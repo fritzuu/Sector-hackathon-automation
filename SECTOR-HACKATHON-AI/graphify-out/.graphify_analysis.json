@@ -1,0 +1,174 @@
+{
+  "communities": {
+    "0": [
+      "backlog_slices",
+      "references_quality_test_evidence",
+      "rules_siba_core",
+      "skills_siba_build",
+      "skills_siba_review",
+      "state_active_handoff"
+    ],
+    "1": [
+      "decisions_pure_core_architecture",
+      "prd_deterministic_engine",
+      "references_domain_idempotency_dedup",
+      "references_domain_replay_engine",
+      "references_quality_structured_logging",
+      "skills_siba_debug"
+    ],
+    "2": [
+      "prd_telegram_delivery",
+      "prd_track02_automation",
+      "prd_watchtower_idx_monitor",
+      "references_quality_security_acceptance"
+    ],
+    "3": [
+      "decisions_api_budget_guardrail",
+      "prd_sectors_api",
+      "skills_siba_data"
+    ],
+    "4": [
+      "decisions_supabase_postgres",
+      "prd_case_timeline",
+      "references_domain_case_lifecycle"
+    ],
+    "5": [
+      "decisions_stack_ts_nextjs_tailwind",
+      "references_quality_ui_guidelines"
+    ]
+  },
+  "cohesion": {
+    "0": 0.3333333333333333,
+    "1": 0.3333333333333333,
+    "2": 0.5,
+    "3": 0.6666666666666666,
+    "4": 0.6666666666666666,
+    "5": 1.0
+  },
+  "gods": [
+    {
+      "id": "prd_watchtower_idx_monitor",
+      "label": "Watchtower IDX Monitor",
+      "degree": 5
+    },
+    {
+      "id": "prd_deterministic_engine",
+      "label": "Deterministic Rule Engine",
+      "degree": 3
+    },
+    {
+      "id": "prd_case_timeline",
+      "label": "Case Timeline System",
+      "degree": 3
+    },
+    {
+      "id": "prd_sectors_api",
+      "label": "Sectors API Integration",
+      "degree": 3
+    },
+    {
+      "id": "decisions_pure_core_architecture",
+      "label": "Pure TypeScript Core Architecture",
+      "degree": 3
+    },
+    {
+      "id": "prd_telegram_delivery",
+      "label": "Telegram Notification Channel",
+      "degree": 2
+    },
+    {
+      "id": "references_quality_structured_logging",
+      "label": "Structured Correlation Logging",
+      "degree": 2
+    },
+    {
+      "id": "references_quality_test_evidence",
+      "label": "Verifiable Test Evidence Gate",
+      "degree": 2
+    },
+    {
+      "id": "rules_siba_core",
+      "label": "SIBA Core Rules",
+      "degree": 2
+    },
+    {
+      "id": "backlog_slices",
+      "label": "Backlog Phased Slices",
+      "degree": 2
+    }
+  ],
+  "surprises": [
+    {
+      "source": "Pure TypeScript Core Architecture",
+      "target": "Deterministic Rule Engine",
+      "source_files": [
+        "DECISIONS.md",
+        "PRD.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "implements",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "Deduplication & Idempotency",
+      "target": "Deterministic Rule Engine",
+      "source_files": [
+        "references/domain.md",
+        "PRD.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "conceptually_related_to",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "Supabase Postgres & Cron",
+      "target": "Case Timeline System",
+      "source_files": [
+        "DECISIONS.md",
+        "PRD.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "shares_data_with",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "Case Lifecycle State Machine",
+      "target": "Case Timeline System",
+      "source_files": [
+        "references/domain.md",
+        "PRD.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "implements",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "1000 API Credits Budget Guardrail",
+      "target": "Sectors API Integration",
+      "source_files": [
+        "DECISIONS.md",
+        "PRD.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "rationale_for",
+      "why": "connects across different repos/directories"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `Watchtower IDX Monitor` connect `Community 2` to `Community 1`, `Community 3`, `Community 4`?",
+      "why": "High betweenness centrality (0.328) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `Deterministic Rule Engine` connect `Community 1` to `Community 2`?",
+      "why": "High betweenness centrality (0.213) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `Track 02 Automation & Workflows`, `Supabase Postgres & Cron`, `Security Acceptance Standard` to the rest of the system?",
+      "why": "11 weakly-connected nodes found - possible documentation gaps or missing edges."
+    }
+  ]
+}

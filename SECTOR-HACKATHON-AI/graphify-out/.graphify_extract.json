@@ -1,0 +1,390 @@
+{
+  "nodes": [
+    {
+      "id": "prd_watchtower_idx_monitor",
+      "label": "Watchtower IDX Monitor",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md",
+      "rationale": "Automated follow-up monitor for IDX stocks tracking multi-day cases without LLM"
+    },
+    {
+      "id": "prd_track02_automation",
+      "label": "Track 02 Automation & Workflows",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md",
+      "rationale": "Target competition track for Sectors Hackathon 2026"
+    },
+    {
+      "id": "prd_deterministic_engine",
+      "label": "Deterministic Rule Engine",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md",
+      "rationale": "100% deterministic template-based evaluation without LLM runtime to ensure reproducibility and zero hallucinations"
+    },
+    {
+      "id": "prd_case_timeline",
+      "label": "Case Timeline System",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md",
+      "rationale": "Tracks open cases across days, separating what is new from previously seen information"
+    },
+    {
+      "id": "prd_sectors_api",
+      "label": "Sectors API Integration",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md",
+      "rationale": "Primary market data and disclosure filing provider for IDX"
+    },
+    {
+      "id": "prd_telegram_delivery",
+      "label": "Telegram Notification Channel",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md",
+      "rationale": "Push updates to users without requiring constant dashboard visits"
+    },
+    {
+      "id": "decisions_stack_ts_nextjs_tailwind",
+      "label": "TypeScript Next.js Tailwind Stack",
+      "file_type": "rationale",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/DECISIONS.md",
+      "rationale": "Standard web stack for dashboard: TypeScript, Next.js, Tailwind CSS"
+    },
+    {
+      "id": "decisions_pure_core_architecture",
+      "label": "Pure TypeScript Core Architecture",
+      "file_type": "rationale",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/DECISIONS.md",
+      "rationale": "Zero external framework dependency in core logic, shared between live, replay, and vitest"
+    },
+    {
+      "id": "decisions_supabase_postgres",
+      "label": "Supabase Postgres & Cron",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/DECISIONS.md",
+      "rationale": "Database storage and scheduled triggers calling worker/Edge Functions"
+    },
+    {
+      "id": "decisions_api_budget_guardrail",
+      "label": "1000 API Credits Budget Guardrail",
+      "file_type": "rationale",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/DECISIONS.md",
+      "rationale": "Strict total team API budget across development and demo runs"
+    },
+    {
+      "id": "quality_security_acceptance",
+      "label": "Security Acceptance Standard",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/quality.md",
+      "rationale": "Server-only keys, strict input validation, sanitized demo modes, multi-user isolation"
+    },
+    {
+      "id": "quality_structured_logging",
+      "label": "Structured Correlation Logging",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/quality.md",
+      "rationale": "run_id, stage, status, latency, and correlation IDs for debuggability"
+    },
+    {
+      "id": "quality_ui_guidelines",
+      "label": "UI Design Guidelines",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/quality.md",
+      "rationale": "Consistent typography/spacing, no FOMO or fake confidence scores, WCAG contrast and keyboard accessibility"
+    },
+    {
+      "id": "quality_test_evidence",
+      "label": "Verifiable Test Evidence Gate",
+      "file_type": "rationale",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/quality.md",
+      "rationale": "All changes must have genuine executable tests (vitest, typecheck, lint), no fictional test passes"
+    },
+    {
+      "id": "domain_case_lifecycle",
+      "label": "Case Lifecycle State Machine",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/domain.md",
+      "rationale": "Governs open, update, resolve, and close transitions across trading days"
+    },
+    {
+      "id": "domain_replay_engine",
+      "label": "Historical Replay & Simulation",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/domain.md",
+      "rationale": "Simulates historical market dates without consuming live API or looking ahead"
+    },
+    {
+      "id": "domain_idempotency_dedup",
+      "label": "Deduplication & Idempotency",
+      "file_type": "concept",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/domain.md",
+      "rationale": "Prevents re-triggering duplicate alerts on identical filings or redundant price spikes"
+    },
+    {
+      "id": "rules_siba_core",
+      "label": "SIBA Core Rules",
+      "file_type": "document",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/rules/siba.md",
+      "rationale": "Operational guidelines for Antigravity agents in the SIBA codebase"
+    },
+    {
+      "id": "skills_siba_build",
+      "label": "SIBA Build Skill",
+      "file_type": "code",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-build/SKILL.md",
+      "rationale": "Implements approved MVP slices with verifiable tests"
+    },
+    {
+      "id": "skills_siba_data",
+      "label": "SIBA Data Skill",
+      "file_type": "code",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-data/SKILL.md",
+      "rationale": "Validates Sectors API feasibility and deterministic rules"
+    },
+    {
+      "id": "skills_siba_debug",
+      "label": "SIBA Debug Skill",
+      "file_type": "code",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-debug/SKILL.md",
+      "rationale": "Reproduces and diagnoses bugs before applying fixes"
+    },
+    {
+      "id": "skills_siba_review",
+      "label": "SIBA Review Skill",
+      "file_type": "code",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-review/SKILL.md",
+      "rationale": "Verifies changes and readiness against hackathon submission gates"
+    },
+    {
+      "id": "backlog_slices",
+      "label": "Backlog Phased Slices",
+      "file_type": "document",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/BACKLOG.md",
+      "rationale": "Structured implementation slices S1 to S5"
+    },
+    {
+      "id": "state_active_handoff",
+      "label": "Current State & Handoff",
+      "file_type": "document",
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/STATE.md",
+      "rationale": "Maintains single source of truth for active project state"
+    }
+  ],
+  "edges": [
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_track02_automation",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md"
+    },
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_deterministic_engine",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md"
+    },
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_case_timeline",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md"
+    },
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_sectors_api",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md"
+    },
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_telegram_delivery",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md"
+    },
+    {
+      "source": "decisions_pure_core_architecture",
+      "target": "prd_deterministic_engine",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/DECISIONS.md"
+    },
+    {
+      "source": "decisions_stack_ts_nextjs_tailwind",
+      "target": "quality_ui_guidelines",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/DECISIONS.md"
+    },
+    {
+      "source": "decisions_supabase_postgres",
+      "target": "prd_case_timeline",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/DECISIONS.md"
+    },
+    {
+      "source": "decisions_api_budget_guardrail",
+      "target": "prd_sectors_api",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/DECISIONS.md"
+    },
+    {
+      "source": "domain_case_lifecycle",
+      "target": "prd_case_timeline",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/domain.md"
+    },
+    {
+      "source": "domain_idempotency_dedup",
+      "target": "prd_deterministic_engine",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/domain.md"
+    },
+    {
+      "source": "domain_replay_engine",
+      "target": "decisions_pure_core_architecture",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/domain.md"
+    },
+    {
+      "source": "quality_security_acceptance",
+      "target": "prd_telegram_delivery",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/quality.md"
+    },
+    {
+      "source": "quality_structured_logging",
+      "target": "decisions_pure_core_architecture",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/quality.md"
+    },
+    {
+      "source": "quality_test_evidence",
+      "target": "rules_siba_core",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/quality.md"
+    },
+    {
+      "source": "skills_siba_build",
+      "target": "backlog_slices",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-build/SKILL.md"
+    },
+    {
+      "source": "skills_siba_data",
+      "target": "prd_sectors_api",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-data/SKILL.md"
+    },
+    {
+      "source": "skills_siba_debug",
+      "target": "quality_structured_logging",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-debug/SKILL.md"
+    },
+    {
+      "source": "skills_siba_review",
+      "target": "quality_test_evidence",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-review/SKILL.md"
+    },
+    {
+      "source": "rules_siba_core",
+      "target": "state_active_handoff",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/rules/siba.md"
+    },
+    {
+      "source": "state_active_handoff",
+      "target": "backlog_slices",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/STATE.md"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "he_core_deterministic_pipeline",
+      "label": "Deterministic Follow-up Pipeline",
+      "nodes": [
+        "prd_watchtower_idx_monitor",
+        "prd_deterministic_engine",
+        "domain_case_lifecycle",
+        "domain_idempotency_dedup",
+        "prd_case_timeline"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md"
+    },
+    {
+      "id": "he_siba_agent_workflow",
+      "label": "SIBA Agent Customization System",
+      "nodes": [
+        "rules_siba_core",
+        "skills_siba_build",
+        "skills_siba_data",
+        "skills_siba_debug",
+        "skills_siba_review"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/rules/siba.md"
+    },
+    {
+      "id": "he_quality_acceptance_framework",
+      "label": "Quality and Acceptance Gates",
+      "nodes": [
+        "quality_security_acceptance",
+        "quality_structured_logging",
+        "quality_ui_guidelines",
+        "quality_test_evidence"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/quality.md"
+    }
+  ],
+  "input_tokens": 12000,
+  "output_tokens": 2500
+}

@@ -1,0 +1,510 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "he_core_deterministic_pipeline",
+        "label": "Deterministic Follow-up Pipeline",
+        "nodes": [
+          "prd_watchtower_idx_monitor",
+          "prd_deterministic_engine",
+          "references_domain_case_lifecycle",
+          "references_domain_idempotency_dedup",
+          "prd_case_timeline"
+        ],
+        "relation": "implement",
+        "confidence": "EXTRACTED",
+        "confidence_score": 0.95,
+        "source_file": "PRD.md"
+      },
+      {
+        "id": "he_quality_acceptance_framework",
+        "label": "Quality and Acceptance Gates",
+        "nodes": [
+          "references_quality_security_acceptance",
+          "references_quality_structured_logging",
+          "references_quality_ui_guidelines",
+          "references_quality_test_evidence"
+        ],
+        "relation": "participate_in",
+        "confidence": "EXTRACTED",
+        "confidence_score": 0.95,
+        "source_file": "references/quality.md"
+      },
+      {
+        "id": "he_siba_agent_workflow",
+        "label": "SIBA Agent Customization System",
+        "nodes": [
+          "rules_siba_core",
+          "skills_siba_build",
+          "skills_siba_data",
+          "skills_siba_debug",
+          "skills_siba_review"
+        ],
+        "relation": "participate_in",
+        "confidence": "EXTRACTED",
+        "confidence_score": 0.95,
+        "source_file": "rules/siba.md"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "skills_siba_build",
+      "label": "SIBA Build Skill",
+      "community": 0,
+      "community_name": "SIBA Agent Workflow & Quality Gates",
+      "file_type": "code",
+      "norm_label": "siba build skill",
+      "rationale": "Implements approved MVP slices with verifiable tests",
+      "source_file": "skills/siba-build/SKILL.md"
+    },
+    {
+      "id": "skills_siba_review",
+      "label": "SIBA Review Skill",
+      "community": 0,
+      "community_name": "SIBA Agent Workflow & Quality Gates",
+      "file_type": "code",
+      "norm_label": "siba review skill",
+      "rationale": "Verifies changes and readiness against hackathon submission gates",
+      "source_file": "skills/siba-review/SKILL.md"
+    },
+    {
+      "id": "backlog_slices",
+      "label": "Backlog Phased Slices",
+      "community": 0,
+      "community_name": "SIBA Agent Workflow & Quality Gates",
+      "file_type": "document",
+      "norm_label": "backlog phased slices",
+      "rationale": "Structured implementation slices S1 to S5",
+      "source_file": "BACKLOG.md"
+    },
+    {
+      "id": "rules_siba_core",
+      "label": "SIBA Core Rules",
+      "community": 0,
+      "community_name": "SIBA Agent Workflow & Quality Gates",
+      "file_type": "document",
+      "norm_label": "siba core rules",
+      "rationale": "Operational guidelines for Antigravity agents in the SIBA codebase",
+      "source_file": "rules/siba.md"
+    },
+    {
+      "id": "state_active_handoff",
+      "label": "Current State & Handoff",
+      "community": 0,
+      "community_name": "SIBA Agent Workflow & Quality Gates",
+      "file_type": "document",
+      "norm_label": "current state & handoff",
+      "rationale": "Maintains single source of truth for active project state",
+      "source_file": "STATE.md"
+    },
+    {
+      "id": "references_quality_test_evidence",
+      "label": "Verifiable Test Evidence Gate",
+      "community": 0,
+      "community_name": "SIBA Agent Workflow & Quality Gates",
+      "file_type": "rationale",
+      "norm_label": "verifiable test evidence gate",
+      "rationale": "All changes must have genuine executable tests (vitest, typecheck, lint), no fictional test passes",
+      "source_file": "references/quality.md"
+    },
+    {
+      "id": "skills_siba_debug",
+      "label": "SIBA Debug Skill",
+      "community": 1,
+      "community_name": "Deterministic Core & Replay Engine",
+      "file_type": "code",
+      "norm_label": "siba debug skill",
+      "rationale": "Reproduces and diagnoses bugs before applying fixes",
+      "source_file": "skills/siba-debug/SKILL.md"
+    },
+    {
+      "id": "prd_deterministic_engine",
+      "label": "Deterministic Rule Engine",
+      "community": 1,
+      "community_name": "Deterministic Core & Replay Engine",
+      "file_type": "concept",
+      "norm_label": "deterministic rule engine",
+      "rationale": "100% deterministic template-based evaluation without LLM runtime to ensure reproducibility and zero hallucinations",
+      "source_file": "PRD.md"
+    },
+    {
+      "id": "references_domain_idempotency_dedup",
+      "label": "Deduplication & Idempotency",
+      "community": 1,
+      "community_name": "Deterministic Core & Replay Engine",
+      "file_type": "concept",
+      "norm_label": "deduplication & idempotency",
+      "rationale": "Prevents re-triggering duplicate alerts on identical filings or redundant price spikes",
+      "source_file": "references/domain.md"
+    },
+    {
+      "id": "references_domain_replay_engine",
+      "label": "Historical Replay & Simulation",
+      "community": 1,
+      "community_name": "Deterministic Core & Replay Engine",
+      "file_type": "concept",
+      "norm_label": "historical replay & simulation",
+      "rationale": "Simulates historical market dates without consuming live API or looking ahead",
+      "source_file": "references/domain.md"
+    },
+    {
+      "id": "references_quality_structured_logging",
+      "label": "Structured Correlation Logging",
+      "community": 1,
+      "community_name": "Deterministic Core & Replay Engine",
+      "file_type": "concept",
+      "norm_label": "structured correlation logging",
+      "rationale": "run_id, stage, status, latency, and correlation IDs for debuggability",
+      "source_file": "references/quality.md"
+    },
+    {
+      "id": "decisions_pure_core_architecture",
+      "label": "Pure TypeScript Core Architecture",
+      "community": 1,
+      "community_name": "Deterministic Core & Replay Engine",
+      "file_type": "rationale",
+      "norm_label": "pure typescript core architecture",
+      "rationale": "Zero external framework dependency in core logic, shared between live, replay, and vitest",
+      "source_file": "DECISIONS.md"
+    },
+    {
+      "id": "prd_telegram_delivery",
+      "label": "Telegram Notification Channel",
+      "community": 2,
+      "community_name": "Watchtower Product & Telegram Delivery",
+      "file_type": "concept",
+      "norm_label": "telegram notification channel",
+      "rationale": "Push updates to users without requiring constant dashboard visits",
+      "source_file": "PRD.md"
+    },
+    {
+      "id": "prd_track02_automation",
+      "label": "Track 02 Automation & Workflows",
+      "community": 2,
+      "community_name": "Watchtower Product & Telegram Delivery",
+      "file_type": "concept",
+      "norm_label": "track 02 automation & workflows",
+      "rationale": "Target competition track for Sectors Hackathon 2026",
+      "source_file": "PRD.md"
+    },
+    {
+      "id": "prd_watchtower_idx_monitor",
+      "label": "Watchtower IDX Monitor",
+      "community": 2,
+      "community_name": "Watchtower Product & Telegram Delivery",
+      "file_type": "concept",
+      "norm_label": "watchtower idx monitor",
+      "rationale": "Automated follow-up monitor for IDX stocks tracking multi-day cases without LLM",
+      "source_file": "PRD.md"
+    },
+    {
+      "id": "references_quality_security_acceptance",
+      "label": "Security Acceptance Standard",
+      "community": 2,
+      "community_name": "Watchtower Product & Telegram Delivery",
+      "file_type": "concept",
+      "norm_label": "security acceptance standard",
+      "rationale": "Server-only keys, strict input validation, sanitized demo modes, multi-user isolation",
+      "source_file": "references/quality.md"
+    },
+    {
+      "id": "skills_siba_data",
+      "label": "SIBA Data Skill",
+      "community": 3,
+      "community_name": "Sectors API & Budget Guardrail",
+      "file_type": "code",
+      "norm_label": "siba data skill",
+      "rationale": "Validates Sectors API feasibility and deterministic rules",
+      "source_file": "skills/siba-data/SKILL.md"
+    },
+    {
+      "id": "prd_sectors_api",
+      "label": "Sectors API Integration",
+      "community": 3,
+      "community_name": "Sectors API & Budget Guardrail",
+      "file_type": "concept",
+      "norm_label": "sectors api integration",
+      "rationale": "Primary market data and disclosure filing provider for IDX",
+      "source_file": "PRD.md"
+    },
+    {
+      "id": "decisions_api_budget_guardrail",
+      "label": "1000 API Credits Budget Guardrail",
+      "community": 3,
+      "community_name": "Sectors API & Budget Guardrail",
+      "file_type": "rationale",
+      "norm_label": "1000 api credits budget guardrail",
+      "rationale": "Strict total team API budget across development and demo runs",
+      "source_file": "DECISIONS.md"
+    },
+    {
+      "id": "decisions_supabase_postgres",
+      "label": "Supabase Postgres & Cron",
+      "community": 4,
+      "community_name": "Case Timeline & Persistence Lifecycle",
+      "file_type": "concept",
+      "norm_label": "supabase postgres & cron",
+      "rationale": "Database storage and scheduled triggers calling worker/Edge Functions",
+      "source_file": "DECISIONS.md"
+    },
+    {
+      "id": "prd_case_timeline",
+      "label": "Case Timeline System",
+      "community": 4,
+      "community_name": "Case Timeline & Persistence Lifecycle",
+      "file_type": "concept",
+      "norm_label": "case timeline system",
+      "rationale": "Tracks open cases across days, separating what is new from previously seen information",
+      "source_file": "PRD.md"
+    },
+    {
+      "id": "references_domain_case_lifecycle",
+      "label": "Case Lifecycle State Machine",
+      "community": 4,
+      "community_name": "Case Timeline & Persistence Lifecycle",
+      "file_type": "concept",
+      "norm_label": "case lifecycle state machine",
+      "rationale": "Governs open, update, resolve, and close transitions across trading days",
+      "source_file": "references/domain.md"
+    },
+    {
+      "id": "references_quality_ui_guidelines",
+      "label": "UI Design Guidelines",
+      "community": 5,
+      "community_name": "Frontend Stack & UI Design Standards",
+      "file_type": "concept",
+      "norm_label": "ui design guidelines",
+      "rationale": "Consistent typography/spacing, no FOMO or fake confidence scores, WCAG contrast and keyboard accessibility",
+      "source_file": "references/quality.md"
+    },
+    {
+      "id": "decisions_stack_ts_nextjs_tailwind",
+      "label": "TypeScript Next.js Tailwind Stack",
+      "community": 5,
+      "community_name": "Frontend Stack & UI Design Standards",
+      "file_type": "rationale",
+      "norm_label": "typescript next.js tailwind stack",
+      "rationale": "Standard web stack for dashboard: TypeScript, Next.js, Tailwind CSS",
+      "source_file": "DECISIONS.md"
+    }
+  ],
+  "links": [
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_track02_automation",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "PRD.md"
+    },
+    {
+      "source": "references_domain_idempotency_dedup",
+      "target": "prd_deterministic_engine",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "references/domain.md"
+    },
+    {
+      "source": "references_domain_replay_engine",
+      "target": "decisions_pure_core_architecture",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "references/domain.md"
+    },
+    {
+      "source": "references_quality_structured_logging",
+      "target": "decisions_pure_core_architecture",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "references/quality.md"
+    },
+    {
+      "source": "references_quality_test_evidence",
+      "target": "rules_siba_core",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "references/quality.md"
+    },
+    {
+      "source": "decisions_pure_core_architecture",
+      "target": "prd_deterministic_engine",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DECISIONS.md"
+    },
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_case_timeline",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "PRD.md"
+    },
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_deterministic_engine",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "PRD.md"
+    },
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_telegram_delivery",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "PRD.md"
+    },
+    {
+      "source": "references_domain_case_lifecycle",
+      "target": "prd_case_timeline",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "references/domain.md"
+    },
+    {
+      "source": "decisions_api_budget_guardrail",
+      "target": "prd_sectors_api",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DECISIONS.md"
+    },
+    {
+      "source": "decisions_stack_ts_nextjs_tailwind",
+      "target": "references_quality_ui_guidelines",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DECISIONS.md"
+    },
+    {
+      "source": "prd_watchtower_idx_monitor",
+      "target": "prd_sectors_api",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "PRD.md"
+    },
+    {
+      "source": "references_quality_security_acceptance",
+      "target": "prd_telegram_delivery",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "references/quality.md"
+    },
+    {
+      "source": "rules_siba_core",
+      "target": "state_active_handoff",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rules/siba.md"
+    },
+    {
+      "source": "skills_siba_build",
+      "target": "backlog_slices",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "skills/siba-build/SKILL.md"
+    },
+    {
+      "source": "skills_siba_data",
+      "target": "prd_sectors_api",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "skills/siba-data/SKILL.md"
+    },
+    {
+      "source": "skills_siba_debug",
+      "target": "references_quality_structured_logging",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "skills/siba-debug/SKILL.md"
+    },
+    {
+      "source": "skills_siba_review",
+      "target": "references_quality_test_evidence",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "skills/siba-review/SKILL.md"
+    },
+    {
+      "source": "state_active_handoff",
+      "target": "backlog_slices",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "STATE.md"
+    },
+    {
+      "source": "decisions_supabase_postgres",
+      "target": "prd_case_timeline",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "DECISIONS.md"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "he_core_deterministic_pipeline",
+      "label": "Deterministic Follow-up Pipeline",
+      "nodes": [
+        "prd_watchtower_idx_monitor",
+        "prd_deterministic_engine",
+        "references_domain_case_lifecycle",
+        "references_domain_idempotency_dedup",
+        "prd_case_timeline"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "PRD.md"
+    },
+    {
+      "id": "he_quality_acceptance_framework",
+      "label": "Quality and Acceptance Gates",
+      "nodes": [
+        "references_quality_security_acceptance",
+        "references_quality_structured_logging",
+        "references_quality_ui_guidelines",
+        "references_quality_test_evidence"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "references/quality.md"
+    },
+    {
+      "id": "he_siba_agent_workflow",
+      "label": "SIBA Agent Customization System",
+      "nodes": [
+        "rules_siba_core",
+        "skills_siba_build",
+        "skills_siba_data",
+        "skills_siba_debug",
+        "skills_siba_review"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "rules/siba.md"
+    }
+  ]
+}

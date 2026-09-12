@@ -1,0 +1,74 @@
+{
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/BACKLOG.md": {
+    "mtime": 1789224872.9908354,
+    "seen": 1789225507.314185,
+    "ast_hash": "e10e6eb5d1b929d66ac11935e6ef79b7",
+    "semantic_hash": "e10e6eb5d1b929d66ac11935e6ef79b7"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/DECISIONS.md": {
+    "mtime": 1789224872.9911618,
+    "seen": 1789225507.314188,
+    "ast_hash": "f7ce8835f7b401e59bfdb9a292bd4c8f",
+    "semantic_hash": "f7ce8835f7b401e59bfdb9a292bd4c8f"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/PRD.md": {
+    "mtime": 1789221139.9753373,
+    "seen": 1789225507.314189,
+    "ast_hash": "96b662bee67510df606143f38eb8083e",
+    "semantic_hash": "96b662bee67510df606143f38eb8083e"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/README.md": {
+    "mtime": 1789224900.160097,
+    "seen": 1789225507.3141901,
+    "ast_hash": "ade2c3c18ede9457d6f93629501e3a9a",
+    "semantic_hash": "ade2c3c18ede9457d6f93629501e3a9a"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/STATE.md": {
+    "mtime": 1789224872.9884138,
+    "seen": 1789225507.314191,
+    "ast_hash": "44707e406dba73f6b33285b2735c5b8c",
+    "semantic_hash": "44707e406dba73f6b33285b2735c5b8c"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/domain.md": {
+    "mtime": 1789224872.9880722,
+    "seen": 1789225507.314191,
+    "ast_hash": "d1177fb3ad252267e5f8dc570efa82e1",
+    "semantic_hash": "d1177fb3ad252267e5f8dc570efa82e1"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/references/quality.md": {
+    "mtime": 1789224872.987729,
+    "seen": 1789225507.3141918,
+    "ast_hash": "65515f6d0ace08efd973b180623bb443",
+    "semantic_hash": "65515f6d0ace08efd973b180623bb443"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/rules/siba.md": {
+    "mtime": 1789224872.9890776,
+    "seen": 1789225507.3141918,
+    "ast_hash": "19daf9b91f5eef5e79c2025b4aef1831",
+    "semantic_hash": "19daf9b91f5eef5e79c2025b4aef1831"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-build/SKILL.md": {
+    "mtime": 1789224872.9901688,
+    "seen": 1789225507.314193,
+    "ast_hash": "e968e2f00a03b68086a2561ca1422d45",
+    "semantic_hash": "e968e2f00a03b68086a2561ca1422d45"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-data/SKILL.md": {
+    "mtime": 1789224872.990491,
+    "seen": 1789225507.314194,
+    "ast_hash": "b6cbd7cef56772ebe4decdb3733564ee",
+    "semantic_hash": "b6cbd7cef56772ebe4decdb3733564ee"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-debug/SKILL.md": {
+    "mtime": 1789224872.9897916,
+    "seen": 1789225507.314194,
+    "ast_hash": "b2e8bef5b4a158770c3d41e5db2687ab",
+    "semantic_hash": "b2e8bef5b4a158770c3d41e5db2687ab"
+  },
+  "/Users/revanzhafran/Documents/ChatGPT/sector-hackathon/SECTOR-HACKATHON-AI/skills/siba-review/SKILL.md": {
+    "mtime": 1789224872.9894557,
+    "seen": 1789225507.314195,
+    "ast_hash": "8c917290a354f11159257ef7c2d1f9a8",
+    "semantic_hash": "8c917290a354f11159257ef7c2d1f9a8"
+  }
+}
