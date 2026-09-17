@@ -1,0 +1,105 @@
+import { EvaluationResult, CaseStatus, RenderedTemplate } from '../types/engine.js';
+import { VolumeEvidence, RelativeMovementEvidence, NewFilingEvidence } from '../types/engine.js';
+
+export const TEMPLATE_VERSION = 'v1.0.0';
+
+export const STANDARD_DISCLAIMER =
+  'Pemberitahuan otomatis SIBA (Sistem Informasi Bursa dan Aset) berbasis aturan deterministik dan data resmi Sectors API. Bukan saran investasi, rekomendasi beli/jual, atau prediksi harga. Seluruh keputusan investasi merupakan tanggung jawab mandiri investor (DYOR).';
+
+export function renderCaseTemplate(
+  evalResult: EvaluationResult,
+  caseStatus: CaseStatus
+): RenderedTemplate {
+  const { symbol, evaluationDate, ruleResults, hasIncompleteData, missingDataReasons } = evalResult;
+
+  const facts: string[] = [];
+  const limitedInterpretations: string[] = [];
+  const unknowns: string[] = [];
+
+  if (hasIncompleteData) {
+    facts.push(`Status data: Data historis/benchmark tidak lengkap pada sesi ${evaluationDate}.`);
+    for (const reason of missingDataReasons) {
+      facts.push(`- Keterbatasan: ${reason}`);
+    }
+    limitedInterpretations.push(
+      'Evaluasi aturan ditangguhkan untuk menjaga akurasi dan mencegah sinyal palsu.'
+    );
+    unknowns.push('Nilai metrik teknis dan selisih terhadap IHSG belum dapat dihitung secara valid.');
+  } else {
+    for (const result of ruleResults) {
+      if (result.ruleId === 'ABNORMAL_VOLUME') {
+        const ev = result.evidence as VolumeEvidence;
+        if (result.isTriggered) {
+          facts.push(
+            `Volume Transaksi: ${ev.latestVolume.toLocaleString('id-ID')} lot (${ev.multiplier.toFixed(2)}x dibanding median 20 sesi bursa: ${ev.medianVolume20Days.toLocaleString('id-ID')} lot).`
+          );
+          limitedInterpretations.push(
+            `Aktivitas volume transaksi berada di atas ambang batas wajar (>= ${ev.threshold}x median 20 hari).`
+          );
+        }
+      } else if (result.ruleId === 'RELATIVE_MOVEMENT') {
+        const ev = result.evidence as RelativeMovementEvidence;
+        if (result.isTriggered) {
+          facts.push(
+            `Perubahan Harga: Saham ${(ev.stockReturn * 100).toFixed(2)}% vs IHSG ${(ev.benchmarkReturn * 100).toFixed(2)}% (Selisih: ${ev.spreadPercentagePoints.toFixed(2)} poin persentase).`
+          );
+          limitedInterpretations.push(
+            `Pergerakan harga saham menyimpang signifikan (>= ${ev.thresholdPercentagePoints}%) relatif terhadap arah indeks acuan pasar.`
+          );
+        }
+      } else if (result.ruleId === 'NEW_FILING') {
+        const ev = result.evidence as NewFilingEvidence;
+        if (result.isTriggered && ev.newFilings.length > 0) {
+          for (const f of ev.newFilings) {
+            facts.push(
+              `Keterbukaan Informasi Resmi: "${f.title}" (${f.category}) terbit pada ${f.publishedAt}.`
+            );
+          }
+          limitedInterpretations.push(
+            'Terdapat rilis pengumuman resmi terbaru dari emiten pada kanal keterbukaan informasi IDX.'
+          );
+        }
+      }
+    }
+
+    if (facts.length === 0) {
+      facts.push(`Tidak ada anomali atau filing baru yang terdeteksi pada sesi ${evaluationDate}.`);
+      limitedInterpretations.push('Seluruh indikator volume dan harga berada dalam rentang normal.');
+    }
+
+    unknowns.push(
+      'Faktor katalis eksternal, rumor pasar, dan sentimen media sosial di luar data resmi Sectors API tidak dipantau.'
+    );
+    unknowns.push(
+      'Dampak fundamental jangka panjang terhadap kinerja keuangan emiten memerlukan riset laporan keuangan mandiri.'
+    );
+  }
+
+  // Format Plain Text
+  const plainTextLines: string[] = [
+    `[SIBA — ${symbol}] Status: ${caseStatus} (${evaluationDate}) [Versi ${TEMPLATE_VERSION}]`,
+    '',
+    '📌 FAKTA (Terverifikasi Data Sectors API):',
+    ...facts.map((f) => `• ${f}`),
+    '',
+    '🔍 INTERPRETASI TERBATAS (Tanpa Prediksi):',
+    ...limitedInterpretations.map((i) => `• ${i}`),
+    '',
+    '❓ BELUM DIKETAHUI:',
+    ...unknowns.map((u) => `• ${u}`),
+    '',
+    `⚠️ DISCLAIMER:\n${STANDARD_DISCLAIMER}`,
+  ];
+
+  return {
+    symbol,
+    asOfDate: evaluationDate,
+    status: caseStatus,
+    version: TEMPLATE_VERSION,
+    facts,
+    limitedInterpretations,
+    unknowns,
+    disclaimer: STANDARD_DISCLAIMER,
+    plainText: plainTextLines.join('\n'),
+  };
+}
