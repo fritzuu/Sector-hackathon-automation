@@ -1,0 +1,45 @@
+{
+  "name": "watchtower-siba-core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Watchtower (SIBA) - Automated Follow-up Monitor for IDX (Deterministic Core Engine)",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "vite",
+    "demo:cli": "tsx src/demo.ts",
+    "build": "tsc && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "idx",
+    "stocks",
+    "automation",
+    "workflow",
+    "deterministic",
+    "sectors"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.47.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.5.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.13",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
+  }
+}
