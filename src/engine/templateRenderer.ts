@@ -34,17 +34,19 @@ export function renderCaseTemplate(
             `Volume Transaksi: ${ev.latestVolume.toLocaleString('id-ID')} lot (${ev.multiplier.toFixed(2)}x dibanding median 20 sesi bursa: ${ev.medianVolume20Days.toLocaleString('id-ID')} lot).`
           );
           limitedInterpretations.push(
-            `Aktivitas volume transaksi berada di atas ambang batas wajar (>= ${ev.threshold}x median 20 hari).`
+            `Aktivitas volume transaksi melonjak signifikan di atas batas wajar (≥ ${ev.threshold}x median 20 hari).`
           );
         }
       } else if (result.ruleId === 'RELATIVE_MOVEMENT') {
         const ev = result.evidence as RelativeMovementEvidence;
         if (result.isTriggered) {
+          const dir = ev.stockReturn >= 0 ? '+' : '';
+          const bDir = ev.benchmarkReturn >= 0 ? '+' : '';
           facts.push(
-            `Perubahan Harga: Saham ${(ev.stockReturn * 100).toFixed(2)}% vs IHSG ${(ev.benchmarkReturn * 100).toFixed(2)}% (Selisih: ${ev.spreadPercentagePoints.toFixed(2)} poin persentase).`
+            `Divergensi Harga: Return Saham ${dir}${(ev.stockReturn * 100).toFixed(2)}% vs IHSG ${bDir}${(ev.benchmarkReturn * 100).toFixed(2)}% (Spread: ${ev.spreadPercentagePoints.toFixed(2)}%).`
           );
           limitedInterpretations.push(
-            `Pergerakan harga saham menyimpang signifikan (>= ${ev.thresholdPercentagePoints}%) relatif terhadap arah indeks acuan pasar.`
+            `Pergerakan harga saham menyimpang tajam dari tren indeks acuan bursa (selisih ≥ ${ev.thresholdPercentagePoints}%).`
           );
         }
       } else if (result.ruleId === 'NEW_FILING') {
@@ -52,11 +54,11 @@ export function renderCaseTemplate(
         if (result.isTriggered && ev.newFilings.length > 0) {
           for (const f of ev.newFilings) {
             facts.push(
-              `Keterbukaan Informasi Resmi: "${f.title}" (${f.category}) terbit pada ${f.publishedAt}.`
+              `Keterbukaan Informasi Resmi BEI: "${f.title}" (${f.category}) dirilis pada ${f.publishedAt}.`
             );
           }
           limitedInterpretations.push(
-            'Terdapat rilis pengumuman resmi terbaru dari emiten pada kanal keterbukaan informasi IDX.'
+            'Terdapat rilis pengumuman / keterbukaan informasi resmi terbaru dari emiten pada kanal Bursa Efek Indonesia.'
           );
         }
       }
@@ -68,7 +70,7 @@ export function renderCaseTemplate(
     }
 
     unknowns.push(
-      'Faktor katalis eksternal, rumor pasar, dan sentimen media sosial di luar data resmi Sectors API tidak dipantau.'
+      'Faktor katalis eksternal, rumor pasar, dan sentimen media sosial di luar data transaksi resmi BEI tidak dipantau.'
     );
     unknowns.push(
       'Dampak fundamental jangka panjang terhadap kinerja keuangan emiten memerlukan riset laporan keuangan mandiri.'

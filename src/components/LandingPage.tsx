@@ -9,12 +9,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError, IhsgUnavailableError } from '../services/liveMarketService.js';
+import { sectorsApi, LiveIdxCompany } from '../services/sectorsApi.js';
 
 interface LandingPageProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
 }
 
-const SYMS = ['BBCA', 'TLKM', 'ASII', 'BBNI', 'UNTR', 'ICBP'];
 const fmt  = (n: number) => n.toLocaleString('id-ID');
 const pct  = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
 const vol  = (n: number) => `${(n / 1_000_000).toFixed(1)}M`;
@@ -575,37 +575,82 @@ const GLOBAL_CSS = `
 `;
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
-  const [selected, setSelected]   = useState('BBCA');
-  const [tickers, setTickers]     = useState<Record<string, RealTickerMetrics>>({});
-  const [failedSyms, setFailed]   = useState<Record<string, string>>({});  // sym → error msg
-  const [globalErr, setGlobalErr] = useState<string>('');                  // IHSG / network down
-  const [loading, setLoading]     = useState(true);
-  const [copied, setCopied]       = useState(false);
-  const [search, setSearch]       = useState('');
-  const [searchErr, setSearchErr] = useState('');
+  const [selected, setSelected]         = useState('');
+  const [tickers, setTickers]           = useState<Record<string, RealTickerMetrics>>({});
+  const [liveCompanies, setLiveCompanies] = useState<LiveIdxCompany[]>([]);
+  const [companiesLoading, setCompLoading] = useState(true);
+  const [companiesError, setCompError]   = useState<string>('');
+  const [failedSyms, setFailed]         = useState<Record<string, string>>({});  // sym → error msg
+  const [globalErr, setGlobalErr]       = useState<string>('');                  // IHSG / network down
+  const [loading, setLoading]           = useState(true);
+  const [copied, setCopied]             = useState(false);
+  const [search, setSearch]             = useState('');
+  const [searchErr, setSearchErr]       = useState('');
   const tapeRef = useRef<HTMLDivElement>(null);
 
+  // Fetch live companies from Sectors API first, then fetch live prices via Yahoo Finance
   useEffect(() => {
     let alive = true;
     (async () => {
+      setCompLoading(true);
+      setCompError('');
+      setLoading(true);
+
+      let companies: LiveIdxCompany[] = [];
+      try {
+        companies = await sectorsApi.fetchTopCompanies();
+      } catch (err) {
+        console.error('Failed to fetch companies from Sectors API:', err);
+      }
+
+      if (!alive) return;
+
+      if (!companies || companies.length === 0) {
+        setCompLoading(false);
+        setLoading(false);
+        return;
+      }
+
+      setLiveCompanies(companies);
+      setCompLoading(false);
+
+      // Default selected to the first company (highest market cap)
+      if (companies.length > 0) {
+        setSelected(prev => prev || companies[0].symbol);
+      }
+
+      // Fetch prices via Yahoo Finance proxy for all companies
+      const targetSymbols = companies.map(c => c.symbol);
       const acc: Record<string, RealTickerMetrics> = {};
       const failed: Record<string, string> = {};
-      for (const sym of SYMS) {
-        try {
-          acc[sym] = await liveMarketService.fetchTickerMetrics(sym);
-        } catch (err) {
+
+      const priceResults = await Promise.allSettled(
+        targetSymbols.map(sym => liveMarketService.fetchTickerMetrics(sym))
+      );
+
+      if (!alive) return;
+
+      priceResults.forEach((res, idx) => {
+        const sym = targetSymbols[idx];
+        if (res.status === 'fulfilled') {
+          acc[sym] = res.value;
+        } else {
+          const err = res.reason;
           if (err instanceof IhsgUnavailableError) {
-            // IHSG down = all tickers blocked; surface once and stop
-            if (alive) setGlobalErr('Data IHSG tidak dapat diambil saat ini. Periksa koneksi internet Anda atau coba beberapa saat lagi.');
-            break;
+            setGlobalErr('Data IHSG tidak dapat diambil saat ini. Periksa koneksi internet Anda atau coba beberapa saat lagi.');
+          } else {
+            failed[sym] = err instanceof MarketDataUnavailableError
+              ? err.message
+              : `Gagal memuat data ${sym}.`;
           }
-          failed[sym] = err instanceof MarketDataUnavailableError
-            ? err.message
-            : `Gagal memuat data ${sym}.`;
         }
-      }
-      if (alive) { setTickers(acc); setFailed(failed); setLoading(false); }
+      });
+
+      setTickers(acc);
+      setFailed(failed);
+      setLoading(false);
     })();
+
     return () => { alive = false; };
   }, []);
 
@@ -776,24 +821,62 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
         <div className="console-wrap">
           {/* Sidebar ticker list */}
           <div className="console-sidebar">
-            <div className="console-sidebar-header">Watchlist Demo</div>
-            {SYMS.map(sym => {
-              const d = tickers[sym];
-              const isAct = selected === sym;
-              return (
+            <div className="console-sidebar-header">
+              <span>Contoh Pantauan Demo</span>
+              <span style={{ fontSize: 10, color: 'var(--tx-2)', fontWeight: 'normal' }}>
+                8 Emiten Pilihan
+              </span>
+            </div>
+
+            {companiesError ? (
+              <div style={{ padding: '16px 12px', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, color: '#f87171', marginBottom: 8, lineHeight: 1.4 }}>
+                  {companiesError}
+                </div>
                 <button
-                  key={sym}
-                  className={`ticker-list-btn${isAct ? ' active' : ''}`}
-                  onClick={() => setSelected(sym)}
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    color: '#f87171',
+                    background: 'rgba(248,113,113,0.1)',
+                    border: '1px solid rgba(248,113,113,0.3)',
+                    borderRadius: 4,
+                    padding: '4px 10px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    sectorsApi.invalidateAll();
+                    window.location.reload();
+                  }}
                 >
-                  <span className="t-sym">{sym}</span>
-                  {d
-                    ? <span className={`t-pct ${d.changePercent >= 0 ? 'up' : 'dn'}`}>{pct(d.changePercent)}</span>
-                    : <span className="t-pct" style={{ color: 'var(--tx-2)' }}>—</span>
-                  }
+                  Muat Ulang
                 </button>
-              );
-            })}
+              </div>
+            ) : companiesLoading ? (
+              <div style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[80, 65, 90, 70, 85].map((w, i) => (
+                  <div key={i} className="sk" style={{ width: `${w}%`, height: 16 }} />
+                ))}
+              </div>
+            ) : (
+              Array.from(new Set(['BBCA', 'BBRI', 'BMRI', 'TLKM', 'ASII', 'BREN', 'AMMN', 'ADRO', selected].filter(Boolean))).map(sym => {
+                const d = tickers[sym];
+                const isAct = selected === sym;
+                return (
+                  <button
+                    key={sym}
+                    className={`ticker-list-btn${isAct ? ' active' : ''}`}
+                    onClick={() => setSelected(sym)}
+                  >
+                    <span className="t-sym">{sym}</span>
+                    {d
+                      ? <span className={`t-pct ${d.changePercent >= 0 ? 'up' : 'dn'}`}>{pct(d.changePercent)}</span>
+                      : <span className="t-pct" style={{ color: 'var(--tx-2)' }}>—</span>
+                    }
+                  </button>
+                );
+              })
+            )}
           </div>
 
           {/* Main panel */}
@@ -1060,31 +1143,42 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
                 </tr>
               </thead>
               <tbody>
-                {Object.values(tickers).length === 0 ? (
-                  <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--tx-2)' }}>
-                      Memuat data bursa…
-                    </td>
-                  </tr>
-                ) : Object.values(tickers).map(item => (
-                  <tr
-                    key={item.symbol}
-                    onClick={() => { setSelected(item.symbol); window.scrollTo({ top: 500, behavior: 'smooth' }); }}
-                    style={{ background: selected === item.symbol ? 'rgba(99,102,241,0.05)' : undefined }}
-                  >
-                    <td className="td-sym">{item.symbol}</td>
-                    <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</td>
-                    <td className="td-price">Rp {fmt(item.lastPrice)}</td>
-                    <td className={item.changePercent >= 0 ? 'td-up' : 'td-dn'}>{pct(item.changePercent)}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{vol(item.todayVolume)} lot</td>
-                    <td className={item.isVolumeAnomaly ? 'td-ratio-hot' : 'td-ratio-ok'}>{item.volumeMultiplier}x</td>
-                    <td>
-                      <span className={`badge ${item.isVolumeAnomaly || item.isSpreadAnomaly ? 'badge-anom' : 'badge-norm'}`}>
-                        {item.isVolumeAnomaly || item.isSpreadAnomaly ? 'Anomali' : 'Normal'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  const demoSyms = ['BBCA', 'BBRI', 'BMRI', 'TLKM', 'ASII', 'BREN', 'AMMN', 'ADRO'];
+                  const displayedList = search.trim()
+                    ? Object.values(tickers).filter(t => t.symbol.toLowerCase().includes(search.toLowerCase()) || t.name.toLowerCase().includes(search.toLowerCase()))
+                    : demoSyms.map(s => tickers[s]).filter(Boolean);
+
+                  if (displayedList.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--tx-2)' }}>
+                          {Object.values(tickers).length === 0 ? 'Memuat data bursa…' : `Tidak ada emiten dengan kode "${search}"`}
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return displayedList.map(item => (
+                    <tr
+                      key={item.symbol}
+                      onClick={() => { setSelected(item.symbol); window.scrollTo({ top: 500, behavior: 'smooth' }); }}
+                      style={{ background: selected === item.symbol ? 'rgba(99,102,241,0.05)' : undefined }}
+                    >
+                      <td className="td-sym">{item.symbol}</td>
+                      <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</td>
+                      <td className="td-price">Rp {fmt(item.lastPrice)}</td>
+                      <td className={item.changePercent >= 0 ? 'td-up' : 'td-dn'}>{pct(item.changePercent)}</td>
+                      <td style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{vol(item.todayVolume)} lot</td>
+                      <td className={item.isVolumeAnomaly ? 'td-ratio-hot' : 'td-ratio-ok'}>{item.volumeMultiplier}x</td>
+                      <td>
+                        <span className={`badge ${item.isVolumeAnomaly || item.isSpreadAnomaly ? 'badge-anom' : 'badge-norm'}`}>
+                          {item.isVolumeAnomaly || item.isSpreadAnomaly ? 'Anomali' : 'Normal'}
+                        </span>
+                      </td>
+                    </tr>
+                  ));
+                })()}
               </tbody>
             </table>
           </div>

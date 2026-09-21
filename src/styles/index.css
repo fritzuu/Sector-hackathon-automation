@@ -6,6 +6,16 @@
     color: #f1f5f9;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
+
+  /* Every <button> gets pointer cursor globally — no need to sprinkle cursor-pointer everywhere */
+  button:not([disabled]) {
+    cursor: pointer;
+  }
+
+  /* Disabled buttons always get not-allowed */
+  button[disabled] {
+    cursor: not-allowed;
+  }
 }
 
 .glass-card {

@@ -1,6 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Search, Plus, X, Building2, Check, Send, Info, HelpCircle, ShieldCheck } from 'lucide-react';
-import { IDX_COMPANIES, POPULAR_PRESETS, IdxCompany, PopularPreset } from '../data/idxCompanies.js';
+/**
+ * WatchlistManager — Orchestrator.
+ * Live company data fetched ONCE from Sectors API and passed down to children.
+ * No hardcoded stock lists anywhere.
+ */
+
+import React, { useState, useCallback, useEffect } from 'react';
+import {
+  X, ExternalLink, TrendingUp, TrendingDown, AlertTriangle, Activity, RefreshCw,
+} from 'lucide-react';
+import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError } from '../services/liveMarketService.js';
+import { sectorsApi, LiveIdxCompany } from '../services/sectorsApi.js';
+import { SectorPresetsGrid } from './SectorPresetsGrid.js';
+import { WatchlistSearchPanel } from './WatchlistSearchPanel.js';
 
 interface WatchlistManagerProps {
   watchlist: string[];
@@ -12,310 +23,265 @@ interface WatchlistManagerProps {
   onSendTelegramSummary: () => void;
 }
 
-export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
-  watchlist,
-  onAddTicker,
-  onRemoveTicker,
-  onAddPreset,
-  isTelegramLinked,
-  onOpenTelegramModal,
-  onSendTelegramSummary,
+// ── HELPERS ────────────────────────────────────────────────────────────────────
+
+const fmt = (n: number) => n.toLocaleString('id-ID');
+const pct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+const vol = (n: number) => `${(n / 1_000_000).toFixed(1)}M`;
+
+// ── DETAIL MODAL ─────────────────────────────────────────────────────────────
+
+interface StockDetailModalProps {
+  symbol: string;
+  companyInfo: LiveIdxCompany | null; // null = live not loaded yet
+  metrics: RealTickerMetrics | null;
+  metricsLoading: boolean;
+  metricsError: string;
+  onClose: () => void;
+  onRemove: () => void;
+}
+
+const StockDetailModal: React.FC<StockDetailModalProps> = ({
+  symbol, companyInfo, metrics, metricsLoading, metricsError, onClose, onRemove,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showMethodologyInfo, setShowMethodologyInfo] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-  const filteredCompanies = IDX_COMPANIES.filter((company) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      company.symbol.toLowerCase().includes(q) ||
-      company.name.toLowerCase().includes(q) ||
-      company.sector.toLowerCase().includes(q) ||
-      company.subSector.toLowerCase().includes(q)
-    );
-  }).slice(0, 6);
+  const isAnom = metrics ? (metrics.isVolumeAnomaly || metrics.isSpreadAnomaly) : false;
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleSelectCompany = (company: IdxCompany) => {
-    if (!watchlist.includes(company.symbol)) {
-      onAddTicker(company.symbol);
-    }
-    setSearchQuery('');
-    setIsDropdownOpen(false);
-  };
-
-  const getCompanyDetails = (symbol: string): IdxCompany => {
-    return (
-      IDX_COMPANIES.find((c) => c.symbol === symbol) || {
-        symbol,
-        name: `PT ${symbol} Tbk`,
-        sector: 'Saham Terdaftar IDX',
-        subSector: 'Umum',
-        marketCapTier: 'Big Cap',
-        marketCapTrillion: 0,
-        lastPrice: 0,
-        indexMembership: ['IDX'],
-        description: 'Perusahaan tercatat di Bursa Efek Indonesia.',
-      }
-    );
-  };
+  // Derive display name/sector from live data only
+  const displayName   = companyInfo?.name   ?? metrics?.name   ?? symbol;
+  const displaySector = companyInfo?.sector  ?? metrics?.sector ?? 'Emiten Terdaftar IDX';
+  const displaySub    = companyInfo?.subSector ?? '';
+  const displayMcap   = companyInfo ? `Rp ${companyInfo.marketCapTrillion} T` : null;
 
   return (
-    <div className="bg-[#0f172a] border border-slate-800 rounded-lg p-5 space-y-4 font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-        <div>
-          <div className="flex items-center space-x-2">
-            <Building2 className="w-4 h-4 text-teal-400" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-              Watchlist Saham Dipantau ({watchlist.length})
-            </h2>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(9,13,22,0.88)', backdropFilter: 'blur(6px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-xl border border-slate-700 bg-[#0d1424] shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className={`px-5 py-4 border-b border-slate-800 flex items-start justify-between gap-3 ${isAnom ? 'bg-amber-950/20' : 'bg-[#111d2e]'}`}>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-mono font-bold text-sm text-teal-300 bg-teal-950/60 px-2.5 py-1 rounded border border-teal-800/50">
+                {symbol}
+              </span>
+              {metrics && (
+                <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded border ${
+                  isAnom
+                    ? 'bg-amber-950/40 text-amber-400 border-amber-700/50'
+                    : 'bg-emerald-950/40 text-emerald-400 border-emerald-700/50'
+                }`}>
+                  {isAnom ? 'ANOMALI' : 'NORMAL'}
+                </span>
+              )}
+            </div>
+            <div className="text-sm font-bold text-white mt-1.5 truncate">{displayName}</div>
+            <div className="text-xs text-slate-400 mt-0.5">
+              {displaySector}{displaySub ? ` · ${displaySub}` : ''}
+            </div>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Cari berdasarkan nama perusahaan atau kode saham untuk pemantauan otomatis via Sectors API.
-          </p>
-        </div>
-
-        {/* 1-Click Telegram Action */}
-        <div className="flex items-center space-x-2 self-start sm:self-auto">
-          {isTelegramLinked ? (
-            <button
-              onClick={onSendTelegramSummary}
-              disabled={watchlist.length === 0}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded bg-sky-950/80 hover:bg-sky-900 border border-sky-600/50 text-sky-300 hover:text-white text-xs font-semibold transition-all cursor-pointer"
-            >
-              <Send className="w-3.5 h-3.5 -translate-x-0.5" />
-              <span>1-Klik Kirim Rekap ke Telegram</span>
-            </button>
-          ) : (
-            <button
-              onClick={onOpenTelegramModal}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded bg-amber-950/80 hover:bg-amber-900 border border-amber-600/50 text-amber-300 hover:text-white text-xs font-semibold transition-all cursor-pointer"
-            >
-              <Send className="w-3.5 h-3.5 -translate-x-0.5" />
-              <span>1-Klik Hubungkan Telegram</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Preset Packages Header with Data Transparency Modal Toggle */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="text-xs font-semibold text-slate-300 flex items-center space-x-1.5">
-            <span>Koleksi Sektor Berdasarkan Indeks Likuiditas LQ45 & IDX-IC (Sectors API):</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowMethodologyInfo(!showMethodologyInfo)}
-            className="text-[11px] text-teal-400 hover:text-teal-300 flex items-center space-x-1 underline font-mono"
-          >
-            <Info className="w-3.5 h-3.5" />
-            <span>{showMethodologyInfo ? 'Tutup Dasar Data' : 'Dasar Data & Metodologi'}</span>
+          <button onClick={onClose} className="text-slate-500 hover:text-white p-1 rounded hover:bg-slate-800 transition-colors flex-shrink-0">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Methodology Info Box */}
-        {showMethodologyInfo && (
-          <div className="p-3.5 rounded bg-slate-900 border border-teal-500/30 text-xs text-slate-300 space-y-1.5 animate-in fade-in">
-            <div className="flex items-center space-x-1.5 text-teal-300 font-bold text-xs">
-              <ShieldCheck className="w-4 h-4 text-teal-400" />
-              <span>Bagaimana Koleksi Sektor Ini Disusun Berdasarkan Data Nyata?</span>
+        {/* Body */}
+        <div className="p-5 space-y-4">
+          {metricsLoading ? (
+            <div className="space-y-2">
+              {[100,75,60].map((w,i) => (
+                <div key={i} className="h-3 rounded animate-pulse bg-slate-800" style={{ width: `${w}%` }} />
+              ))}
             </div>
-            <p className="text-[11px] text-slate-300 leading-relaxed">
-              Koleksi ini <strong>bukan rekomendasi beli/jual</strong>, melainkan pengelompokan emiten terlikuid di Bursa Efek Indonesia berdasarkan kriteria kuantitatif data <strong>Sectors API v2</strong>:
-            </p>
-            <ul className="text-[11px] text-slate-400 space-y-1 pl-3 list-disc">
-              <li><strong>Konstituen Resmi Indeks LQ45 & IDX30:</strong> Saham dengan nilai transaksi harian dan frekuensi perdagangan tertinggi di BEI.</li>
-              <li><strong>Kapitalisasi Pasar Terbesar (Market Cap):</strong> Total nilai pasar emiten dalam setiap kelompok sektor bernilai puluhan hingga ribuan Triliun Rupiah.</li>
-              <li><strong>Klasifikasi Industri Resmi IDX-IC:</strong> Pengelompokan sektor terstandarisasi Bursa Efek Indonesia.</li>
-            </ul>
-          </div>
-        )}
-
-        {/* Preset Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-          {POPULAR_PRESETS.map((preset) => {
-            const allAdded = preset.tickers.every((t) => watchlist.includes(t));
-            return (
-              <div
-                key={preset.name}
-                className={`p-3 rounded border text-left flex flex-col justify-between space-y-2 ${
-                  allAdded
-                    ? 'bg-teal-950/20 border-teal-500/40'
-                    : 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
-                }`}
-              >
+          ) : metricsError ? (
+            <div className="p-3 rounded bg-red-950/30 border border-red-800/40 text-xs text-red-400 font-mono">
+              {metricsError}
+            </div>
+          ) : metrics ? (
+            <>
+              {/* Price row */}
+              <div className="flex items-end justify-between">
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-white">{preset.name}</span>
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-teal-300 border border-slate-700">
-                      {preset.totalMarketCap}
-                    </span>
+                  <div className="text-2xl font-bold font-mono text-white">Rp {fmt(metrics.lastPrice)}</div>
+                  <div className={`text-sm font-semibold font-mono flex items-center gap-1 mt-0.5 ${metrics.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {metrics.changePercent >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                    {pct(metrics.changePercent)} hari ini
                   </div>
-                  <div className="text-[10px] text-teal-400/90 font-mono mb-1">{preset.indexBasis}</div>
-                  <div className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">{preset.description}</div>
                 </div>
-
-                <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-slate-300 font-bold">{preset.tickers.join(', ')}</span>
-                  {allAdded ? (
-                    <span className="flex items-center space-x-0.5 text-teal-400 font-sans font-bold text-[10px]">
-                      <Check className="w-3 h-3" />
-                      <span>Dipantau</span>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => onAddPreset(preset.tickers)}
-                      className="px-2 py-0.5 bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold text-[10px] rounded transition-colors"
-                    >
-                      + Pasang
-                    </button>
-                  )}
+                <div className="text-right">
+                  <div className="text-xs text-slate-500 font-mono">IHSG</div>
+                  <div className={`text-sm font-bold font-mono ${metrics.ihsgChangePercent >= 0 ? 'text-slate-300' : 'text-slate-400'}`}>
+                    {pct(metrics.ihsgChangePercent)}
+                  </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Search Input with Autocomplete */}
-      <div className="relative" ref={dropdownRef}>
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setIsDropdownOpen(true);
-            }}
-            onFocus={() => setIsDropdownOpen(true)}
-            placeholder="Cari nama perusahaan (cth: Bank Central Asia, Telkom, Indofood, Antam) atau kode saham..."
-            className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 hover:border-slate-600 focus:border-teal-500 rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition-colors"
-          />
-        </div>
-
-        {/* Dropdown Menu */}
-        {isDropdownOpen && (
-          <div className="absolute left-0 right-0 top-full mt-1 bg-[#0f172a] border border-slate-700 rounded shadow-xl z-30 max-h-64 overflow-y-auto divide-y divide-slate-800">
-            {filteredCompanies.length === 0 ? (
-              <div className="p-3 text-center text-xs text-slate-400">
-                Tidak ada emiten IDX yang cocok dengan pencarian "{searchQuery}".
-              </div>
-            ) : (
-              filteredCompanies.map((company) => {
-                const isAdded = watchlist.includes(company.symbol);
-                return (
-                  <div
-                    key={company.symbol}
-                    onClick={() => !isAdded && handleSelectCompany(company)}
-                    className={`p-2.5 flex items-center justify-between text-xs transition-colors ${
-                      isAdded
-                        ? 'opacity-50 cursor-default bg-slate-900/40'
-                        : 'hover:bg-slate-800 cursor-pointer'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2.5">
-                      <span className="font-mono font-bold text-teal-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-700 text-xs">
-                        {company.symbol}
-                      </span>
-                      <div>
-                        <div className="font-semibold text-white">{company.name}</div>
-                        <div className="text-[11px] text-slate-400">
-                          {company.sector} • Market Cap: Rp {company.marketCapTrillion} T
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <span className="font-mono text-xs text-slate-300">
-                        Rp {company.lastPrice.toLocaleString('id-ID')}
-                      </span>
-                      {isAdded ? (
-                        <span className="text-[10px] text-teal-400 font-medium px-2 py-0.5 bg-teal-950 rounded border border-teal-800">
-                          Dipantau
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          className="px-2 py-0.5 bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold text-[11px] rounded transition-colors"
-                        >
-                          + Tambah
-                        </button>
-                      )}
-                    </div>
+              {/* Metrics grid */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Volume Hari Ini', value: `${vol(metrics.todayVolume)} lot`, hot: metrics.isVolumeAnomaly },
+                  { label: 'Median 20 Sesi',  value: `${vol(metrics.medianVolume20d)} lot`, hot: false },
+                  { label: 'Rasio Volume',    value: `${metrics.volumeMultiplier}×`, hot: metrics.isVolumeAnomaly },
+                  { label: 'Spread vs IHSG',  value: `${metrics.spreadVsIhsg.toFixed(2)}%`, hot: metrics.isSpreadAnomaly },
+                  { label: 'Market Cap',      value: displayMcap ?? '—', hot: false },
+                  { label: 'Rank IDX',        value: companyInfo ? `#${companyInfo.rank}` : '—', hot: false },
+                ].map(m => (
+                  <div key={m.label} className="bg-slate-900/70 border border-slate-800 rounded-lg p-2.5">
+                    <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{m.label}</div>
+                    <div className={`text-xs font-bold font-mono ${m.hot ? 'text-amber-400' : 'text-white'}`}>{m.value}</div>
                   </div>
-                );
-              })
-            )}
-          </div>
-        )}
-      </div>
+                ))}
+              </div>
 
-      {/* Selected Watchlist Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
-        {watchlist.map((ticker) => {
-          const info = getCompanyDetails(ticker);
-          return (
-            <div
-              key={ticker}
-              className="p-3 rounded bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between"
+              {/* Anomaly flag */}
+              {isAnom && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-950/25 border border-amber-700/40">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-amber-300 leading-relaxed">
+                    {metrics.isVolumeAnomaly && <div>Volume {metrics.volumeMultiplier}× median — melampaui ambang 2.0×</div>}
+                    {metrics.isSpreadAnomaly && <div>Spread vs IHSG {metrics.spreadVsIhsg.toFixed(2)}% — melampaui ambang 2.0%</div>}
+                  </div>
+                </div>
+              )}
+
+              <div className="text-[10px] text-slate-600 font-mono text-right">
+                Yahoo Finance · Diperbarui {metrics.lastUpdated} · Cache 5 mnt
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between gap-3 flex-wrap">
+          <a
+            href={`https://sectors.app/idx/${symbol}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 hover:underline transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Lihat di Sectors.app/idx/{symbol}
+          </a>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { onRemove(); onClose(); }}
+              className="px-3 py-1.5 text-xs font-semibold text-red-400 hover:text-white bg-red-950/30 hover:bg-red-900/50 border border-red-800/40 hover:border-red-600/60 rounded transition-all"
             >
-              <div>
-                <div className="flex items-start justify-between mb-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-mono font-bold text-xs text-teal-300 bg-teal-950 px-2 py-0.5 rounded border border-teal-800/60">
-                      {info.symbol}
-                    </span>
-                    <span className="text-[10px] text-slate-400 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono">
-                      Rp {info.marketCapTrillion} T
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => onRemoveTicker(ticker)}
-                    title={`Hapus ${ticker} dari pemantauan`}
-                    className="text-slate-500 hover:text-rose-400 p-0.5 rounded hover:bg-rose-500/10 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <div className="text-xs font-semibold text-white truncate">{info.name}</div>
-                <div className="text-[11px] text-slate-400 truncate">{info.sector} • {info.subSector}</div>
-              </div>
-
-              <div className="mt-2.5 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                <span>Harga Sesi Terakhir:</span>
-                <span className="text-slate-200 font-bold">
-                  Rp {info.lastPrice.toLocaleString('id-ID')}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-
-        {watchlist.length === 0 && (
-          <div className="col-span-full py-6 text-center border border-dashed border-slate-800 rounded bg-slate-900/30">
-            <p className="text-xs font-semibold text-slate-400">Watchlist Anda masih kosong.</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              Gunakan pencarian nama perusahaan di atas atau pilih salah satu paket sektor.
-            </p>
+              Hapus dari Watchlist
+            </button>
           </div>
-        )}
+        </div>
       </div>
+    </div>
+  );
+};
+
+// ── ORCHESTRATOR ──────────────────────────────────────────────────────────────
+
+export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
+  watchlist, onAddTicker, onRemoveTicker, onAddPreset,
+  isTelegramLinked, onOpenTelegramModal, onSendTelegramSummary,
+}) => {
+  // ── Live company list — single source of truth, no hardcode ───────────────
+  const [liveCompanies,    setLiveCompanies]    = useState<LiveIdxCompany[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [companiesError,   setCompaniesError]   = useState(false);
+
+  const loadCompanies = useCallback(async (force = false) => {
+    setCompaniesLoading(true);
+    setCompaniesError(false);
+    try {
+      if (force) sectorsApi.invalidateAll(); // bust cache on manual retry
+      const companies = await sectorsApi.fetchTopCompanies();
+      if (companies.length > 0) {
+        setLiveCompanies(companies);
+      } else {
+        setCompaniesError(true);
+      }
+    } catch {
+      setCompaniesError(true);
+    } finally {
+      setCompaniesLoading(false);
+    }
+  }, []);
+
+  // Kick off on mount
+  useEffect(() => { loadCompanies(); }, [loadCompanies]);
+
+  // ── Modal state ────────────────────────────────────────────────────────────
+  const [modalSymbol,         setModalSymbol]         = useState<string | null>(null);
+  const [modalMetrics,        setModalMetrics]        = useState<RealTickerMetrics | null>(null);
+  const [modalMetricsLoading, setModalMetricsLoading] = useState(false);
+  const [modalMetricsError,   setModalMetricsError]   = useState('');
+
+  const getLiveCompanyInfo = useCallback((symbol: string): LiveIdxCompany | null =>
+    liveCompanies.find(c => c.symbol === symbol) ?? null,
+  [liveCompanies]);
+
+  const openModal = useCallback(async (sym: string) => {
+    setModalSymbol(sym);
+    setModalMetrics(null);
+    setModalMetricsError('');
+    setModalMetricsLoading(true);
+    try {
+      const m = await liveMarketService.fetchTickerMetrics(sym);
+      setModalMetrics(m);
+    } catch (err) {
+      setModalMetricsError(
+        err instanceof MarketDataUnavailableError
+          ? err.message
+          : `Gagal memuat data ${sym} dari Yahoo Finance.`,
+      );
+    } finally {
+      setModalMetricsLoading(false);
+    }
+  }, []);
+
+  return (
+    <div className="space-y-4 font-sans">
+      {/* Zone A — Sector Presets Grid */}
+      <SectorPresetsGrid
+        watchlist={watchlist}
+        onAddPreset={onAddPreset}
+      />
+
+      {/* Zone B — Search + Watchlist Cards */}
+      <WatchlistSearchPanel
+        watchlist={watchlist}
+        isTelegramLinked={isTelegramLinked}
+        onAddTicker={onAddTicker}
+        onRemoveTicker={onRemoveTicker}
+        onOpenTelegramModal={onOpenTelegramModal}
+        onSendTelegramSummary={onSendTelegramSummary}
+        onOpenStockModal={openModal}
+        liveCompanies={liveCompanies}
+        companiesLoading={companiesLoading}
+        companiesError={companiesError}
+        onRetryCompanies={() => loadCompanies(true)}
+      />
+
+      {/* Detail Modal */}
+      {modalSymbol && (
+        <StockDetailModal
+          symbol={modalSymbol}
+          companyInfo={getLiveCompanyInfo(modalSymbol)}
+          metrics={modalMetrics}
+          metricsLoading={modalMetricsLoading}
+          metricsError={modalMetricsError}
+          onClose={() => setModalSymbol(null)}
+          onRemove={() => onRemoveTicker(modalSymbol)}
+        />
+      )}
     </div>
   );
 };

@@ -53,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Telegram Status Button */}
             <button
               onClick={onOpenTelegramModal}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                 currentUser.isTelegramLinked
                   ? 'bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20'
                   : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20 animate-pulse'
@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onResetReplay}
               title="Reset data sesi"
-              className="flex items-center space-x-1 px-2.5 py-1.5 text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-700/80 rounded-xl transition-colors"
+              className="flex items-center space-x-1 px-2.5 py-1.5 text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-700/80 rounded-xl transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden lg:inline">Reset</span>
@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="relative">
               <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="flex items-center space-x-2 p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs font-semibold text-white transition-colors"
+                className="flex items-center space-x-2 p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs font-semibold text-white transition-colors cursor-pointer"
               >
                 <div className="w-6 h-6 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-xs">
                   {currentUser.name.charAt(0)}
@@ -132,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-3">
             <button
               onClick={() => onOpenAuth('login')}
-              className="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors"
+              className="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors cursor-pointer"
             >
               Masuk
             </button>

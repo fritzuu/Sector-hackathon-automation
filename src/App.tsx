@@ -12,6 +12,7 @@ import { RunAuditHistory, AuditRunItem } from './components/RunAuditHistory.js';
 import { TelegramConnectModal } from './components/TelegramConnectModal.js';
 import { TelegramAlertPreview } from './components/TelegramAlertPreview.js';
 import { SectorsApiBadge } from './components/SectorsApiBadge.js';
+import { MarketCloseToast } from './components/MarketCloseToast.js';
 import { UserProfile } from './data/userProfiles.js';
 import { CaseState, CaseEvent, RenderedTemplate } from './types/engine.js';
 import { evaluateDataset } from './engine/rules/index.js';
@@ -19,6 +20,7 @@ import { processCaseTransition } from './engine/caseEngine.js';
 import { renderCaseTemplate } from './engine/templateRenderer.js';
 import { generateSecurePairingToken } from './utils/token.js';
 import { sectorsApi } from './services/sectorsApi.js';
+import { liveMarketService } from './services/liveMarketService.js';
 import { TickerDataset } from './types/sectors.js';
 
 export function App() {
@@ -34,7 +36,7 @@ export function App() {
   });
 
   // User Watchlist & Cases State
-  const [watchlist, setWatchlist] = useState<string[]>(['BBCA', 'TLKM', 'ASII', 'UNTR']);
+  const [watchlist, setWatchlist] = useState<string[]>([]);
   const [activeCases, setActiveCases] = useState<Map<string, CaseState>>(new Map());
   const [caseEvents, setCaseEvents] = useState<Map<string, CaseEvent[]>>(new Map());
   const [caseTemplates, setCaseTemplates] = useState<Map<string, RenderedTemplate>>(new Map());
@@ -48,6 +50,13 @@ export function App() {
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [latestTelegramAlert, setLatestTelegramAlert] = useState<string | null>(null);
 
+  // Auto-run scheduler state — prevents double-fire on the same day
+  const [lastAutoRunDate, setLastAutoRunDate] = useState<string | null>(null);
+
+  // 16:30 market-close refresh state
+  const [newsForceRefresh, setNewsForceRefresh] = useState<number | undefined>(undefined);
+  const [showMarketCloseToast, setShowMarketCloseToast] = useState(false);
+
   // Save user session & persistent cache
   useEffect(() => {
     if (currentUser) {
@@ -55,6 +64,56 @@ export function App() {
       localStorage.setItem('siba_saved_session', JSON.stringify(currentUser));
     }
   }, [currentUser]);
+
+  /**
+   * Auto-scheduler: fires at 16:30 WIB (UTC+7) on weekdays (Mon–Fri).
+   * Checks every 30 seconds. Busts ALL caches (price + IHSG + news + Sectors historical)
+   * so watchlist cards and news feed get fully fresh data.
+   * Triggers MarketCloseToast UI notification + Telegram alert preview.
+   * Guards against double-fire: only runs once per calendar day.
+   * Only active when user is logged in and app is open in browser.
+   */
+  useEffect(() => {
+    if (!currentUser) return; // guest — no scheduler
+
+    const tick = () => {
+      // Current time in WIB (UTC+7)
+      const nowUtc    = new Date();
+      const wibMs     = nowUtc.getTime() + 7 * 60 * 60 * 1000;
+      const wib       = new Date(wibMs);
+      const hh        = wib.getUTCHours();
+      const mm        = wib.getUTCMinutes();
+      const dayOfWeek = wib.getUTCDay(); // 0=Sun, 6=Sat
+      const dateStr   = wib.toISOString().slice(0, 10); // YYYY-MM-DD
+
+      const isWeekday    = dayOfWeek >= 1 && dayOfWeek <= 5;
+      const is1630Window = hh === 16 && mm >= 30 && mm <= 31; // 2-min fire window
+      const notYetRun    = lastAutoRunDate !== dateStr;
+
+      if (isWeekday && is1630Window && notYetRun && !isRunning) {
+        console.log('[AutoScheduler] 16:30 WIB triggered — invalidating all caches and refreshing data.');
+        setLastAutoRunDate(dateStr);
+
+        // 1. Bust ALL caches — price, IHSG, news (Yahoo Finance), historical prices (Sectors)
+        liveMarketService.invalidateAll();
+        sectorsApi.invalidateAll();
+
+        // 2. Force-refresh the news feed immediately (WatchlistNewsFeed reacts to this)
+        setNewsForceRefresh(Date.now());
+
+        // 3. Show the market-close toast in the UI
+        setShowMarketCloseToast(true);
+
+        // 4. Run the full Sectors API workflow (fetches fresh prices + evaluates rules)
+        handleRunWorkflow();
+      }
+    };
+
+    const id = setInterval(tick, 30_000); // check every 30 seconds
+    tick(); // also check immediately on login
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id, lastAutoRunDate, isRunning]);
 
   // Auth Handlers
   const handleOpenAuth = (mode: 'login' | 'register') => {
@@ -81,7 +140,7 @@ export function App() {
       telegramUsername: previousProfile?.telegramUsername || null,
       isTelegramLinked: previousProfile?.isTelegramLinked || false,
       pairingToken: previousProfile?.pairingToken || generateSecurePairingToken(),
-      defaultWatchlist: previousProfile?.defaultWatchlist || ['BBCA', 'TLKM', 'ASII', 'UNTR'],
+      defaultWatchlist: previousProfile?.defaultWatchlist || [],
     };
     setCurrentUser(newUser);
   };
@@ -202,9 +261,24 @@ export function App() {
         const template = renderCaseTemplate(evalResult, transition.event.newStatus);
         updatedTemplates.set(ticker, template);
 
-        // Telegram alert preview
+        // Telegram alert preview — rich version with harga + news hint
         if (currentUser?.isTelegramLinked && evalResult.activeTriggerCount > 0 && !sampleDispatchedAlert) {
-          sampleDispatchedAlert = `🔔 [SIBA ALERT — ${ticker}]\nStatus: ${transition.event.newStatus}\n\n📌 Temuan:\n${template.facts[0]}\n\n🔍 ${template.limitedInterpretations[0]}\n\nLihat selengkapnya di Dashboard SIBA.`;
+          const dateLabel = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+          sampleDispatchedAlert = [
+            `🔔 [SIBA ALERT — ${ticker}]`,
+            `📅 ${dateLabel} · Penutupan Market 16:30 WIB`,
+            `Status Case: ${transition.event.newStatus}`,
+            ``,
+            `📌 Temuan Utama:`,
+            `${template.facts[0]}`,
+            ``,
+            `🔍 Interpretasi:`,
+            `${template.limitedInterpretations[0]}`,
+            ``,
+            `📰 Cek berita terbaru: sectors.app/idx/${ticker}`,
+            ``,
+            `Lihat selengkapnya di Dashboard SIBA.`,
+          ].join('\n');
         }
       }
     } catch (err) {
@@ -282,7 +356,7 @@ export function App() {
             />
 
             {/* Watchlist News Feed (Exclusively For User's Watchlist) */}
-            <WatchlistNewsFeed watchlist={watchlist} />
+            <WatchlistNewsFeed watchlist={watchlist} forceRefreshAt={newsForceRefresh} />
 
             {/* Active Cases Grid */}
             <ActiveCasesList
@@ -332,6 +406,15 @@ export function App() {
           user={currentUser}
           message={latestTelegramAlert}
           onClose={() => setLatestTelegramAlert(null)}
+        />
+      )}
+
+      {/* Market Close 16:30 WIB Notification Toast */}
+      {currentUser && (
+        <MarketCloseToast
+          isVisible={showMarketCloseToast}
+          watchlistCount={watchlist.length}
+          onClose={() => setShowMarketCloseToast(false)}
         />
       )}
 
