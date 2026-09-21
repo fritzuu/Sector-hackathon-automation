@@ -22,18 +22,8 @@ import { sectorsApi } from './services/sectorsApi.js';
 import { TickerDataset } from './types/sectors.js';
 
 export function App() {
-  // Auth state
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem('siba_user');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+  // Auth state - default to null so landing page is ALWAYS the entry point
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
   const [authModalState, setAuthModalState] = useState<{
     isOpen: boolean;
@@ -261,7 +251,7 @@ export function App() {
       />
 
       {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-6">
+      <main className={`flex-1 w-full ${currentUser ? 'max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6' : 'w-full'}`}>
         {currentUser ? (
           /* Authenticated Dashboard */
           <div className="space-y-5">
@@ -346,10 +336,10 @@ export function App() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-[#060910] py-4 text-center text-xs text-slate-500 font-sans">
+      <footer className="border-t border-slate-800/60 bg-[#090d16] py-4 text-xs font-sans">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>SIBA • Sistem Informasi Bursa dan Aset (Track 02 — Automation & Workflows)</span>
-          <span className="font-mono text-slate-400 text-[11px]">Sectors API v2 • 100% Deterministik Tanpa LLM</span>
+          <span className="text-slate-500">SIBA • Sistem Informasi Bursa dan Aset (Track 02 — Automation & Workflows)</span>
+          <span className="font-mono text-teal-500/60 text-[11px]">Sectors API v2 • 100% Deterministik Tanpa LLM</span>
         </div>
       </footer>
     </div>
