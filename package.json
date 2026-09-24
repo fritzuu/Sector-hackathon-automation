@@ -5,6 +5,7 @@
   "description": "Watchtower (SIBA) - Automated Follow-up Monitor for IDX (Deterministic Core Engine)",
   "main": "dist/index.js",
   "scripts": {
+    "start": "bash start.sh",
     "dev": "vite",
     "demo:cli": "tsx src/demo.ts",
     "build": "tsc && vite build",

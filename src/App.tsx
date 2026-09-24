@@ -21,6 +21,7 @@ import { renderCaseTemplate } from './engine/templateRenderer.js';
 import { generateSecurePairingToken } from './utils/token.js';
 import { sectorsApi } from './services/sectorsApi.js';
 import { liveMarketService } from './services/liveMarketService.js';
+import { dispatchCaseAlert } from './services/telegramService.js';
 import { TickerDataset } from './types/sectors.js';
 
 export function App() {
@@ -261,24 +262,45 @@ export function App() {
         const template = renderCaseTemplate(evalResult, transition.event.newStatus);
         updatedTemplates.set(ticker, template);
 
-        // Telegram alert preview — rich version with harga + news hint
-        if (currentUser?.isTelegramLinked && evalResult.activeTriggerCount > 0 && !sampleDispatchedAlert) {
-          const dateLabel = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-          sampleDispatchedAlert = [
-            `🔔 [SIBA ALERT — ${ticker}]`,
-            `📅 ${dateLabel} · Penutupan Market 16:30 WIB`,
-            `Status Case: ${transition.event.newStatus}`,
-            ``,
-            `📌 Temuan Utama:`,
-            `${template.facts[0]}`,
-            ``,
-            `🔍 Interpretasi:`,
-            `${template.limitedInterpretations[0]}`,
-            ``,
-            `📰 Cek berita terbaru: sectors.app/idx/${ticker}`,
-            ``,
-            `Lihat selengkapnya di Dashboard SIBA.`,
-          ].join('\n');
+        // Telegram: dispatch alert nyata via Vite proxy → Telegram Bot API
+        // Hanya untuk event material (PRD §6.4 — MONITORING tidak dikirim)
+        const isMaterialEvent = ['OPEN', 'UPDATED', 'CLOSED', 'DATA_INCOMPLETE'].includes(
+          transition.event.newStatus
+        );
+        if (currentUser?.isTelegramLinked && currentUser.telegramChatId && isMaterialEvent) {
+          // fire-and-forget: kegagalan delivery tidak menghentikan workflow (PRD §6.5)
+          dispatchCaseAlert({
+            symbol:          ticker,
+            status:          transition.event.newStatus as any,
+            evaluation_date: evalResult.evaluationDate,
+            facts:           template.facts,
+            interpretations: template.limitedInterpretations,
+            unknowns:        template.unknowns,
+            target_chat_id:  currentUser.telegramChatId,
+            is_replay:       false,
+          }).then((res) => {
+            if (!res.success) console.warn(`[Telegram] Dispatch gagal untuk ${ticker}:`, res.result);
+          });
+
+          // Simpan preview untuk toast UI (hanya satu alert pertama)
+          if (!sampleDispatchedAlert) {
+            const dateLabel = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+            sampleDispatchedAlert = [
+              `🔔 [SIBA ALERT — ${ticker}]`,
+              `📅 ${dateLabel} · Penutupan Market 16:30 WIB`,
+              `Status Case: ${transition.event.newStatus}`,
+              ``,
+              `📌 Temuan Utama:`,
+              `${template.facts[0]}`,
+              ``,
+              `🔍 Interpretasi:`,
+              `${template.limitedInterpretations[0]}`,
+              ``,
+              `📰 Cek berita terbaru: sectors.app/idx/${ticker}`,
+              ``,
+              `Lihat selengkapnya di Dashboard SIBA.`,
+            ].join('\n');
+          }
         }
       }
     } catch (err) {
@@ -393,6 +415,7 @@ export function App() {
       {currentUser && (
         <TelegramConnectModal
           user={currentUser}
+          watchlist={watchlist}
           isOpen={isTelegramModalOpen}
           onClose={() => setIsTelegramModalOpen(false)}
           onLinkSuccess={handleLinkTelegram}
