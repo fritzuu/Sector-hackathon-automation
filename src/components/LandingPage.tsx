@@ -24,26 +24,26 @@ const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
   :root {
-    /* Paper — matched to dashboard bg */
-    --pp: #090d16;          /* page background  */
-    --sf: #0d1424;          /* surface           */
-    --sf2: #111d2e;         /* raised surface    */
-    --ed: #1e2d45;          /* edge / border     */
-    --ed2: #253555;         /* prominent edge    */
+    /* Paper — matched to requested bg */
+    --pp: hsl(279, 100%, 3%);     /* page background  */
+    --sf: #120517;          /* surface           */
+    --sf2: hsl(301, 100%, 12%);  /* raised surface    */
+    --ed: hsl(301, 60%, 25%);    /* edge / border     */
+    --ed2: hsl(301, 70%, 32%);   /* prominent edge    */
 
     /* Text */
-    --tx-0: #f0f4ff;        /* primary           */
-    --tx-1: #8b9abf;        /* secondary         */
-    --tx-2: #4a5a82;        /* muted / label     */
+    --tx-0: hsl(0, 0%, 100%);     /* primary           */
+    --tx-1: rgba(255,255,255,0.75); /* secondary       */
+    --tx-2: rgba(255,255,255,0.5);  /* muted / label     */
 
-    /* Accent — teal (konsisten dengan dashboard) */
-    --ac:  #14b8a6;         /* primary accent    */
-    --ac-h: #2dd4bf;        /* hover             */
-    --ac-bg: rgba(20,184,166,0.08);
-    --ac-br: rgba(20,184,166,0.28);
+    /* Accent — Primary purple/magenta & Accent Emerald */
+    --ac:  hsl(288, 100%, 70%); /* primary accent    */
+    --ac-h: hsl(288, 100%, 80%);/* hover             */
+    --ac-bg: rgba(230,102,255,0.12);
+    --ac-br: rgba(230,102,255,0.35);
 
     /* Semantic */
-    --up:  #34d399;
+    --up:  hsl(141, 100%, 50%);
     --dn:  #f87171;
     --warn: #fbbf24;        /* anomaly amber     */
     --warn-bg: rgba(251,191,36,0.08);
@@ -76,7 +76,7 @@ const GLOBAL_CSS = `
   }
   .tape-inner {
     display: flex; gap: 0;
-    animation: tape-scroll 32s linear infinite;
+    animation: tape-scroll 90s linear infinite;
     white-space: nowrap;
     will-change: transform;
   }
@@ -101,7 +101,7 @@ const GLOBAL_CSS = `
   /* ── HERO ─────────────────────────────────────────────── */
   .siba-hero {
     max-width: 1120px; margin: 0 auto;
-    padding: 80px 24px 64px;
+    padding: 120px 24px 80px;
     display: grid;
     grid-template-columns: 1fr;
     gap: 0;

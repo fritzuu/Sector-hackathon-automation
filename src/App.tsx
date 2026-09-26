@@ -5,13 +5,14 @@ import { AuthModal } from './components/AuthModal.js';
 import { BeginnerGuideBanner } from './components/BeginnerGuideBanner.js';
 import { AutomationOverview } from './components/AutomationOverview.js';
 import { WatchlistManager } from './components/WatchlistManager.js';
-import { WatchlistNewsFeed } from './components/WatchlistNewsFeed.js';
 import { ActiveCasesList } from './components/ActiveCasesList.js';
 import { CaseDetailModal } from './components/CaseDetailModal.js';
 import { RunAuditHistory, AuditRunItem } from './components/RunAuditHistory.js';
+import { SectorsApiBadge } from './components/SectorsApiBadge.js';
 import { TelegramConnectModal } from './components/TelegramConnectModal.js';
 import { TelegramAlertPreview } from './components/TelegramAlertPreview.js';
-import { SectorsApiBadge } from './components/SectorsApiBadge.js';
+import { TelegramLogViewer, TelegramLogEntry } from './components/TelegramLogViewer.js';
+import { DashboardTourModal } from './components/DashboardTourModal.js';
 import { MarketCloseToast } from './components/MarketCloseToast.js';
 import { UserProfile } from './data/userProfiles.js';
 import { CaseState, CaseEvent, RenderedTemplate } from './types/engine.js';
@@ -22,6 +23,7 @@ import { generateSecurePairingToken } from './utils/token.js';
 import { sectorsApi } from './services/sectorsApi.js';
 import { liveMarketService } from './services/liveMarketService.js';
 import { TickerDataset } from './types/sectors.js';
+import { Send, Bot } from 'lucide-react';
 
 export function App() {
   // Auth state - default to null so landing page is ALWAYS the entry point
@@ -46,9 +48,15 @@ export function App() {
   const [lastRunTime, setLastRunTime] = useState<string | null>(null);
   const [runIndex, setRunIndex] = useState(1);
 
+  // Telegram sent logs state
+  const [telegramLogs, setTelegramLogs] = useState<TelegramLogEntry[]>([]);
+
   // Modals & Notifications
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [latestTelegramAlert, setLatestTelegramAlert] = useState<string | null>(null);
+
+  // Onboarding tour modal state (triggers only on first register/login per user)
+  const [isTourOpen, setIsTourOpen] = useState(false);
 
   // Auto-run scheduler state — prevents double-fire on the same day
   const [lastAutoRunDate, setLastAutoRunDate] = useState<string | null>(null);
@@ -67,50 +75,36 @@ export function App() {
 
   /**
    * Auto-scheduler: fires at 16:30 WIB (UTC+7) on weekdays (Mon–Fri).
-   * Checks every 30 seconds. Busts ALL caches (price + IHSG + news + Sectors historical)
-   * so watchlist cards and news feed get fully fresh data.
-   * Triggers MarketCloseToast UI notification + Telegram alert preview.
-   * Guards against double-fire: only runs once per calendar day.
-   * Only active when user is logged in and app is open in browser.
    */
   useEffect(() => {
     if (!currentUser) return; // guest — no scheduler
 
     const tick = () => {
-      // Current time in WIB (UTC+7)
       const nowUtc    = new Date();
       const wibMs     = nowUtc.getTime() + 7 * 60 * 60 * 1000;
       const wib       = new Date(wibMs);
       const hh        = wib.getUTCHours();
       const mm        = wib.getUTCMinutes();
-      const dayOfWeek = wib.getUTCDay(); // 0=Sun, 6=Sat
-      const dateStr   = wib.toISOString().slice(0, 10); // YYYY-MM-DD
+      const dayOfWeek = wib.getUTCDay();
+      const dateStr   = wib.toISOString().slice(0, 10);
 
       const isWeekday    = dayOfWeek >= 1 && dayOfWeek <= 5;
-      const is1630Window = hh === 16 && mm >= 30 && mm <= 31; // 2-min fire window
+      const is1630Window = hh === 16 && mm >= 30 && mm <= 31;
       const notYetRun    = lastAutoRunDate !== dateStr;
 
       if (isWeekday && is1630Window && notYetRun && !isRunning) {
         console.log('[AutoScheduler] 16:30 WIB triggered — invalidating all caches and refreshing data.');
         setLastAutoRunDate(dateStr);
-
-        // 1. Bust ALL caches — price, IHSG, news (Yahoo Finance), historical prices (Sectors)
         liveMarketService.invalidateAll();
         sectorsApi.invalidateAll();
-
-        // 2. Force-refresh the news feed immediately (WatchlistNewsFeed reacts to this)
         setNewsForceRefresh(Date.now());
-
-        // 3. Show the market-close toast in the UI
         setShowMarketCloseToast(true);
-
-        // 4. Run the full Sectors API workflow (fetches fresh prices + evaluates rules)
         handleRunWorkflow();
       }
     };
 
-    const id = setInterval(tick, 30_000); // check every 30 seconds
-    tick(); // also check immediately on login
+    const id = setInterval(tick, 30_000);
+    tick();
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, lastAutoRunDate, isRunning]);
@@ -121,7 +115,6 @@ export function App() {
   };
 
   const handleAuthSuccess = (userData: { name: string; email: string }) => {
-    // Check if there is a saved profile for this user
     const saved = localStorage.getItem('siba_saved_session');
     let previousProfile: UserProfile | null = null;
     if (saved) {
@@ -142,14 +135,22 @@ export function App() {
       pairingToken: previousProfile?.pairingToken || generateSecurePairingToken(),
       defaultWatchlist: previousProfile?.defaultWatchlist || [],
     };
+
     setCurrentUser(newUser);
+
+    // Trigger onboarding tour if user hasn't seen it yet
+    const tourKey = `siba_tour_done_${newUser.id}`;
+    if (!localStorage.getItem(tourKey)) {
+      setIsTourOpen(true);
+      localStorage.setItem(tourKey, 'true');
+    }
   };
 
   const handleLogout = () => {
-    // Switch to guest landing page view, but preserve localStorage cache
     setCurrentUser(null);
     setSelectedCase(null);
     setLatestTelegramAlert(null);
+    setIsTourOpen(false);
   };
 
   // Watchlist Handlers
@@ -196,6 +197,7 @@ export function App() {
     setCaseEvents(new Map());
     setCaseTemplates(new Map());
     setAuditRuns([]);
+    setTelegramLogs([]);
     setSelectedCase(null);
     setLastRunTime(null);
     setLatestTelegramAlert(null);
@@ -209,7 +211,19 @@ export function App() {
       return;
     }
     const summaryMsg = `📊 [SIBA — Rekap Watchlist Pribadi]\nPengguna: ${currentUser.name}\nTanggal: ${new Date().toLocaleDateString('id-ID')}\n\nSaham yang Dipantau (${watchlist.length}):\n${watchlist.map((t) => `• ${t}`).join('\n')}\n\nJadwal evaluasi otomatis berikutnya: 16:30 WIB.`;
+    
     setLatestTelegramAlert(summaryMsg);
+
+    // Record into Telegram Log Entries
+    const newLog: TelegramLogEntry = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      message: summaryMsg,
+      chatId: currentUser.telegramChatId || 'N/A',
+      username: currentUser.telegramUsername || '@user',
+      status: 'SENT',
+    };
+    setTelegramLogs(prev => [newLog, ...prev]);
   };
 
   // Execute Unattended Workflow Run (Powered by Sectors API Service)
@@ -220,6 +234,7 @@ export function App() {
 
     let totalTriggersFound = 0;
     let sampleDispatchedAlert: string | null = null;
+    let alertTicker: string | undefined = undefined;
 
     const updatedCases = new Map(activeCases);
     const updatedEvents = new Map(caseEvents);
@@ -227,7 +242,6 @@ export function App() {
 
     try {
       for (const ticker of watchlist) {
-        // Fetch real market transactions & filings from Sectors API
         const prices = await sectorsApi.fetchDailyTransactions(ticker);
         const benchmark = await sectorsApi.fetchBenchmarkData(prices.map((p) => p.date));
         const filings = await sectorsApi.fetchCompanyFilings(ticker);
@@ -253,16 +267,14 @@ export function App() {
           updatedCases.delete(ticker);
         }
 
-        // Record Timeline Event
         const existingEvents = updatedEvents.get(ticker) || [];
         updatedEvents.set(ticker, [transition.event, ...existingEvents]);
 
-        // Render Template
         const template = renderCaseTemplate(evalResult, transition.event.newStatus);
         updatedTemplates.set(ticker, template);
 
-        // Telegram alert preview — rich version with harga + news hint
         if (currentUser?.isTelegramLinked && evalResult.activeTriggerCount > 0 && !sampleDispatchedAlert) {
+          alertTicker = ticker;
           const dateLabel = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
           sampleDispatchedAlert = [
             `🔔 [SIBA ALERT — ${ticker}]`,
@@ -303,15 +315,26 @@ export function App() {
     setRunIndex((prev) => prev + 1);
     setIsRunning(false);
 
-    if (sampleDispatchedAlert) {
+    if (sampleDispatchedAlert && currentUser) {
       setLatestTelegramAlert(sampleDispatchedAlert);
+
+      const newLog: TelegramLogEntry = {
+        id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        timestamp: new Date().toISOString(),
+        ticker: alertTicker,
+        message: sampleDispatchedAlert,
+        chatId: currentUser.telegramChatId || 'N/A',
+        username: currentUser.telegramUsername || '@user',
+        status: 'SENT',
+      };
+      setTelegramLogs(prev => [newLog, ...prev]);
     }
   };
 
   const activeCasesArray = Array.from(activeCases.values());
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col selection:bg-teal-500 selection:text-white font-sans">
+    <div className="min-h-screen bg-background text-text flex flex-col selection:bg-primary selection:text-background font-sans">
       {/* Header */}
       <Header
         currentUser={currentUser}
@@ -328,41 +351,50 @@ export function App() {
       <main className={`flex-1 w-full ${currentUser ? 'max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6' : 'w-full'}`}>
         {currentUser ? (
           /* Authenticated Dashboard */
-          <div className="space-y-5">
+          <div className="space-y-6">
             {/* Welcoming Guide Banner */}
             <BeginnerGuideBanner userName={currentUser.name} />
 
-            {/* Sectors API Compliance Badge */}
-            <SectorsApiBadge />
-
             {/* Automation Overview KPIs */}
-            <AutomationOverview
-              lastRunTime={lastRunTime}
-              activeCasesCount={activeCasesArray.length}
-              totalWatchlistCount={watchlist.length}
-              lastRunStatus={isRunning ? 'RUNNING' : 'IDLE'}
-              totalRunsCount={auditRuns.length}
-            />
+            <div id="tour-automation-kpis" className="scroll-mt-20">
+              <AutomationOverview
+                lastRunTime={lastRunTime}
+                activeCasesCount={activeCasesArray.length}
+                totalWatchlistCount={watchlist.length}
+                lastRunStatus={isRunning ? 'RUNNING' : 'IDLE'}
+                totalRunsCount={auditRuns.length}
+              />
+            </div>
 
-            {/* Watchlist Manager with Full Company Lookup & Presets */}
-            <WatchlistManager
-              watchlist={watchlist}
-              onAddTicker={handleAddTicker}
-              onRemoveTicker={handleRemoveTicker}
-              onAddPreset={handleAddPreset}
-              isTelegramLinked={currentUser.isTelegramLinked}
-              onOpenTelegramModal={() => setIsTelegramModalOpen(true)}
-              onSendTelegramSummary={handleSendTelegramSummary}
-            />
+            {/* Watchlist Manager with Search (No hardcoded sector presets) */}
+            <div id="tour-watchlist-manager" className="scroll-mt-20">
+              <WatchlistManager
+                watchlist={watchlist}
+                onAddTicker={handleAddTicker}
+                onRemoveTicker={handleRemoveTicker}
+                onAddPreset={handleAddPreset}
+                isTelegramLinked={currentUser.isTelegramLinked}
+                onOpenTelegramModal={() => setIsTelegramModalOpen(true)}
+                onSendTelegramSummary={handleSendTelegramSummary}
+              />
+            </div>
 
-            {/* Watchlist News Feed (Exclusively For User's Watchlist) */}
-            <WatchlistNewsFeed watchlist={watchlist} forceRefreshAt={newsForceRefresh} />
+            {/* Log Entri Telegram Sent */}
+            <div id="tour-telegram-logs" className="scroll-mt-20">
+              <TelegramLogViewer
+                user={currentUser}
+                logs={telegramLogs}
+                onClearLogs={() => setTelegramLogs([])}
+              />
+            </div>
 
             {/* Active Cases Grid */}
-            <ActiveCasesList
-              cases={activeCasesArray}
-              onSelectCase={(c) => setSelectedCase(c)}
-            />
+            <div id="tour-active-cases" className="scroll-mt-20">
+              <ActiveCasesList
+                cases={activeCasesArray}
+                onSelectCase={(c) => setSelectedCase(c)}
+              />
+            </div>
 
             {/* Unattended Run Audit Trail */}
             <RunAuditHistory runs={auditRuns} />
@@ -372,6 +404,31 @@ export function App() {
           <LandingPage onOpenAuth={handleOpenAuth} />
         )}
       </main>
+
+      {/* Floating Telegram Bot CTA Button (Icon Only) */}
+      <div id="tour-telegram-bot-cta" className="fixed bottom-6 right-6 z-40">
+        <button
+          onClick={() => {
+            if (currentUser) {
+              setIsTelegramModalOpen(true);
+            } else {
+              handleOpenAuth('register');
+            }
+          }}
+          className="group relative flex items-center justify-center w-12 h-12 bg-[hsl(141,100%,50%)] hover:bg-[hsl(141,100%,45%)] text-[hsl(279,100%,3%)] rounded-full shadow-2xl transition-all duration-200 transform hover:scale-110 cursor-pointer border-2 border-[hsl(141,100%,70%)] glow-blue opacity-100"
+          title={currentUser?.isTelegramLinked ? 'Telegram Bot Terhubung' : 'Hubungkan Telegram Bot SIBA'}
+        >
+          <Bot className="w-6 h-6 text-[hsl(279,100%,3%)] stroke-[2.5]" />
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping" />
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full" />
+        </button>
+      </div>
+
+      {/* Interactive Dashboard Tour Modal */}
+      <DashboardTourModal
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+      />
 
       {/* Auth Modal (Login / Register) */}
       <AuthModal
@@ -419,10 +476,10 @@ export function App() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/60 bg-[#090d16] py-4 text-xs font-sans">
+      <footer className="relative z-20 border-t border-[hsl(301,60%,25%)] bg-[hsl(279,100%,3%)] py-6 mb-16 sm:mb-0 text-xs font-sans shadow-2xl">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="text-slate-500">SIBA • Sistem Informasi Bursa dan Aset (Track 02 — Automation & Workflows)</span>
-          <span className="font-mono text-teal-500/60 text-[11px]">Sectors API v2 • 100% Deterministik Tanpa LLM</span>
+          <span className="text-text/70">SIBA • Sistem Informasi Bursa dan Aset (Track 02 — Automation &amp; Workflows)</span>
+          <span className="font-mono text-primary text-[11px] font-bold">Sectors API v2 • 100% Deterministik Tanpa LLM</span>
         </div>
       </footer>
     </div>
@@ -430,3 +487,4 @@ export function App() {
 }
 
 export default App;
+
