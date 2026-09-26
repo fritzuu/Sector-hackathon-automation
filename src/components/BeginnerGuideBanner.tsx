@@ -26,15 +26,15 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({ userNa
     <div
       className="rounded-xl overflow-hidden font-sans relative"
       style={{
-        background: 'linear-gradient(135deg, rgba(13,20,36,0.96) 0%, rgba(6,25,28,0.96) 100%)',
-        border: '1px solid rgba(20,184,166,0.12)',
-        boxShadow: '0 0 40px rgba(20,184,166,0.06), 0 4px 24px rgba(0,0,0,0.4)',
+        background: 'linear-gradient(135deg, hsl(301, 100%, 10%) 0%, hsl(279, 100%, 5%) 100%)',
+        border: '1px solid hsl(301, 60%, 25%)',
+        boxShadow: '0 0 40px rgba(230,102,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
       }}
     >
       {/* Subtle top gradient accent */}
       <div
         className="absolute inset-x-0 top-0 h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(20,184,166,0.5), transparent)' }}
+        style={{ background: 'linear-gradient(90deg, transparent, hsl(288, 100%, 70%), transparent)' }}
       />
 
       <div className="px-5 py-4">
@@ -43,27 +43,21 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({ userNa
             {/* Greeting */}
             <div className="flex items-center gap-2 mb-2">
               <span
-                className="text-[10px] font-mono font-bold uppercase tracking-widest"
-                style={{ color: 'rgba(20,184,166,0.7)' }}
+                className="text-[10px] font-mono font-bold uppercase tracking-widest text-primary"
               >
                 Selamat datang kembali
               </span>
               <span
-                className="text-[10px] font-mono font-bold px-2 py-0.5 rounded"
-                style={{
-                  background: 'rgba(20,184,166,0.1)',
-                  border: '1px solid rgba(20,184,166,0.2)',
-                  color: '#5eead4',
-                }}
+                className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-secondary text-primary border border-primary/30"
               >
                 {userName}
               </span>
             </div>
 
             {/* Body */}
-            <p className="text-xs leading-relaxed max-w-3xl" style={{ color: 'rgba(203,213,225,0.7)' }}>
-              Masukkan saham ke <strong className="text-slate-200">Watchlist</strong>, hubungkan{' '}
-              <strong className="text-slate-200">Telegram</strong>, dan SIBA akan memeriksa data resmi
+            <p className="text-xs leading-relaxed max-w-3xl text-text/80">
+              Masukkan saham ke <strong className="text-white">Watchlist</strong>, hubungkan{' '}
+              <strong className="text-white">Telegram</strong>, dan SIBA akan memeriksa data resmi
               Sectors API tiap hari bursa — notifikasi dikirim hanya saat ada pola penting.
             </p>
 
@@ -72,12 +66,7 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({ userNa
               {FEATURES.map(f => (
                 <div
                   key={f.text}
-                  className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-full"
-                  style={{
-                    background: 'rgba(20,184,166,0.07)',
-                    border: '1px solid rgba(20,184,166,0.15)',
-                    color: 'rgba(94,234,212,0.8)',
-                  }}
+                  className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-full bg-secondary/80 border border-primary/20 text-accent font-medium"
                 >
                   {f.icon}
                   {f.text}
