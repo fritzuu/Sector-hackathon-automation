@@ -8,22 +8,26 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0a0f1d',
-        surface: '#111827',
-        'surface-elevated': '#1f2937',
-        border: '#374151',
+        text: 'hsl(0, 0%, 100%)',
+        background: 'hsl(279, 100%, 3%)',
         primary: {
-          50: '#f0fdfa',
-          500: '#14b8a6',
-          600: '#0d9488',
-          700: '#0f766e',
+          DEFAULT: 'hsl(288, 100%, 70%)',
+          50: '#fdf4ff',
+          500: 'hsl(288, 100%, 70%)',
+          600: 'hsl(288, 80%, 60%)',
+          700: 'hsl(288, 70%, 50%)',
         },
+        secondary: 'hsl(301, 100%, 20%)',
         accent: {
+          DEFAULT: 'hsl(141, 100%, 50%)',
           blue: '#38bdf8',
           amber: '#fbbf24',
-          emerald: '#34d399',
+          emerald: 'hsl(141, 100%, 50%)',
           rose: '#f43f5e',
-        }
+        },
+        surface: '#120517',
+        'surface-elevated': 'hsl(301, 100%, 12%)',
+        border: 'hsl(301, 60%, 25%)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
@@ -33,3 +37,4 @@ export default {
   },
   plugins: [],
 }
+

@@ -1,41 +1,54 @@
 @import "tailwindcss";
 
+:root {
+  --color-text: hsl(0, 0%, 100%);
+  --color-bg: hsl(279, 100%, 3%);
+  --color-primary: hsl(288, 100%, 70%);
+  --color-secondary: hsl(301, 100%, 20%);
+  --color-accent: hsl(141, 100%, 50%);
+}
+
 @layer base {
   body {
-    background-color: #0a0f1d;
-    color: #f1f5f9;
+    background-color: var(--color-bg);
+    color: var(--color-text);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  /* Every <button> gets pointer cursor globally — no need to sprinkle cursor-pointer everywhere */
-  button:not([disabled]) {
-    cursor: pointer;
+  /* Every clickable element & button gets pointer cursor globally */
+  button:not([disabled]),
+  a,
+  [role="button"],
+  [onClick],
+  input[type="submit"],
+  input[type="button"] {
+    cursor: pointer !important;
   }
 
   /* Disabled buttons always get not-allowed */
   button[disabled] {
-    cursor: not-allowed;
+    cursor: not-allowed !important;
   }
 }
 
 .glass-card {
-  background: rgba(17, 24, 39, 0.75);
+  background: rgba(26, 0, 31, 0.75);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(230, 102, 255, 0.15);
 }
 
 .glass-card-elevated {
-  background: rgba(31, 41, 55, 0.85);
+  background: rgba(51, 0, 61, 0.85);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(230, 102, 255, 0.25);
 }
 
 .glow-teal {
-  box-shadow: 0 0 25px -5px rgba(20, 184, 166, 0.3);
+  box-shadow: 0 0 25px -5px rgba(230, 102, 255, 0.3);
 }
 
 .glow-blue {
-  box-shadow: 0 0 25px -5px rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 25px -5px rgba(0, 255, 85, 0.3);
 }
 
 /* Custom scrollbar */
@@ -44,17 +57,18 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0f1d;
+  background: hsl(279, 100%, 3%);
 }
 ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: hsl(301, 100%, 20%);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: hsl(288, 100%, 70%);
 }
 
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
