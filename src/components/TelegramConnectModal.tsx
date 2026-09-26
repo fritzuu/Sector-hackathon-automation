@@ -39,10 +39,10 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-[#0d1424] border border-slate-700 rounded-xl shadow-2xl overflow-hidden my-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-background border border-[hsl(301,60%,25%)] rounded-xl shadow-2xl overflow-hidden my-6">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+        <div className="p-4 sm:p-5 border-b border-[hsl(301,60%,25%)] flex items-center justify-between bg-secondary/30">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center">
               <Send className="w-4 h-4 -translate-x-0.5" />
