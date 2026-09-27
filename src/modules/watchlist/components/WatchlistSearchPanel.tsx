@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Search, Globe, RefreshCw, ServerCrash, Wifi
@@ -252,17 +253,32 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            variants={{
+              hidden: { opacity: 0 },
+              show: { opacity: 1, transition: { staggerChildren: 0.05 } }
+            }}
+            initial="hidden"
+            animate="show"
+          >
             {watchlist.map(ticker => (
-              <WatchlistCard
+              <motion.div 
                 key={ticker}
-                ticker={ticker}
-                companyInfo={getLiveInfo(ticker)}
-                onRemove={() => onRemoveTicker(ticker)}
-                onClick={() => onOpenStockModal(ticker)}
-              />
+                variants={{
+                  hidden: { opacity: 0, y: 15 },
+                  show: { opacity: 1, y: 0, transition: { duration: 0.15, ease: "easeOut" } }
+                }}
+              >
+                <WatchlistCard
+                  ticker={ticker}
+                  companyInfo={getLiveInfo(ticker)}
+                  onRemove={() => onRemoveTicker(ticker)}
+                  onClick={() => onOpenStockModal(ticker)}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

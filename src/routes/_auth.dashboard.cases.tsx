@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { ActiveCasesList } from '../modules/cases/components/ActiveCasesList';
 import { CaseDetailModal } from '../modules/cases/components/CaseDetailModal';
@@ -16,7 +17,7 @@ function CasesPage() {
   const activeCasesArray = Array.from(activeCases.values());
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="">
       <ActiveCasesList
         cases={activeCasesArray}
         onSelectCase={(c) => setSelectedCase(c)}
@@ -28,6 +29,6 @@ function CasesPage() {
         template={selectedCase ? caseTemplates.get(selectedCase.symbol) || null : null}
         onClose={() => setSelectedCase(null)}
       />
-    </div>
+    </motion.div>
   );
 }

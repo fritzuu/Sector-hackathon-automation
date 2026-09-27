@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { motion } from 'framer-motion';
 import { WatchlistManager } from '../modules/watchlist/components/WatchlistManager';
+import { PopularStocksWidget } from '../modules/watchlist/components/PopularStocksWidget';
 import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { useAuthStore } from '../modules/auth/stores/auth.store';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
@@ -23,16 +25,30 @@ function WatchlistPage() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <WatchlistManager
-        watchlist={watchlist}
-        onAddTicker={addTicker}
-        onRemoveTicker={removeTicker}
-        onAddPreset={addPresets}
-        isTelegramLinked={currentUser?.isTelegramLinked || false}
-        onOpenTelegramModal={() => window.dispatchEvent(new CustomEvent('open-telegram-modal'))}
-        onSendTelegramSummary={handleSendTelegramSummary}
-      />
-    </div>
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.15, ease: "easeOut" }} 
+      className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"
+    >
+      <div className="lg:col-span-2 space-y-6">
+        <WatchlistManager
+          watchlist={watchlist}
+          onAddTicker={addTicker}
+          onRemoveTicker={removeTicker}
+          onAddPreset={addPresets}
+          isTelegramLinked={currentUser?.isTelegramLinked || false}
+          onOpenTelegramModal={() => window.dispatchEvent(new CustomEvent('open-telegram-modal'))}
+          onSendTelegramSummary={handleSendTelegramSummary}
+        />
+      </div>
+      
+      <div className="lg:col-span-1 sticky top-0">
+        <PopularStocksWidget 
+          watchlist={watchlist} 
+          onAddTicker={addTicker} 
+        />
+      </div>
+    </motion.div>
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { BeginnerGuideBanner } from '../shared/components/BeginnerGuideBanner';
 import { AutomationOverview } from '../modules/dashboard/components/AutomationOverview';
@@ -67,7 +68,7 @@ function DashboardOverviewPage() {
   const activeCasesArray = Array.from(activeCases.values());
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="space-y-8 ">
       <BeginnerGuideBanner userName={currentUser?.name || ''} onOpenTour={() => setIsTourOpen(true)} />
 
       <AutomationOverview
@@ -92,6 +93,6 @@ function DashboardOverviewPage() {
         isOpen={isTourOpen}
         onClose={() => setIsTourOpen(false)}
       />
-    </div>
+    </motion.div>
   );
 }

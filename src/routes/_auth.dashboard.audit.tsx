@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { motion } from 'framer-motion';
 import { RunAuditHistory } from '../modules/cases/components/RunAuditHistory';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
 
@@ -10,8 +11,8 @@ function AuditPage() {
   const { auditRuns } = useWorkflowStore();
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="">
       <RunAuditHistory runs={auditRuns} />
-    </div>
+    </motion.div>
   );
 }

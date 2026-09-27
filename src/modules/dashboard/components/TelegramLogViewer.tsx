@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Send, Copy, Check, Clock, Trash2, ShieldCheck, Search, Bot } from 'lucide-react';
 import { UserProfile } from '../../../data/userProfiles.js';
+import { motion } from 'framer-motion';
 
 export interface TelegramLogEntry {
   id: string;
@@ -44,21 +45,32 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
 
   if (!user.isTelegramLinked) {
     return (
-      <div className="rounded-xl p-8 bg-accent text-bg shadow-[0_0_30px_rgba(0,255,136,0.15)] flex flex-col items-center justify-center text-center font-sans h-full">
-        <div className="w-16 h-16 rounded-2xl bg-bg text-accent flex items-center justify-center mb-5 shadow-xl -rotate-12 hover:rotate-0 transition-transform duration-500">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        className="rounded-xl p-8 bg-accent text-bg shadow-[0_0_30px_rgba(0,255,136,0.15)] flex flex-col items-center justify-center text-center font-sans h-full"
+      >
+        <motion.div 
+          animate={{ y: [0, -10, 0] }}
+          transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+          className="w-16 h-16 rounded-2xl bg-bg text-accent flex items-center justify-center mb-5 shadow-xl -rotate-12 hover:rotate-0 transition-transform duration-500"
+        >
           <Send className="w-8 h-8 -ml-1 mt-1" />
-        </div>
+        </motion.div>
         <h3 className="text-xl font-black mb-2 tracking-tight">Telegram Belum Terhubung</h3>
         <p className="text-sm font-bold opacity-80 mb-6 max-w-sm">
           Dapatkan peringatan anomali saham dan rekap otomatis secara real-time. Hubungkan SIBA Bot ke Telegram Anda sekarang.
         </p>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => window.dispatchEvent(new CustomEvent('open-telegram-modal'))}
-          className="px-6 py-3 rounded-xl bg-bg text-accent font-black text-sm uppercase tracking-widest hover:bg-white hover:text-bg transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+          className="px-6 py-3 rounded-xl bg-bg text-accent font-black text-sm uppercase tracking-widest hover:bg-white hover:text-bg transition-colors shadow-lg cursor-pointer"
         >
           Konfigurasi Bot
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     );
   }
 
