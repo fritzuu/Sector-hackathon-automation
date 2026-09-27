@@ -1,13 +1,14 @@
 # Handoff
 
-- Tahap: setup panduan & design skills; belum ada kode aplikasi/dependency.
+- Tahap: S3 persistensi per akun (bukan user dummy). Auth UUID = `profiles.id`; watchlist, audit run, dan workspace kasus disimpan di Supabase dengan RLS.
 - Scope: PRD v0.3, Track 02, tanpa LLM.
-- Design skills: 8 skill desain & frontend esensial (tanpa over-engineering/duplikasi) tersimpan di `SECTOR-HACKATHON-AI/skills` & jembatan `.agents/skills`; guardrail konsistensi desain UI terkunci di `rules/siba.md`, `siba-build`, dan `siba-review`.
-- Graphify: terpasang & tersinkronisasi di `graphify-out/` (24 node, 21 edge, 6 cluster).
-- Onboarding seluruh anggota: BELUM DIKONFIRMASI. Gate sebelum kode.
-- Submission/freeze: BELUM DIKONFIRMASI. Cek sebelum perubahan berikutnya.
-- Task aktif: tidak ada implementasi yang diotorisasi dalam setup ini.
-- Selanjutnya: preflight keputusan S0 di BACKLOG; konfirmasi stack dan onboarding.
-- Verifikasi aplikasi: belum tersedia; jangan klaim build/test lulus.
-
-Saat handoff, ganti ringkasan ini dengan status terbaru, file utama, perintah tes beserta hasil, blocker, dan satu langkah berikutnya. Pertahankan sekitar 30 baris; jangan append transkrip.
+- Hasil: schema `supabase/schema.sql` + migrasi `20260927100000_per_account_production.sql`; login/daftar memakai sesi Auth; bot pairing lewat RPC tanpa seed Budi/Sarah.
+- Verifikasi: jalankan SQL schema di dashboard Supabase project `tdqwrfcaxxswmrtwcxyd`, lalu `npm test` dan `npm run build`.
+- File utama:
+  - `supabase/schema.sql`
+  - `src/modules/auth/stores/auth.store.ts`
+  - `src/services/supabaseStorage.ts`
+  - `bot/storage.py`
+- Selanjutnya: terapkan schema di SQL Editor bila belum, uji dua akun terpisah (watchlist/kasus tidak bocor), lalu scheduler unattended di luar browser.
+- 27 Sep 2026 — Login Google lokal memakai redirect halaman penuh dan route menunggu pemulihan sesi. `npm test` lulus 23/23; `npm run build` lulus. Uji browser: login email, pemulihan sesi setelah refresh, logout, pengalihan dari `/dashboard` setelah logout, serta tambah/hapus satu saham dan persistensinya berhasil. Google provider membuka pemilih akun; callback setelah memilih akun belum diuji. Perlu uji dua akun terpisah dan alur reset kata sandi sampai selesai.
+- Risiko auth yang perlu ditangani sebelum rilis: perintah Telegram `/login` meminta kata sandi dalam pesan; cache profil menurut email bisa mengembalikan profil dengan ID berbeda dari pengguna yang sedang login.

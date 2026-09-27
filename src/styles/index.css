@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  --color-text: hsl(276, 30%, 95%);
+  --color-text-muted: hsl(276, 20%, 65%);
+  --color-bg: hsl(279, 100%, 3%);
+  /* A true, darker purple for cards/secondary instead of the bright magenta */
+  --color-secondary: hsl(270, 70%, 12%); 
+  --color-border: hsl(270, 60%, 25%);
+  --color-primary: hsl(280, 80%, 65%);
+  --color-accent: hsl(141, 100%, 50%);
+}
+
+@theme {
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-bg: var(--color-bg);
+  --color-secondary: var(--color-secondary);
+  --color-border: var(--color-border);
+  --color-primary: var(--color-primary);
+  --color-accent: var(--color-accent);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
+  }
+
+  /* Every clickable element & button gets pointer cursor globally */
+  button:not([disabled]),
+  a,
+  [role="button"],
+  [onClick],
+  input[type="submit"],
+  input[type="button"] {
+    cursor: pointer !important;
+  }
+
+  /* Disabled buttons always get not-allowed */
+  button[disabled] {
+    cursor: not-allowed !important;
+  }
+}
+
+.glass-card {
+  background: rgba(26, 0, 31, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(230, 102, 255, 0.15);
+}
+
+.glass-card-elevated {
+  background: rgba(51, 0, 61, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(230, 102, 255, 0.25);
+}
+
+.glow-teal {
+  box-shadow: 0 0 25px -5px rgba(230, 102, 255, 0.3);
+}
+
+.glow-blue {
+  box-shadow: 0 0 25px -5px rgba(0, 255, 85, 0.3);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(279, 100%, 3%);
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(301, 100%, 20%);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(288, 100%, 70%);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
