@@ -1,0 +1,33 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { useState } from 'react';
+import { ActiveCasesList } from '../modules/cases/components/ActiveCasesList';
+import { CaseDetailModal } from '../modules/cases/components/CaseDetailModal';
+import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
+import { CaseState } from '../types/engine';
+
+export const Route = createFileRoute('/_auth/dashboard/cases')({
+  component: CasesPage,
+});
+
+function CasesPage() {
+  const { activeCases, caseEvents, caseTemplates } = useWorkflowStore();
+  const [selectedCase, setSelectedCase] = useState<CaseState | null>(null);
+
+  const activeCasesArray = Array.from(activeCases.values());
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <ActiveCasesList
+        cases={activeCasesArray}
+        onSelectCase={(c) => setSelectedCase(c)}
+      />
+
+      <CaseDetailModal
+        caseItem={selectedCase}
+        events={selectedCase ? caseEvents.get(selectedCase.symbol) || [] : []}
+        template={selectedCase ? caseTemplates.get(selectedCase.symbol) || null : null}
+        onClose={() => setSelectedCase(null)}
+      />
+    </div>
+  );
+}

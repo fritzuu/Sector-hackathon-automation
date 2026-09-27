@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { useAuthStore } from "../modules/auth/stores/auth.store";
 import { Header } from "../modules/dashboard/components/Header";
+import { Sidebar } from "../modules/dashboard/components/Sidebar";
 import { TelegramConnectModal } from "../modules/auth/components/TelegramConnectModal";
 import { TelegramAlertPreview } from "../shared/components/TelegramAlertPreview";
 import { MarketCloseToast } from "../modules/dashboard/components/MarketCloseToast";
@@ -74,25 +75,44 @@ function AuthLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-bg text-text flex flex-col font-sans">
-      <Header
-        currentUser={currentUser}
-        onOpenAuth={() => {}} // Not needed in auth layout
-        onLogout={handleLogout}
-        onOpenTelegramModal={() => setIsTelegramModalOpen(true)}
-        onRunWorkflow={runWorkflow}
-        onResetReplay={resetReplay}
-        onOpenTour={() => {
-          // Dispatch a custom event or trigger tour
-          window.dispatchEvent(new CustomEvent("open-siba-tour"));
-        }}
-        isRunning={isRunning}
-        totalWatchlist={watchlist.length}
-      />
+    <div className="h-screen w-full bg-bg text-text-main flex font-sans overflow-hidden">
+      
+      {/* Sidebar Navigation */}
+      <Sidebar />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        <Outlet />
-      </main>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <Header
+          currentUser={currentUser}
+          onOpenAuth={() => {}} // Not needed in auth layout
+          onLogout={handleLogout}
+          onOpenTelegramModal={() => setIsTelegramModalOpen(true)}
+          onRunWorkflow={runWorkflow}
+          onResetReplay={resetReplay}
+          onOpenTour={() => {
+            window.dispatchEvent(new CustomEvent("open-siba-tour"));
+          }}
+          isRunning={isRunning}
+          totalWatchlist={watchlist.length}
+        />
+
+        <main className="flex-1 overflow-y-auto w-full">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto h-full">
+            <Outlet />
+          </div>
+        </main>
+
+        <footer className="border-t border-border/50 bg-bg/50 py-3 text-xs font-sans mt-auto">
+          <div className="px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span className="text-text-muted/40">
+              SIBA • Sistem Informasi Bursa dan Aset (Track 02 Automation)
+            </span>
+            <span className="font-mono text-primary/50 text-[11px]">
+              Sectors API v2 • 100% Deterministik
+            </span>
+          </div>
+        </footer>
+      </div>
 
       <TelegramConnectModal
         user={currentUser}
@@ -113,18 +133,6 @@ function AuthLayout() {
         watchlistCount={watchlist.length}
         onClose={() => setShowMarketCloseToast(false)}
       />
-
-      <footer className="border-t border-border bg-bg py-4 text-xs font-sans">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="text-white/40">
-            SIBA • Sistem Informasi Bursa dan Aset (Track 02 Automation &amp;
-            Workflows)
-          </span>
-          <span className="font-mono text-primary/50 text-[11px]">
-            Sectors API v2 • 100% Deterministik Tanpa LLM
-          </span>
-        </div>
-      </footer>
 
       {/* Floating Telegram Bot CTA Button */}
       <div id="tour-telegram-bot-cta" className="fixed bottom-6 right-6 z-40">

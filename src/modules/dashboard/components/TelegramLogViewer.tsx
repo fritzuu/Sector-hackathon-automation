@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Send, Copy, Check, Clock, Trash2, ShieldCheck, Search } from 'lucide-react';
+import { Send, Copy, Check, Clock, Trash2, ShieldCheck, Search, Bot } from 'lucide-react';
 import { UserProfile } from '../../../data/userProfiles.js';
 
 export interface TelegramLogEntry {
@@ -42,9 +42,29 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
     (log.ticker && log.ticker.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  if (!user.isTelegramLinked) {
+    return (
+      <div className="rounded-xl p-8 bg-accent text-bg shadow-[0_0_30px_rgba(0,255,136,0.15)] flex flex-col items-center justify-center text-center font-sans h-full">
+        <div className="w-16 h-16 rounded-2xl bg-bg text-accent flex items-center justify-center mb-5 shadow-xl -rotate-12 hover:rotate-0 transition-transform duration-500">
+          <Send className="w-8 h-8 -ml-1 mt-1" />
+        </div>
+        <h3 className="text-xl font-black mb-2 tracking-tight">Telegram Belum Terhubung</h3>
+        <p className="text-sm font-bold opacity-80 mb-6 max-w-sm">
+          Dapatkan peringatan anomali saham dan rekap otomatis secara real-time. Hubungkan SIBA Bot ke Telegram Anda sekarang.
+        </p>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-telegram-modal'))}
+          className="px-6 py-3 rounded-xl bg-bg text-accent font-black text-sm uppercase tracking-widest hover:bg-white hover:text-bg transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+        >
+          Konfigurasi Bot
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="rounded-xl p-5 space-y-4 font-sans bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
+      className="rounded-xl p-5 space-y-4 font-sans bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)] h-full"
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">

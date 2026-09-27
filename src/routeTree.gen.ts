@@ -11,8 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as GuestRouteImport } from './routes/_guest'
-import { Route as AuthDashboardRouteImport } from './routes/_auth.dashboard'
 import { Route as GuestIndexRouteImport } from './routes/_guest.index'
+import { Route as AuthDashboardIndexRouteImport } from './routes/_auth.dashboard.index'
+import { Route as AuthDashboardAuditRouteImport } from './routes/_auth.dashboard.audit'
+import { Route as AuthDashboardCasesRouteImport } from './routes/_auth.dashboard.cases'
+import { Route as AuthDashboardWatchlistRouteImport } from './routes/_auth.dashboard.watchlist'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
@@ -22,38 +25,80 @@ const GuestRoute = GuestRouteImport.update({
   id: '/_guest',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthDashboardRoute = AuthDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthRoute,
-} as any)
 const GuestIndexRoute = GuestIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => GuestRoute,
 } as any)
+const AuthDashboardIndexRoute = AuthDashboardIndexRouteImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthDashboardAuditRoute = AuthDashboardAuditRouteImport.update({
+  id: '/dashboard/audit',
+  path: '/dashboard/audit',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthDashboardCasesRoute = AuthDashboardCasesRouteImport.update({
+  id: '/dashboard/cases',
+  path: '/dashboard/cases',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthDashboardWatchlistRoute = AuthDashboardWatchlistRouteImport.update({
+  id: '/dashboard/watchlist',
+  path: '/dashboard/watchlist',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof GuestIndexRoute
-  '/dashboard': typeof AuthDashboardRoute
+  '/dashboard/audit': typeof AuthDashboardAuditRoute
+  '/dashboard/cases': typeof AuthDashboardCasesRoute
+  '/dashboard/watchlist': typeof AuthDashboardWatchlistRoute
+  '/dashboard/': typeof AuthDashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof GuestIndexRoute
-  '/dashboard': typeof AuthDashboardRoute
+  '/dashboard/audit': typeof AuthDashboardAuditRoute
+  '/dashboard/cases': typeof AuthDashboardCasesRoute
+  '/dashboard/watchlist': typeof AuthDashboardWatchlistRoute
+  '/dashboard': typeof AuthDashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_auth': typeof AuthRouteWithChildren
   '/_guest': typeof GuestRouteWithChildren
-  '/_auth/dashboard': typeof AuthDashboardRoute
   '/_guest/': typeof GuestIndexRoute
+  '/_auth/dashboard/audit': typeof AuthDashboardAuditRoute
+  '/_auth/dashboard/cases': typeof AuthDashboardCasesRoute
+  '/_auth/dashboard/watchlist': typeof AuthDashboardWatchlistRoute
+  '/_auth/dashboard/': typeof AuthDashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/dashboard/audit'
+    | '/dashboard/cases'
+    | '/dashboard/watchlist'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard'
-  id: '__root__' | '/_auth' | '/_guest' | '/_auth/dashboard' | '/_guest/'
+  to:
+    | '/'
+    | '/dashboard/audit'
+    | '/dashboard/cases'
+    | '/dashboard/watchlist'
+    | '/dashboard'
+  id:
+    | '__root__'
+    | '/_auth'
+    | '/_guest'
+    | '/_guest/'
+    | '/_auth/dashboard/audit'
+    | '/_auth/dashboard/cases'
+    | '/_auth/dashboard/watchlist'
+    | '/_auth/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,13 +122,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/dashboard': {
-      id: '/_auth/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthDashboardRouteImport
-      parentRoute: typeof AuthRoute
-    }
     '/_guest/': {
       id: '/_guest/'
       path: '/'
@@ -91,15 +129,49 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestIndexRouteImport
       parentRoute: typeof GuestRoute
     }
+    '/_auth/dashboard/': {
+      id: '/_auth/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AuthDashboardIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/dashboard/audit': {
+      id: '/_auth/dashboard/audit'
+      path: '/dashboard/audit'
+      fullPath: '/dashboard/audit'
+      preLoaderRoute: typeof AuthDashboardAuditRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/dashboard/cases': {
+      id: '/_auth/dashboard/cases'
+      path: '/dashboard/cases'
+      fullPath: '/dashboard/cases'
+      preLoaderRoute: typeof AuthDashboardCasesRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/dashboard/watchlist': {
+      id: '/_auth/dashboard/watchlist'
+      path: '/dashboard/watchlist'
+      fullPath: '/dashboard/watchlist'
+      preLoaderRoute: typeof AuthDashboardWatchlistRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
 interface AuthRouteChildren {
-  AuthDashboardRoute: typeof AuthDashboardRoute
+  AuthDashboardAuditRoute: typeof AuthDashboardAuditRoute
+  AuthDashboardCasesRoute: typeof AuthDashboardCasesRoute
+  AuthDashboardWatchlistRoute: typeof AuthDashboardWatchlistRoute
+  AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthDashboardRoute: AuthDashboardRoute,
+  AuthDashboardAuditRoute: AuthDashboardAuditRoute,
+  AuthDashboardCasesRoute: AuthDashboardCasesRoute,
+  AuthDashboardWatchlistRoute: AuthDashboardWatchlistRoute,
+  AuthDashboardIndexRoute: AuthDashboardIndexRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
