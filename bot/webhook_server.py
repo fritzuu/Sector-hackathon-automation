@@ -34,7 +34,7 @@ async def send_telegram_message(chat_id: str, html_text: str) -> Dict[str, Any]:
         "disable_web_page_preview": True
     }
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with httpx.AsyncClient(timeout=10.0, trust_env=False) as client:
         try:
             resp = await client.post(url, json=payload)
             data = resp.json()
@@ -166,24 +166,11 @@ async def handle_send_alert(request: web.Request) -> web.Response:
     if target_chat_id:
         recipients = [str(target_chat_id)]
     else:
-        # Check if users have this symbol in their watchlist
-        data_store = storage._load()
-        matched_users = [
-            u.get("telegram_chat_id")
-            for u in data_store.get("users", {}).values()
-            if u.get("is_linked") and u.get("telegram_chat_id") and (
-                symbol in u.get("watchlist", []) or not u.get("watchlist")
-            )
-        ]
-        recipients = list(set([str(cid) for cid in matched_users if cid]))
-
-        # If no specific watchlist match, broadcast to subscribers or default chat
-        if not recipients:
-            subscribers = storage.get_all_subscribers()
-            if subscribers:
-                recipients = subscribers
-            elif DEFAULT_CHAT_ID:
-                recipients = [DEFAULT_CHAT_ID]
+        logger.warning(f"Alert {symbol} ditolak: target_chat_id wajib agar tidak tersebar ke akun lain.")
+        return web.json_response({
+            "status": "error",
+            "message": "target_chat_id is required for per-account delivery.",
+        }, status=400)
 
     if not recipients:
         logger.warning(f"No recipients found for alert {symbol}. Register a subscriber or set DEFAULT_CHAT_ID.")

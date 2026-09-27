@@ -26,6 +26,7 @@ import {
   fetchUserProfileFromSupabase,
   saveUserProfileToSupabase,
 } from './services/supabaseStorage.js';
+import { supabase } from './lib/supabaseClient.js';
 import { TickerDataset } from './types/sectors.js';
 
 export function App() {
@@ -128,24 +129,26 @@ export function App() {
   };
 
   const handleAuthSuccess = async (userData: { name: string; email: string; avatar?: string }) => {
-    // 1. Try to fetch existing user profile from Supabase
-    let profile = await fetchUserProfileFromSupabase(userData.email);
+    const { data: { session } } = await supabase.auth.getSession();
+    const authUser = session?.user;
+    if (!authUser) {
+      return;
+    }
 
+    let profile = await fetchUserProfileFromSupabase(authUser.id);
     if (!profile) {
-      // 2. If not found in Supabase, create a new profile and save to Supabase
       const newUser: UserProfile = {
-        id: `usr-${Date.now()}`,
+        id: authUser.id,
         name: userData.name,
         email: userData.email,
-        avatar: '',
+        avatar: userData.avatar || authUser.user_metadata?.avatar_url || '',
         role: 'Investor Ritel',
         telegramChatId: null,
         telegramUsername: null,
         isTelegramLinked: false,
         pairingToken: generateSecurePairingToken(),
-        defaultWatchlist: ['BBCA', 'TLKM', 'UNTR'],
+        defaultWatchlist: [],
       };
-
       profile = await saveUserProfileToSupabase(newUser);
     }
 

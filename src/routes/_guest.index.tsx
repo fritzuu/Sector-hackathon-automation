@@ -1,13 +1,9 @@
+import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LandingPage } from "../modules/dashboard/components/LandingPage";
 import { Header } from "../modules/dashboard/components/Header";
+import { AuthModal } from "../modules/auth/components/AuthModal";
 import { useAuthStore } from "../modules/auth/stores/auth.store";
-import { generateSecurePairingToken } from "../utils/token";
-import { UserProfile } from "../data/userProfiles";
-import {
-  fetchUserProfileFromSupabase,
-  saveUserProfileToSupabase,
-} from "../services/supabaseStorage";
 
 export const Route = createFileRoute("/_guest/")({
   component: GuestIndexPage,
@@ -15,44 +11,24 @@ export const Route = createFileRoute("/_guest/")({
 
 function GuestIndexPage() {
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
+  const syncFromSession = useAuthStore((state) => state.syncFromSession);
+  const [authModalState, setAuthModalState] = useState<{
+    isOpen: boolean;
+    mode: "login" | "register";
+  }>({
+    isOpen: false,
+    mode: "login",
+  });
 
   const handleOpenAuth = (mode: "login" | "register") => {
-    // Header buttons still call this — scroll to hero panel as a convenience
-    const hero = document.getElementById("siba-hero-auth");
-    if (hero) {
-      hero.scrollIntoView({ behavior: "smooth" });
-    }
+    setAuthModalState({ isOpen: true, mode });
   };
 
-  const handleAuthSuccess = async (userData: {
-    name: string;
-    email: string;
-    avatar?: string;
-  }) => {
-    // 1. Try to fetch existing user profile from Supabase
-    let profile = await fetchUserProfileFromSupabase(userData.email);
-
-    if (!profile) {
-      // 2. If not found in Supabase, create a new profile and save to Supabase
-      const newUser: UserProfile = {
-        id: `usr-${Date.now()}`,
-        name: userData.name,
-        email: userData.email,
-        avatar: userData.avatar || "",
-        role: "Investor Ritel",
-        telegramChatId: null,
-        telegramUsername: null,
-        isTelegramLinked: false,
-        pairingToken: generateSecurePairingToken(),
-        defaultWatchlist: ["BBCA", "TLKM", "UNTR"],
-      };
-
-      profile = await saveUserProfileToSupabase(newUser);
+  const handleAuthSuccess = async () => {
+    await syncFromSession();
+    if (useAuthStore.getState().currentUser) {
+      navigate({ to: "/dashboard" });
     }
-
-    login(profile);
-    navigate({ to: "/dashboard" });
   };
 
   return (
@@ -70,6 +46,12 @@ function GuestIndexPage() {
       <main className="flex-1 w-full">
         <LandingPage onOpenAuth={handleOpenAuth} onAuthSuccess={handleAuthSuccess} />
       </main>
+      <AuthModal
+        isOpen={authModalState.isOpen}
+        initialMode={authModalState.mode}
+        onClose={() => setAuthModalState({ ...authModalState, isOpen: false })}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

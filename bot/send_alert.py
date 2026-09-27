@@ -26,7 +26,7 @@ async def dispatch_via_telegram_api(chat_id: str, html_content: str):
         "parse_mode": "HTML",
         "disable_web_page_preview": True
     }
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with httpx.AsyncClient(timeout=10.0, trust_env=False) as client:
         resp = await client.post(url, json=payload)
         if resp.is_success:
             print(f"✅ Berhasil dikirim ke Chat ID {chat_id}")

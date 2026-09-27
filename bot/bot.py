@@ -185,13 +185,11 @@ async def cases_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /cases."""
     active_cases = storage.get_active_cases()
     if not active_cases:
-        # Provide simulated sample summary if no cases recorded yet
         text = (
-            "📋 <b>Ringkasan Kasus Aktif SIBA (Sesi Terakhir):</b>\n\n"
-            "• <b>TLKM</b>: 🚨 Kasus Baru (Volume 2.35x median, spread +2.70%)\n"
-            "• <b>ASII</b>: 🔄 Pembaruan (Divergensi harga return -2.85% vs IHSG)\n"
-            "• <b>UNTR</b>: 👁️ Monitoring (Keterbukaan informasi resmi BEI)\n\n"
-            "Ketik <code>/case &lt;TICKER&gt;</code> untuk melihat fakta & bukti lengkap."
+            "📋 <b>Ringkasan Kasus Aktif SIBA:</b>\n\n"
+            "✅ <i>Tidak ada kasus anomali aktif saat ini.</i>\n"
+            "Seluruh indikator volume dan pergerakan harga berada dalam rentang wajar "
+            "atau belum ada evaluasi sesi bursa baru yang mencatat anomali material."
         )
     else:
         lines = ["📋 <b>Ringkasan Kasus Aktif SIBA:</b>\n"]
@@ -222,18 +220,15 @@ async def case_detail_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             interpretations=recorded_case.get("interpretations"),
             unknowns=recorded_case.get("unknowns")
         )
+        await update.message.reply_html(msg_html, disable_web_page_preview=True)
     else:
-        sample = create_sample_alert(ticker=ticker, status="OPEN")
-        msg_html = format_case_message_html(
-            symbol=sample["symbol"],
-            status=sample["status"],
-            evaluation_date=sample["evaluation_date"],
-            facts=sample["facts"],
-            interpretations=sample["interpretations"],
-            unknowns=sample["unknowns"]
+        text = (
+            f"ℹ️ <b>Kasus untuk {ticker} Tidak Ditemukan</b>\n\n"
+            f"Belum ada anomali atau data kasus aktif yang tercatat untuk emiten <b>{ticker}</b> "
+            f"pada evaluasi sesi bursa terkini.\n\n"
+            f"Ketik <code>/cases</code> untuk melihat daftar kasus aktif."
         )
-
-    await update.message.reply_html(msg_html, disable_web_page_preview=True)
+        await update.message.reply_html(text)
 
 
 async def disclaimer_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

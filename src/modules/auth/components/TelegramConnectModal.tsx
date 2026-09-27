@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, CheckCircle, Copy, X, Shield, Loader2, AlertCircle, WifiOff } from 'lucide-react';
 import { UserProfile } from '../../../data/userProfiles.js';
 import { generateSecurePairingToken } from '../../../utils/token.js';
+import { useAuthStore } from '../stores/auth.store';
 import {
   registerPairingToken,
   checkPairingStatus,
@@ -34,9 +35,9 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
   const [pairingState, setPairingState] = useState<PairingState>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Read bot username from env — set VITE_TELEGRAM_BOT_USERNAME in .env.local
+  // Read bot username from env — set VITE_TELEGRAM_BOT_USERNAME in .env
   const botUsername =
-    (import.meta as any).env?.VITE_TELEGRAM_BOT_USERNAME || 'siba_idx_bot';
+    (import.meta as any).env?.VITE_TELEGRAM_BOT_USERNAME || 'SIBANotbot';
 
   const fullCommand = `/start ${token}`;
 
@@ -68,6 +69,10 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
   const handleStartPairing = async () => {
     setErrorMsg(null);
     setPairingState('registering');
+
+    if (token && token !== user.pairingToken) {
+      useAuthStore.getState().updateUser({ ...user, pairingToken: token });
+    }
 
     // 1. Register the token with the bot server
     const ok = await registerPairingToken(token, user.id, user.name, watchlist);

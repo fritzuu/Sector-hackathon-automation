@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- SIBA Watchtower - Supabase Database Schema
+-- SIBA Watchtower - Migration: Create Profiles & Audit Runs with Per-User RLS
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- 1. Create profiles table
@@ -23,10 +23,10 @@ create index if not exists idx_profiles_email on public.profiles (email);
 create index if not exists idx_profiles_pairing_token on public.profiles (pairing_token);
 create index if not exists idx_profiles_telegram_chat_id on public.profiles (telegram_chat_id);
 
--- 2. Create audit_runs table
+-- 2. Create audit_runs table (user_id references profiles with cascade delete)
 create table if not exists public.audit_runs (
   id text primary key,
-  user_id text references public.profiles(id) on delete set null,
+  user_id text references public.profiles(id) on delete cascade,
   timestamp text not null,
   tickers_count integer default 0,
   active_triggers_count integer default 0,
@@ -38,46 +38,40 @@ create table if not exists public.audit_runs (
 create index if not exists idx_audit_runs_user_id on public.audit_runs (user_id);
 create index if not exists idx_audit_runs_created_at on public.audit_runs (created_at desc);
 
--- 3. Enable Row Level Security (RLS)
+-- 3. Enable Row Level Security
 alter table public.profiles enable row level security;
 alter table public.audit_runs enable row level security;
 
--- 4. Policies for Anonymous / Authenticated Access
-create policy "Allow all access to profiles"
-  on public.profiles
-  for all
-  using (true)
-  with check (true);
+-- 4. Per-user RLS: profiles
+--    Authenticated users can only read/write their own profile (id = auth.uid()).
+create policy "profiles: select own"
+  on public.profiles for select
+  using (auth.uid()::text = id or auth.role() = 'service_role');
 
-create policy "Allow all access to audit_runs"
-  on public.audit_runs
-  for all
-  using (true)
-  with check (true);
+create policy "profiles: insert own"
+  on public.profiles for insert
+  with check (auth.uid()::text = id or auth.role() = 'service_role');
 
--- 5. Seed default demo profiles
-insert into public.profiles (id, email, name, role, pairing_token, telegram_chat_id, telegram_username, is_telegram_linked, watchlist)
-values
-  (
-    'usr-budi-01',
-    'budi.santoso@gmail.com',
-    'Budi Santoso',
-    'Investor Ritel',
-    'PAIR_BUDI_891',
-    '829104821',
-    '@budisantoso_idx',
-    true,
-    '["BBCA", "TLKM", "UNTR"]'::jsonb
-  ),
-  (
-    'usr-sarah-02',
-    'sarah.wijaya@outlook.com',
-    'Sarah Wijaya',
-    'Swing Trader',
-    'PAIR_SARAH_412',
-    null,
-    null,
-    false,
-    '["ASII", "ANTM", "ADRO", "GOTO"]'::jsonb
-  )
-on conflict (id) do nothing;
+create policy "profiles: update own"
+  on public.profiles for update
+  using (auth.uid()::text = id or auth.role() = 'service_role');
+
+-- 5. Per-user RLS: audit_runs
+--    Authenticated users can only read/insert their own audit runs.
+create policy "audit_runs: select own"
+  on public.audit_runs for select
+  using (auth.uid()::text = user_id or auth.role() = 'service_role');
+
+create policy "audit_runs: insert own"
+  on public.audit_runs for insert
+  with check (auth.uid()::text = user_id or auth.role() = 'service_role');
+
+-- 6. Bot (anon role) can upsert profiles and insert audit_runs
+--    The bot uses the anon/publishable key; it needs to write pairing data.
+create policy "profiles: anon upsert for bot"
+  on public.profiles for all to anon
+  using (true) with check (true);
+
+create policy "audit_runs: anon insert for bot"
+  on public.audit_runs for insert to anon
+  with check (true);

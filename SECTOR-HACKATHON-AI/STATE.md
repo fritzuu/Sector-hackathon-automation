@@ -1,13 +1,12 @@
 # Handoff
 
-- Tahap: S2 (Core lokal deterministik & suite tes) selesai di branch `testing-f`.
+- Tahap: S3 persistensi per akun (bukan user dummy). Auth UUID = `profiles.id`; watchlist, audit run, dan workspace kasus disimpan di Supabase dengan RLS.
 - Scope: PRD v0.3, Track 02, tanpa LLM.
-- Hasil: 3 deterministic rules (abnormal volume >= 2.0x median, relative movement >= 2.0%, new filing), state machine lifecycle (OPEN -> UPDATED / MONITORING -> CLOSED setelah 2 sesi berturut-turut tanpa anomali, DATA_INCOMPLETE), dan versioned template renderer v1.0.0.
-- Verifikasi: `npm test` lulus 20/20 unit tests (Vitest); `npm run build` berhasil bersih (`tsc`).
+- Hasil: schema `supabase/schema.sql` + migrasi `20260927100000_per_account_production.sql`; login/daftar memakai sesi Auth; bot pairing lewat RPC tanpa seed Budi/Sarah.
+- Verifikasi: jalankan SQL schema di dashboard Supabase project `tdqwrfcaxxswmrtwcxyd`, lalu `npm test` dan `npm run build`.
 - File utama:
-  - `src/engine/rules/` (`abnormalVolume.ts`, `relativeMovement.ts`, `newFiling.ts`, `index.ts`)
-  - `src/engine/caseEngine.ts`
-  - `src/engine/templateRenderer.ts`
-  - `src/types/` (`sectors.ts`, `engine.ts`)
-  - `tests/` (`rules.test.ts`, `caseLifecycle.test.ts`, `templateRenderer.test.ts`)
-- Selanjutnya: Slice S3/S4 (Persistensi Supabase / Scheduler & Automation Edge Function) atau adapter live Sectors API.
+  - `supabase/schema.sql`
+  - `src/modules/auth/stores/auth.store.ts`
+  - `src/services/supabaseStorage.ts`
+  - `bot/storage.py`
+- Selanjutnya: terapkan schema di SQL Editor bila belum, uji dua akun terpisah (watchlist/kasus tidak bocor), lalu scheduler unattended di luar browser.

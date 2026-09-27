@@ -14,6 +14,9 @@ interface WatchlistState {
 function syncToDb(updatedList: string[]) {
   const user = useAuthStore.getState().currentUser;
   if (user?.id) {
+    useAuthStore.setState({
+      currentUser: { ...user, defaultWatchlist: updatedList },
+    });
     syncWatchlistToSupabase(user.id, updatedList);
   }
 }

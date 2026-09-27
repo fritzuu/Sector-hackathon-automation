@@ -8,7 +8,7 @@ import { sectorsApi } from '../../../services/sectorsApi';
 import { dispatchCaseAlert } from '../../../services/telegramService';
 import {
   saveAuditRunToSupabase,
-  fetchAuditRunsFromSupabase,
+  saveUserWorkspaceToSupabase,
 } from '../../../services/supabaseStorage';
 import { TickerDataset } from '../../../types/sectors';
 import { useWatchlistStore } from '../../watchlist/stores/watchlist.store';
@@ -156,25 +156,30 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       durationMs,
     };
 
-    // Save to Supabase in background
-    saveAuditRunToSupabase(newAudit, currentUser?.id);
+    const nextRunIndex = runIndex + 1;
+    const nextAuditRuns = [newAudit, ...get().auditRuns];
 
     set({
       activeCases: updatedCases,
       caseEvents: updatedEvents,
       caseTemplates: updatedTemplates,
-      auditRuns: [newAudit, ...get().auditRuns],
+      auditRuns: nextAuditRuns,
       lastRunTime: timestamp,
-      runIndex: runIndex + 1,
+      runIndex: nextRunIndex,
       isRunning: false,
       latestTelegramAlert: sampleDispatchedAlert || get().latestTelegramAlert
     });
+
+    if (currentUser?.id) {
+      saveAuditRunToSupabase(newAudit, currentUser.id);
+      saveUserWorkspaceToSupabase(currentUser.id, {
+        activeCases: updatedCases,
+        caseEvents: updatedEvents,
+        caseTemplates: updatedTemplates,
+        lastRunTime: timestamp,
+        runIndex: nextRunIndex,
+      });
+    }
   }
 }));
 
-// Hydrate audit runs from Supabase on init
-fetchAuditRunsFromSupabase().then((history) => {
-  if (history && history.length > 0) {
-    useWorkflowStore.setState({ auditRuns: history });
-  }
-});

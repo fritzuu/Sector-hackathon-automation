@@ -3,8 +3,8 @@ import { useAuthStore } from '../modules/auth/stores/auth.store';
 
 export const Route = createFileRoute('/_guest')({
   beforeLoad: () => {
-    const user = useAuthStore.getState().currentUser;
-    if (user) {
+    const { currentUser, authReady } = useAuthStore.getState();
+    if (authReady && currentUser) {
       throw redirect({ to: '/dashboard' });
     }
   },

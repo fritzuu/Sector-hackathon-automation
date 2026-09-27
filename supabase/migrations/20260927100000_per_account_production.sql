@@ -1,12 +1,8 @@
--- ─────────────────────────────────────────────────────────────────────────────
--- SIBA Watchtower — schema produksi (isolasi per akun)
--- Jalankan seluruh file di SQL Editor Supabase:
--- https://supabase.com/dashboard/project/tdqwrfcaxxswmrtwcxyd/sql
--- ─────────────────────────────────────────────────────────────────────────────
+-- Isolasi per akun: UUID auth.users, workspace, RLS ketat, RPC bot.
+-- Isi lengkap sama dengan supabase/schema.sql
 
 create extension if not exists pgcrypto;
 
--- Hapus schema uji (id teks, user dummy, kebijakan anon terbuka)
 drop trigger if exists on_auth_user_created on auth.users;
 drop function if exists public.handle_new_user() cascade;
 drop function if exists public.link_telegram_account(text, text, text) cascade;
@@ -17,7 +13,6 @@ drop table if exists public.user_workspaces cascade;
 drop table if exists public.audit_runs cascade;
 drop table if exists public.profiles cascade;
 
--- 1. Profil = 1:1 dengan auth.users (UUID)
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null,
@@ -37,7 +32,6 @@ create index idx_profiles_email on public.profiles (email);
 create index idx_profiles_pairing_token on public.profiles (pairing_token);
 create index idx_profiles_telegram_chat_id on public.profiles (telegram_chat_id);
 
--- 2. Riwayat run milik satu akun
 create table public.audit_runs (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -54,7 +48,6 @@ create table public.audit_runs (
 create index idx_audit_runs_user_id on public.audit_runs (user_id);
 create index idx_audit_runs_created_at on public.audit_runs (created_at desc);
 
--- 3. Kasus / event / template per akun
 create table public.user_workspaces (
   user_id uuid primary key references public.profiles (id) on delete cascade,
   active_cases jsonb not null default '{}'::jsonb,
@@ -108,7 +101,6 @@ create policy "workspaces: update own"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- 4. Profil otomatis saat daftar di Auth
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -147,7 +139,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 5. RPC bot Telegram (tanpa membuka seluruh tabel ke anon)
 create or replace function public.link_telegram_account(
   p_token text,
   p_chat_id text,

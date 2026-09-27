@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, KeyRound, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { signInWithGoogle, GOOGLE_CANCELLED } from '../../../utils/googleAuth';
+import { supabase } from '../../../lib/supabaseClient';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -9,7 +10,7 @@ interface AuthModalProps {
   onAuthSuccess: (userData: { name: string; email: string; avatar?: string }) => void;
 }
 
-type ModalView = 'login' | 'register' | 'forgot' | 'forgot-sent';
+type ModalView = 'login' | 'register' | 'forgot' | 'forgot-sent' | 'confirm-email';
 
 const INPUT_BASE =
   'w-full pl-10 pr-10 py-3 bg-[#060c1a] border border-[#1e2d45] rounded-xl text-sm text-[#f0f4ff] placeholder-[#4a5a82] focus:outline-none focus:border-teal-500/70 focus:ring-2 focus:ring-teal-500/10 transition-all duration-200';
@@ -53,40 +54,120 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setView(v);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (view === 'register' && !name.trim()) {
-      setError('Masukkan nama lengkap Anda.'); return;
+      setError('Masukkan nama lengkap Anda.');
+      return;
     }
     if (!email.trim() || !email.includes('@')) {
-      setError('Masukkan alamat email yang valid.'); return;
+      setError('Masukkan alamat email yang valid.');
+      return;
     }
     if (!password || password.length < 6) {
-      setError('Kata sandi minimal 6 karakter.'); return;
+      setError('Kata sandi minimal 6 karakter.');
+      return;
     }
     setFormLoading(true);
-    // Simulate async (in real app would call API)
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      if (view === 'register') {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: {
+              name: name.trim(),
+              full_name: name.trim(),
+            },
+          },
+        });
+
+        if (signUpError) {
+          setError(signUpError.message);
+          setFormLoading(false);
+          return;
+        }
+
+        if (!data.session) {
+          setView('confirm-email');
+          setFormLoading(false);
+          return;
+        }
+
+        const displayName = name.trim() || email.split('@')[0];
+        onAuthSuccess({
+          name: displayName,
+          email: email.trim(),
+          avatar: undefined,
+        });
+        clearForm();
+        onClose();
+      } else {
+        // Real Supabase Login
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (signInError) {
+          if (signInError.message.includes('Invalid login credentials')) {
+            setError('Email atau kata sandi salah. Silakan periksa kembali.');
+          } else {
+            setError(signInError.message);
+          }
+          setFormLoading(false);
+          return;
+        }
+
+        const user = data.user;
+        const displayName =
+          user?.user_metadata?.full_name ||
+          user?.user_metadata?.name ||
+          name.trim() ||
+          email.split('@')[0];
+
+        onAuthSuccess({
+          name: displayName,
+          email: email.trim(),
+          avatar: user?.user_metadata?.avatar_url || user?.user_metadata?.picture || undefined,
+        });
+        clearForm();
+        onClose();
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Terjadi kesalahan saat otentikasi. Silakan coba lagi.');
+    } finally {
       setFormLoading(false);
-      onAuthSuccess({
-        name: view === 'register' ? name.trim() : email.split('@')[0],
-        email: email.trim(),
-      });
-      clearForm();
-      onClose();
-    }, 600);
+    }
   };
 
-  const handleForgot = (e: React.FormEvent) => {
+  const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail.trim() || !forgotEmail.includes('@')) {
-      setError('Masukkan alamat email yang valid.'); return;
+      setError('Masukkan alamat email yang valid.');
+      return;
     }
     setFormLoading(true);
-    setTimeout(() => {
+    setError(null);
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        forgotEmail.trim(),
+        {
+          redirectTo: `${window.location.origin}/`,
+        }
+      );
+      if (resetError) {
+        setError(resetError.message);
+      } else {
+        setView('forgot-sent');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Gagal mengirim email reset kata sandi.');
+    } finally {
       setFormLoading(false);
-      setView('forgot-sent');
-    }, 800);
+    }
   };
 
   const handleGoogleQuick = async () => {
@@ -123,6 +204,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     register:     { heading: 'Buat Akun Gratis',         sub: 'Mulai pantau aset IDX tanpa analisa teknikal.' },
     forgot:       { heading: 'Lupa Kata Sandi',          sub: 'Kami kirim tautan reset ke email kamu.' },
     'forgot-sent':{ heading: 'Email Terkirim',           sub: '' },
+    'confirm-email':{ heading: 'Konfirmasi Email',       sub: '' },
   };
 
   const { heading, sub } = titles[view];
@@ -161,7 +243,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 boxShadow: '0 4px 16px rgba(20,184,166,0.3)',
                 flexShrink: 0,
               }}>
-                {view === 'forgot' || view === 'forgot-sent'
+                {view === 'forgot' || view === 'forgot-sent' || view === 'confirm-email'
                   ? <KeyRound size={18} color="#040710" strokeWidth={2.5} />
                   : <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 900, color: '#040710', letterSpacing: '-0.04em' }}>SIBA</span>
                 }
@@ -229,6 +311,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div style={{ padding: '24px' }}>
 
           {/* ── FORGOT SENT success state ── */}
+          {view === 'confirm-email' && (
+            <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: 'rgba(20,184,166,0.1)', border: '2px solid rgba(20,184,166,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 20px',
+              }}>
+                <CheckCircle2 size={32} color="#2dd4bf" strokeWidth={1.5} />
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#f0f4ff', marginBottom: 8 }}>
+                Cek email untuk mengaktifkan akun
+              </div>
+              <div style={{ fontSize: 13, color: '#8b9abf', lineHeight: 1.6, marginBottom: 8 }}>
+                Kami mengirim tautan konfirmasi ke <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{email}</span>.
+                Setelah dikonfirmasi, masuk kembali untuk membuka dashboard.
+              </div>
+              <button
+                onClick={() => { clearForm(); switchView('login'); }}
+                style={{
+                  width: '100%', padding: '12px 0', marginTop: 20,
+                  background: 'linear-gradient(135deg, #14b8a6, #2dd4bf)',
+                  border: 'none', borderRadius: 12, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 700, color: '#040710',
+                  boxShadow: '0 4px 20px rgba(20,184,166,0.25)',
+                }}
+              >
+                Kembali ke Halaman Masuk
+              </button>
+            </div>
+          )}
+
           {view === 'forgot-sent' && (
             <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
               <div style={{

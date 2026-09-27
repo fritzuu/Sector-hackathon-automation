@@ -11,8 +11,8 @@ import { generateSecurePairingToken } from '../utils/token';
 
 export const Route = createFileRoute('/_auth')({
   beforeLoad: () => {
-    const user = useAuthStore.getState().currentUser;
-    if (!user) {
+    const { currentUser, authReady } = useAuthStore.getState();
+    if (authReady && !currentUser) {
       throw redirect({ to: '/' });
     }
   },
@@ -34,7 +34,13 @@ function AuthLayout() {
     }
   }, [currentUser]);
 
-  if (!currentUser) return null;
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-[#090d16] text-slate-400 flex items-center justify-center text-sm">
+        Memuat akun...
+      </div>
+    );
+  }
 
   const handleLinkTelegram = (chatId: string, username: string) => {
     updateUser({
