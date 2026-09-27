@@ -343,6 +343,7 @@ export function App() {
         onOpenTelegramModal={() => setIsTelegramModalOpen(true)}
         onRunWorkflow={handleRunWorkflow}
         onResetReplay={handleReset}
+        onOpenTour={() => setIsTourOpen(true)}
         isRunning={isRunning}
         totalWatchlist={watchlist.length}
       />
@@ -353,7 +354,7 @@ export function App() {
           /* Authenticated Dashboard */
           <div className="space-y-6">
             {/* Welcoming Guide Banner */}
-            <BeginnerGuideBanner userName={currentUser.name} />
+            <BeginnerGuideBanner userName={currentUser.name} onOpenTour={() => setIsTourOpen(true)} />
 
             {/* Automation Overview KPIs */}
             <div id="tour-automation-kpis" className="scroll-mt-20">

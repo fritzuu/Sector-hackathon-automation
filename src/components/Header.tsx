@@ -9,6 +9,7 @@ interface HeaderProps {
   onOpenTelegramModal: () => void;
   onRunWorkflow: () => void;
   onResetReplay: () => void;
+  onOpenTour?: () => void;
   isRunning: boolean;
   totalWatchlist: number;
 }
@@ -20,13 +21,14 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenTelegramModal,
   onRunWorkflow,
   onResetReplay,
+  onOpenTour,
   isRunning,
   totalWatchlist,
 }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   return (
-    <header className="border-b border-[hsl(301,60%,25%)] bg-[hsl(279,100%,3%)]/95 backdrop-blur-md sticky top-0 z-40">
+    <header id="tour-header-actions" className="border-b border-[hsl(301,60%,25%)] bg-[hsl(279,100%,3%)]/95 backdrop-blur-md sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <div className="flex items-center space-x-3">
@@ -96,7 +98,19 @@ export const Header: React.FC<HeaderProps> = ({
                       {currentUser.role}
                     </span>
                   </div>
-                  <div className="pt-1">
+                  <div className="py-1 space-y-1">
+                    {onOpenTour && (
+                      <button
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          onOpenTour();
+                        }}
+                        className="w-full p-2 text-left text-[hsl(141,100%,50%)] hover:bg-[hsl(141,100%,50%)]/10 rounded-lg flex items-center space-x-2 font-semibold transition-colors cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Ulangi Tur Interaktif</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setIsProfileMenuOpen(false);

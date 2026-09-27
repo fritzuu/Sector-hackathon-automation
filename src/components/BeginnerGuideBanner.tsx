@@ -5,10 +5,11 @@
  */
 
 import React, { useState } from 'react';
-import { X, CheckCircle2, BellRing, Shield, Zap } from 'lucide-react';
+import { X, CheckCircle2, BellRing, Shield, Zap, Sparkles } from 'lucide-react';
 
 interface BeginnerGuideBannerProps {
   userName: string;
+  onOpenTour?: () => void;
 }
 
 const FEATURES = [
@@ -17,7 +18,7 @@ const FEATURES = [
   { icon: <BellRing className="w-3 h-3 flex-shrink-0" />, text: 'Notifikasi terisolasi ke akun Anda' },
 ];
 
-export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({ userName }) => {
+export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({ userName, onOpenTour }) => {
   const [isVisible, setIsVisible] = useState(true);
 
   if (!isVisible) return null;
@@ -52,6 +53,15 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({ userNa
               >
                 {userName}
               </span>
+              {onOpenTour && (
+                <button
+                  onClick={onOpenTour}
+                  className="ml-auto text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[hsl(141,100%,50%)]/15 text-[hsl(141,100%,50%)] border border-[hsl(141,100%,50%)]/40 hover:bg-[hsl(141,100%,50%)] hover:text-black transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>Lihat Tur Interaktif</span>
+                </button>
+              )}
             </div>
 
             {/* Body */}
