@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, KeyRound, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { signInWithGoogle, GOOGLE_CANCELLED } from '../../../utils/googleAuth';
+import { signInWithGoogle } from '../../../utils/googleAuth';
 import { supabase } from '../../../lib/supabaseClient';
 
 interface AuthModalProps {
@@ -32,7 +32,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError]         = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleCancelled, setGoogleCancelled] = useState(false);
 
   // Sync view when initialMode changes (e.g. parent opens in 'register')
   useEffect(() => {
@@ -172,27 +171,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleGoogleQuick = async () => {
     setError(null);
-    setGoogleCancelled(false);
     setGoogleLoading(true);
     try {
-      const userData = await signInWithGoogle();
-      onAuthSuccess(userData);
-      clearForm();
-      onClose();
+      await signInWithGoogle();
     } catch (err: any) {
-      if (err?.name === GOOGLE_CANCELLED || err?.message === GOOGLE_CANCELLED) {
-        setGoogleCancelled(true);
+      const msg: string = err?.message || '';
+      if (msg.includes('Client ID') || msg.includes('client_id')) {
+        setError('Konfigurasi Google OAuth belum diatur. Hubungi administrator.');
+      } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('Failed to fetch')) {
+        setError('Tidak ada koneksi internet. Periksa jaringan Anda.');
       } else {
-        const msg: string = err?.message || '';
-        if (msg.includes('Client ID') || msg.includes('client_id')) {
-          setError('Konfigurasi Google OAuth belum diatur. Hubungi administrator.');
-        } else if (msg.includes('popup') || msg.includes('blocked')) {
-          setError('Popup diblokir browser. Izinkan popup lalu coba lagi.');
-        } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('Failed to fetch')) {
-          setError('Tidak ada koneksi internet. Periksa jaringan Anda.');
-        } else {
-          setError('Gagal masuk dengan Google. Silakan coba lagi.');
-        }
+        setError('Gagal masuk dengan Google. Silakan coba lagi.');
       }
     } finally {
       setGoogleLoading(false);
@@ -500,23 +489,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div style={{ flex: 1, height: 1, background: '#1e2d45' }} />
               </div>
 
-              {/* Google cancelled hint */}
-              {googleCancelled && !error && (
-                <div style={{
-                  background: 'rgba(251,191,36,0.06)',
-                  border: '1px solid rgba(251,191,36,0.22)',
-                  borderRadius: 10, padding: '10px 14px',
-                  fontSize: 12, color: '#fbbf24', marginBottom: 8, lineHeight: 1.5,
-                }}>
-                  Anda membatalkan login Google. Klik tombol di bawah untuk mencoba lagi.
-                </div>
-              )}
-
               {/* Google */}
               <GoogleBtn
                 onClick={handleGoogleQuick}
                 loading={googleLoading}
-                label={googleCancelled ? 'Coba lagi dengan Google' : 'Lanjutkan dengan Google'}
+                label="Lanjutkan dengan Google"
               />
 
               {/* Trust badge */}

@@ -813,7 +813,7 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
 
         {/* Right column: inline auth panel */}
         <div className="hero-right">
-          <InlineAuthPanel onAuthSuccess={onAuthSuccess} initialView="register" />
+          <InlineAuthPanel onAuthSuccess={onAuthSuccess} initialView="login" />
         </div>
       </div>
 
