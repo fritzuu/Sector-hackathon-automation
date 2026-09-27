@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[hsl(288,100%,70%)] to-[hsl(141,100%,50%)] flex items-center justify-center shadow-lg shadow-primary/30 font-black text-[hsl(279,100%,3%)] text-sm">
+          <div className="w-9 h-9 rounded-xl bg-[hsl(288,100%,70%)] flex items-center justify-center shadow-lg shadow-primary/30 font-black text-[hsl(279,100%,3%)] text-sm">
             SIBA
           </div>
           <div>

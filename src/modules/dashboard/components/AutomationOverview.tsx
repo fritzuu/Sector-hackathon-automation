@@ -31,7 +31,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
   <div
     className="rounded-xl p-4 flex flex-col gap-3 transition-all duration-200"
     style={{
-      background: 'linear-gradient(135deg, hsl(301, 100%, 8%) 0%, hsl(279, 100%, 4%) 100%)',
+      background: 'hsl(301, 100%, 7%)',
       border: '1px solid hsl(301, 60%, 25%)',
       boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
     }}

@@ -110,16 +110,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       <div
         className="relative w-full max-w-md overflow-hidden"
         style={{
-          background: 'linear-gradient(160deg, hsl(301, 100%, 8%) 0%, hsl(279, 100%, 4%) 100%)',
+          background: 'hsl(301, 100%, 7%)',
           border: '1px solid hsl(301, 60%, 25%)',
           borderRadius: 20,
-          boxShadow: '0 32px 80px rgba(0,0,0,0.85), 0 0 30px rgba(230,102,255,0.15)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.85)',
         }}
       >
-        {/* ── TOP GLOW BAR ── */}
+        {/* ── TOP ACCENT BAR ── */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-          background: 'linear-gradient(90deg, transparent 0%, hsl(288,100%,70%) 40%, hsl(141,100%,50%) 60%, transparent 100%)',
+          background: 'hsl(288, 100%, 70%)',
           opacity: 0.9,
         }} />
 
@@ -130,9 +130,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Icon */}
               <div style={{
                 width: 40, height: 40, borderRadius: 12,
-                background: 'linear-gradient(135deg, hsl(288,100%,70%), hsl(141,100%,50%))',
+                background: 'hsl(288, 100%, 70%)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(230,102,255,0.3)',
                 flexShrink: 0,
               }}>
                 {view === 'forgot' || view === 'forgot-sent'

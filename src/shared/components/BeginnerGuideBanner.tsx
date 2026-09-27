@@ -27,15 +27,14 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({ userNa
     <div
       className="rounded-xl overflow-hidden font-sans relative"
       style={{
-        background: 'linear-gradient(135deg, hsl(301, 100%, 10%) 0%, hsl(279, 100%, 5%) 100%)',
+        background: 'hsl(279, 100%, 5%)',
         border: '1px solid hsl(301, 60%, 25%)',
-        boxShadow: '0 0 40px rgba(230,102,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
       }}
     >
-      {/* Subtle top gradient accent */}
+      {/* Subtle top accent */}
       <div
-        className="absolute inset-x-0 top-0 h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, hsl(288, 100%, 70%), transparent)' }}
+        className="absolute inset-x-0 top-0 h-px bg-[hsl(288,100%,70%)]"
       />
 
       <div className="px-5 py-4">

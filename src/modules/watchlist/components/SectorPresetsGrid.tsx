@@ -37,7 +37,7 @@ export const SectorPresetsGrid: React.FC<SectorPresetsGridProps> = ({ watchlist,
     <div
       className="rounded-xl overflow-hidden font-sans"
       style={{
-        background: 'linear-gradient(135deg, hsl(301, 100%, 8%) 0%, hsl(279, 100%, 4%) 100%)',
+        background: 'hsl(301, 100%, 7%)',
         border: '1px solid hsl(301, 60%, 25%)',
         boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
       }}
