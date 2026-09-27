@@ -5,6 +5,7 @@ import { evaluateDataset } from '../../../engine/rules/index';
 import { processCaseTransition } from '../../../engine/caseEngine';
 import { renderCaseTemplate } from '../../../engine/templateRenderer';
 import { sectorsApi } from '../../../services/sectorsApi';
+import { dispatchCaseAlert } from '../../../services/telegramService';
 import { TickerDataset } from '../../../types/sectors';
 import { useWatchlistStore } from '../../watchlist/stores/watchlist.store';
 import { useAuthStore } from '../../auth/stores/auth.store';
@@ -96,23 +97,45 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         const template = renderCaseTemplate(evalResult, transition.event.newStatus);
         updatedTemplates.set(ticker, template);
 
-        if (currentUser?.isTelegramLinked && evalResult.activeTriggerCount > 0 && !sampleDispatchedAlert) {
-          const dateLabel = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-          sampleDispatchedAlert = [
-            `🔔 [SIBA ALERT — ${ticker}]`,
-            `📅 ${dateLabel} · Penutupan Market 16:30 WIB`,
-            `Status Case: ${transition.event.newStatus}`,
-            ``,
-            `📌 Temuan Utama:`,
-            `${template.facts[0]}`,
-            ``,
-            `🔍 Interpretasi:`,
-            `${template.limitedInterpretations[0]}`,
-            ``,
-            `📰 Cek berita terbaru: sectors.app/idx/${ticker}`,
-            ``,
-            `Lihat selengkapnya di Dashboard SIBA.`,
-          ].join('\n');
+        // Telegram: dispatch alert nyata via Vite proxy -> Telegram Bot API
+        // Hanya untuk event material (PRD §6.4 — MONITORING tidak dikirim)
+        const isMaterialEvent = ['OPEN', 'UPDATED', 'CLOSED', 'DATA_INCOMPLETE'].includes(
+          transition.event.newStatus
+        );
+        if (currentUser?.isTelegramLinked && currentUser.telegramChatId && isMaterialEvent) {
+          // fire-and-forget: kegagalan delivery tidak menghentikan workflow (PRD §6.5)
+          dispatchCaseAlert({
+            symbol:          ticker,
+            status:          transition.event.newStatus as any,
+            evaluation_date: evalResult.evaluationDate,
+            facts:           template.facts,
+            interpretations: template.limitedInterpretations,
+            unknowns:        template.unknowns,
+            target_chat_id:  currentUser.telegramChatId,
+            is_replay:       false,
+          }).then((res) => {
+            if (!res.success) console.warn(`[Telegram] Dispatch gagal untuk ${ticker}:`, res.result);
+          });
+
+          // Simpan preview untuk toast UI (hanya satu alert pertama)
+          if (!sampleDispatchedAlert) {
+            const dateLabel = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+            sampleDispatchedAlert = [
+              `🔔 [SIBA ALERT — ${ticker}]`,
+              `📅 ${dateLabel} · Penutupan Market 16:30 WIB`,
+              `Status Case: ${transition.event.newStatus}`,
+              ``,
+              `📌 Temuan Utama:`,
+              `${template.facts[0]}`,
+              ``,
+              `🔍 Interpretasi:`,
+              `${template.limitedInterpretations[0]}`,
+              ``,
+              `📰 Cek berita terbaru: sectors.app/idx/${ticker}`,
+              ``,
+              `Lihat selengkapnya di Dashboard SIBA.`,
+            ].join('\n');
+          }
         }
       }
     } catch (err) {

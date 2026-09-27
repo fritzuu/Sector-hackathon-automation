@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tanstackRouter from "@tanstack/router-plugin/vite";
 
@@ -35,6 +35,14 @@ export default defineConfig({
         target: "https://api.sectors.app",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/sectors/, ""),
+      },
+      // Telebot bridge — proxied to the local Python bot server (bot/main.py).
+      // Start it with: cd bot && python main.py
+      // The bot token never enters the browser bundle.
+      '/bot-api': {
+        target: 'http://127.0.0.1:8088',
+        changeOrigin: false,
+        rewrite: (path) => path.replace(/^\/bot-api/, ''),
       },
     },
   },

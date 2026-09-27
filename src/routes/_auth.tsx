@@ -74,6 +74,7 @@ function AuthLayout() {
 
       <TelegramConnectModal
         user={currentUser}
+        watchlist={watchlist}
         isOpen={isTelegramModalOpen}
         onClose={() => setIsTelegramModalOpen(false)}
         onLinkSuccess={handleLinkTelegram}
