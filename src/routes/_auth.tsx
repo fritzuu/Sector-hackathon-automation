@@ -7,6 +7,7 @@ import { MarketCloseToast } from '../modules/dashboard/components/MarketCloseToa
 import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
 import { useState } from 'react';
+import { Bot } from 'lucide-react';
 import { generateSecurePairingToken } from '../utils/token';
 
 export const Route = createFileRoute('/_auth')({
@@ -102,6 +103,17 @@ function AuthLayout() {
           <span className="font-mono text-teal-500/60 text-[11px]">Sectors API v2 • 100% Deterministik Tanpa LLM</span>
         </div>
       </footer>
+
+      {/* Floating Telegram Bot CTA Button */}
+      <div id="tour-telegram-bot-cta" className="fixed bottom-6 right-6 z-40">
+        <button
+          onClick={() => setIsTelegramModalOpen(true)}
+          className="group relative flex items-center justify-center w-12 h-12 bg-[hsl(141,100%,50%)] hover:bg-[hsl(141,100%,45%)] text-[hsl(279,100%,3%)] rounded-full shadow-2xl transition-all duration-200 transform hover:scale-110 cursor-pointer border-2 border-[hsl(141,100%,70%)] opacity-100"
+          title={currentUser?.isTelegramLinked ? 'Telegram Bot Terhubung' : 'Hubungkan Telegram Bot SIBA'}
+        >
+          <Bot className="w-6 h-6" />
+        </button>
+      </div>
     </div>
   );
 }
