@@ -64,19 +64,14 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
     >
       {/* Card */}
       <div
-        className="relative overflow-hidden rounded-xl border border-teal-700/50 shadow-2xl"
+        className="relative overflow-hidden rounded-xl border border-teal-700/50 shadow-2xl bg-[#0D1424]"
         style={{
-          background: 'linear-gradient(135deg, rgba(13,20,36,0.97) 0%, rgba(6,25,28,0.97) 100%)',
-          backdropFilter: 'blur(20px)',
           boxShadow: '0 0 40px rgba(20,184,166,0.15), 0 20px 60px rgba(0,0,0,0.6)',
         }}
       >
         {/* Top glow accent */}
         <div
-          className="absolute inset-x-0 top-0 h-px"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(20,184,166,0.8), transparent)',
-          }}
+          className="absolute inset-x-0 top-0 h-px bg-teal-500/80"
         />
 
         <div className="p-4">
@@ -84,10 +79,8 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
           <div className="flex items-start gap-3">
             {/* Icon */}
             <div
-              className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5"
+              className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5 bg-teal-500/20 border border-teal-500/40"
               style={{
-                background: 'linear-gradient(135deg, rgba(20,184,166,0.25), rgba(6,182,212,0.15))',
-                border: '1px solid rgba(20,184,166,0.4)',
                 boxShadow: '0 0 12px rgba(20,184,166,0.3)',
               }}
             >
@@ -165,10 +158,9 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
         {/* Progress bar — auto dismiss countdown */}
         <div className="h-0.5 bg-slate-800/60">
           <div
-            className="h-full"
+            className="h-full bg-teal-500"
             style={{
               width: `${progress}%`,
-              background: 'linear-gradient(90deg, rgba(20,184,166,0.9), rgba(6,182,212,0.9))',
               transition: 'width 50ms linear',
             }}
           />

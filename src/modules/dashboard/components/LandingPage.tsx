@@ -512,7 +512,7 @@ const GLOBAL_CSS = `
 
   /* ── CTA BLOCK ────────────────────────────────────────── */
   .cta-block {
-    background: linear-gradient(135deg, var(--sf) 0%, rgba(99,102,241,0.07) 100%);
+    background: var(--sf);
     border: 1px solid var(--ed2);
     border-radius: 12px;
     padding: 64px 40px;

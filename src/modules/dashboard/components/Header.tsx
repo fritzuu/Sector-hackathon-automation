@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-text/60 hidden sm:block">
-              Sistem Informasi &amp; Bot Analisis IDX
+              Sistem Informasi Bursa dan Aset
             </p>
           </div>
         </div>
