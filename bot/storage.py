@@ -107,6 +107,80 @@ class StorageManager:
             return profile
         return None
 
+    def login_and_pair_user(self, email: str, password: str, chat_id: str, username: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Authenticate user against Supabase Auth and pair their telegram chat."""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            logger.warning("[Supabase Auth] SUPABASE_URL or SUPABASE_KEY is missing.")
+            return None
+
+        try:
+            with httpx.Client(timeout=8.0, trust_env=False) as client:
+                auth_res = client.post(
+                    f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
+                    headers={
+                        "apikey": SUPABASE_KEY,
+                        "Content-Type": "application/json",
+                    },
+                    json={"email": email, "password": password},
+                )
+                if auth_res.status_code != 200:
+                    logger.warning(f"[Supabase Auth] Login failed for {email}: {auth_res.text}")
+                    return None
+
+                auth_data = auth_res.json()
+                user = auth_data.get("user")
+                if not user or not user.get("id"):
+                    return None
+
+                user_id = user["id"]
+                meta = user.get("user_metadata") or {}
+                name = meta.get("full_name") or meta.get("name") or email.split("@")[0]
+
+                patch_res = client.patch(
+                    f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}",
+                    headers={
+                        "apikey": SUPABASE_KEY,
+                        "Authorization": f"Bearer {SUPABASE_KEY}",
+                        "Content-Type": "application/json",
+                        "Prefer": "return=representation",
+                    },
+                    json={
+                        "telegram_chat_id": str(chat_id),
+                        "telegram_username": username,
+                        "is_telegram_linked": True,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
+
+                profile_data = None
+                if patch_res.status_code in (200, 201) and patch_res.json():
+                    profile_data = patch_res.json()[0]
+
+                watchlist = profile_data.get("watchlist", []) if profile_data else []
+                token = profile_data.get("pairing_token") if profile_data else f"token_{user_id[:8]}"
+
+                profile = {
+                    "id": user_id,
+                    "name": profile_data.get("name") if profile_data else name,
+                    "email": email,
+                    "pairing_token": token,
+                    "telegram_chat_id": str(chat_id),
+                    "telegram_username": username,
+                    "is_linked": True,
+                    "watchlist": watchlist,
+                }
+
+                data = self._load()
+                data["users"][token] = profile
+                chat_id_str = str(chat_id)
+                if chat_id_str not in data["subscribers"]:
+                    data["subscribers"].append(chat_id_str)
+                self._save(data)
+                return profile
+        except Exception as e:
+            logger.error(f"[Supabase Auth] Error in login_and_pair_user: {e}")
+            return None
+
     def get_user_by_chat_id(self, chat_id: str) -> Optional[Dict[str, Any]]:
         chat_id_str = str(chat_id)
         rpc_result = self._rpc("get_profile_by_chat_id", {"p_chat_id": chat_id_str})

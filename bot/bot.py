@@ -80,11 +80,61 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_html(welcome_text)
 
 
+async def login_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /login <email> <password> to authenticate and pair account."""
+    chat_id = str(update.effective_chat.id)
+    user = update.effective_user
+    username = f"@{user.username}" if user.username else user.full_name
+
+    if not context.args or len(context.args) < 2:
+        await update.message.reply_html(
+            "⚠️ <b>Format perintah salah.</b>\n"
+            "Gunakan format: <code>/login &lt;email&gt; &lt;password&gt;</code>\n\n"
+            "<i>Contoh:</i> <code>/login nama@email.com katasandi123</code>\n\n"
+            "<i>Catatan: Pesan yang berisi kata sandi akan otomatis dihapus jika bot memiliki izin admin.</i>"
+        )
+        return
+
+    email = context.args[0].strip()
+    password = context.args[1].strip()
+
+    # Try to delete incoming message with password for security
+    try:
+        await update.message.delete()
+    except Exception:
+        pass
+
+    status_msg = await update.effective_chat.send_message("🔄 <i>Memverifikasi akun SIBA...</i>", parse_mode="HTML")
+
+    paired = storage.login_and_pair_user(email, password, chat_id, username)
+    if paired:
+        watchlist_str = ", ".join(paired.get("watchlist", [])) or "Belum ada (atur di dashboard)"
+        success_text = (
+            f"✅ <b>Login Berhasil & Akun Terhubung!</b>\n\n"
+            f"👤 <b>Pengguna:</b> {paired.get('name')}\n"
+            f"📧 <b>Email:</b> {paired.get('email', email)}\n"
+            f"🆔 <b>Chat ID:</b> <code>{chat_id}</code>\n"
+            f"📊 <b>Watchlist:</b> {watchlist_str}\n\n"
+            f"<i>Setiap anomali volume, pergerakan relatif, atau keterbukaan informasi BEI "
+            f"pada saham di watchlist Anda akan dikirimkan otomatis ke chat ini.</i>\n\n"
+            f"Ketik /status untuk melihat ringkasan atau /test_alert untuk mencoba notifikasi."
+        )
+        await status_msg.edit_text(success_text, parse_mode="HTML")
+    else:
+        fail_text = (
+            "❌ <b>Login Gagal.</b>\n"
+            "Email atau kata sandi salah, atau terjadi kendala koneksi ke server auth SIBA.\n\n"
+            "Silakan periksa kembali email & kata sandi Anda, atau hubungkan akun melalui tombol 'Hubungkan Telegram' di Dashboard SIBA."
+        )
+        await status_msg.edit_text(fail_text, parse_mode="HTML")
+
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /help."""
     help_text = (
         "📖 <b>Daftar Perintah SIBA Bot:</b>\n\n"
         "/start - Mulai bot dan cek status koneksi\n"
+        "/login &lt;email&gt; &lt;password&gt; - Login akun SIBA dan pairing otomatis\n"
         "/status - Cek status profil, pairing, dan watchlist Anda\n"
         "/cases - Lihat daftar anomali aktif di bursa saat ini\n"
         "/case &lt;TICKER&gt; - Lihat detail temuan saham tertentu (contoh: <code>/case TLKM</code>)\n"
@@ -267,6 +317,7 @@ def build_application() -> Optional[Application]:
 
     # Register handlers
     app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("login", login_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("status", status_command))
     app.add_handler(CommandHandler("id", id_command))
