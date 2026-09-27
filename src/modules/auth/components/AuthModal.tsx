@@ -243,7 +243,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 onClick={() => { clearForm(); switchView('login'); }}
                 style={{
                   width: '100%', padding: '12px 0',
-                  background: 'linear-gradient(135deg, #14b8a6, #2dd4bf)',
+                  background: '#14b8a6',
                   border: 'none', borderRadius: 12, cursor: 'pointer',
                   fontSize: 13, fontWeight: 700, color: '#040710',
                   boxShadow: '0 4px 20px rgba(20,184,166,0.25)',
