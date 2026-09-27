@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from '@tanstack/react-router';
-import { useAuthStore } from '../modules/auth/stores/auth.store';
+import { useAuthStore, waitForAuthReady } from '../modules/auth/stores/auth.store';
 import { Header } from '../modules/dashboard/components/Header';
 import { TelegramConnectModal } from '../modules/auth/components/TelegramConnectModal';
 import { TelegramAlertPreview } from '../shared/components/TelegramAlertPreview';
@@ -10,9 +10,10 @@ import { useState, useEffect } from 'react';
 import { generateSecurePairingToken } from '../utils/token';
 
 export const Route = createFileRoute('/_auth')({
-  beforeLoad: () => {
-    const { currentUser, authReady } = useAuthStore.getState();
-    if (authReady && !currentUser) {
+  beforeLoad: async () => {
+    await waitForAuthReady();
+    const { currentUser } = useAuthStore.getState();
+    if (!currentUser) {
       throw redirect({ to: '/' });
     }
   },
