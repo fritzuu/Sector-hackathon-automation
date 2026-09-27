@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { Check, Info, ShieldCheck, LayoutGrid, Plus } from 'lucide-react';
-import { POPULAR_PRESETS } from '../data/idxCompanies.js';
+import { POPULAR_PRESETS } from '../../../data/idxCompanies.js';
 
 interface SectorPresetsGridProps {
   watchlist: string[];

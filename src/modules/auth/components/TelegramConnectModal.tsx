@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Send, CheckCircle, Copy, X, Shield, Smartphone, Key, AlertCircle, RefreshCw } from 'lucide-react';
-import { UserProfile } from '../data/userProfiles.js';
-import { generateSecurePairingToken } from '../utils/token.js';
+import { UserProfile } from '../../../data/userProfiles.js';
+import { generateSecurePairingToken } from '../../../utils/token.js';
 
 interface TelegramConnectModalProps {
   user: UserProfile;

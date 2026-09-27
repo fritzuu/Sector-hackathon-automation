@@ -8,8 +8,8 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError, IhsgUnavailableError } from '../services/liveMarketService.js';
-import { sectorsApi, LiveIdxCompany } from '../services/sectorsApi.js';
+import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError, IhsgUnavailableError } from '../../../services/liveMarketService.js';
+import { sectorsApi, LiveIdxCompany } from '../../../services/sectorsApi.js';
 
 interface LandingPageProps {
   onOpenAuth: (mode: 'login' | 'register') => void;

@@ -9,8 +9,8 @@ import {
   Search, X, TrendingUp, TrendingDown, AlertTriangle,
   Send, Wifi, WifiOff, RefreshCw, Globe, ServerCrash,
 } from 'lucide-react';
-import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError } from '../services/liveMarketService.js';
-import { LiveIdxCompany } from '../services/sectorsApi.js';
+import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError } from '../../../services/liveMarketService.js';
+import { LiveIdxCompany } from '../../../services/sectorsApi.js';
 
 interface WatchlistSearchPanelProps {
   watchlist: string[];

@@ -8,8 +8,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   X, ExternalLink, TrendingUp, TrendingDown, AlertTriangle, Activity, RefreshCw,
 } from 'lucide-react';
-import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError } from '../services/liveMarketService.js';
-import { sectorsApi, LiveIdxCompany } from '../services/sectorsApi.js';
+import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError } from '../../../services/liveMarketService.js';
+import { sectorsApi, LiveIdxCompany } from '../../../services/sectorsApi.js';
 import { SectorPresetsGrid } from './SectorPresetsGrid.js';
 import { WatchlistSearchPanel } from './WatchlistSearchPanel.js';
 

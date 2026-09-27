@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Newspaper, ExternalLink, RefreshCw, Clock } from 'lucide-react';
-import { liveMarketService, YFNewsItem } from '../services/liveMarketService.js';
+import { liveMarketService, YFNewsItem } from '../../../services/liveMarketService.js';
 
 interface WatchlistNewsFeedProps {
   watchlist: string[];

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { CaseState, CaseEvent, RenderedTemplate } from '../types/engine.js';
+import { CaseState, CaseEvent, RenderedTemplate } from '../../../types/engine.js';
 import {
   X, Shield, AlertTriangle, CheckCircle, Clock, ExternalLink,
   TrendingUp, TrendingDown, Activity, FileText, Database,
 } from 'lucide-react';
-import { liveMarketService, RealTickerMetrics } from '../services/liveMarketService.js';
-import { IDX_COMPANIES } from '../data/idxCompanies.js';
+import { liveMarketService, RealTickerMetrics } from '../../../services/liveMarketService.js';
+import { IDX_COMPANIES } from '../../../data/idxCompanies.js';
 
 interface CaseDetailModalProps {
   caseItem: CaseState | null;

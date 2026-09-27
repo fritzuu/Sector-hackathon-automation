@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Play, RotateCcw, Activity, Send, User, LogOut, Sparkles, ChevronDown } from 'lucide-react';
-import { UserProfile } from '../data/userProfiles.js';
+import { UserProfile } from '../../../data/userProfiles.js';
 
 interface HeaderProps {
   currentUser: UserProfile | null;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Send, X, ExternalLink } from 'lucide-react';
-import { UserProfile } from '../data/userProfiles.js';
+import { UserProfile } from '../../data/userProfiles.js';
 
 interface TelegramAlertPreviewProps {
   user: UserProfile;

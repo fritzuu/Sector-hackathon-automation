@@ -1,5 +1,5 @@
 import React from 'react';
-import { CaseState, CaseStatus } from '../types/engine.js';
+import { CaseState, CaseStatus } from '../../../types/engine.js';
 import { ShieldAlert, ArrowRight, Zap, FileText, TrendingUp, AlertOctagon } from 'lucide-react';
 
 interface ActiveCasesListProps {
