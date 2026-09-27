@@ -19,14 +19,17 @@ interface AuthState {
   syncFromSession: () => Promise<void>;
 }
 
-function getWorkflowStore() {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return require('../../../modules/cases/stores/workflow.store').useWorkflowStore;
-}
-
-function getWatchlistStore() {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return require('../../../modules/watchlist/stores/watchlist.store').useWatchlistStore;
+async function clearAccountStores() {
+  try {
+    const [workflowMod, watchlistMod] = await Promise.all([
+      import('../../../modules/cases/stores/workflow.store'),
+      import('../../../modules/watchlist/stores/watchlist.store'),
+    ]);
+    workflowMod.useWorkflowStore.getState().resetReplay();
+    watchlistMod.useWatchlistStore.getState().reset();
+  } catch (err) {
+    console.warn('[AuthStore] Gagal mereset store akun:', err);
+  }
 }
 
 function profileFromAuthUser(authUser: User, existing?: UserProfile | null): UserProfile {
@@ -47,35 +50,42 @@ function profileFromAuthUser(authUser: User, existing?: UserProfile | null): Use
 }
 
 async function hydrateUserData(profile: UserProfile) {
-  const [history, workspace] = await Promise.all([
-    fetchAuditRunsFromSupabase(profile.id),
-    fetchUserWorkspaceFromSupabase(profile.id),
-  ]);
+  try {
+    const [history, workspace, workflowMod, watchlistMod] = await Promise.all([
+      fetchAuditRunsFromSupabase(profile.id),
+      fetchUserWorkspaceFromSupabase(profile.id),
+      import('../../../modules/cases/stores/workflow.store'),
+      import('../../../modules/watchlist/stores/watchlist.store'),
+    ]);
 
-  getWatchlistStore().getState().setWatchlist(profile.defaultWatchlist || []);
+    if (useAuthStore.getState().currentUser?.id !== profile.id) return;
 
-  const workflow = getWorkflowStore();
-  workflow.setState({
-    auditRuns: history,
-    activeCases: workspace?.activeCases ?? new Map(),
-    caseEvents: workspace?.caseEvents ?? new Map(),
-    caseTemplates: workspace?.caseTemplates ?? new Map(),
-    lastRunTime: workspace?.lastRunTime ?? null,
-    runIndex: workspace?.runIndex ?? 1,
-    latestTelegramAlert: null,
-  });
-}
+    watchlistMod.useWatchlistStore.getState().setWatchlist(profile.defaultWatchlist || []);
 
-function clearAccountStores() {
-  getWorkflowStore().getState().resetReplay();
-  getWatchlistStore().getState().reset();
+    workflowMod.useWorkflowStore.setState({
+      auditRuns: history,
+      activeCases: workspace?.activeCases ?? new Map(),
+      caseEvents: workspace?.caseEvents ?? new Map(),
+      caseTemplates: workspace?.caseTemplates ?? new Map(),
+      lastRunTime: workspace?.lastRunTime ?? null,
+      runIndex: workspace?.runIndex ?? 1,
+      latestTelegramAlert: null,
+    });
+  } catch (err) {
+    console.warn('[AuthStore] Gagal menghidrasi data user:', err);
+  }
 }
 
 async function syncAuthUser(authUser: User) {
+  const prevUser = useAuthStore.getState().currentUser;
+  if (prevUser && prevUser.id !== authUser.id && prevUser.email !== authUser.email) {
+    await clearAccountStores();
+  }
+
   let profile = await fetchUserProfileFromSupabase(authUser.id);
   if (!profile && authUser.email) {
     const byEmail = await fetchUserProfileFromSupabase(authUser.email);
-    if (byEmail && byEmail.id === authUser.id) {
+    if (byEmail) {
       profile = byEmail;
     }
   }
@@ -83,16 +93,16 @@ async function syncAuthUser(authUser: User) {
   if (!profile) {
     profile = await saveUserProfileToSupabase(profileFromAuthUser(authUser));
   } else {
-    const merged = profileFromAuthUser(authUser, profile);
-    if (
-      merged.name !== profile.name ||
-      merged.avatar !== profile.avatar ||
-      merged.email !== profile.email
-    ) {
-      profile = await saveUserProfileToSupabase({ ...profile, ...merged, pairingToken: profile.pairingToken });
-    }
+    const fresh = profileFromAuthUser(authUser, profile);
+    profile = await saveUserProfileToSupabase({
+      ...profile,
+      name: fresh.name || profile.name,
+      avatar: fresh.avatar || profile.avatar,
+      email: authUser.email || profile.email,
+    });
   }
 
+  // Set auth state immediately so route guards don't kick user out
   useAuthStore.setState({ currentUser: profile, authReady: true });
   await hydrateUserData(profile);
 }
@@ -126,23 +136,69 @@ export const useAuthStore = create<AuthState>((set) => ({
       await syncAuthUser(session.user);
     } else {
       set({ currentUser: null, authReady: true });
-      clearAccountStores();
+      await clearAccountStores();
     }
   },
 }));
 
+/** Route guards wait for Supabase to process a returning OAuth URL. */
+export function waitForAuthReady(): Promise<void> {
+  if (useAuthStore.getState().authReady) return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsubscribe = useAuthStore.subscribe((state) => {
+      if (state.authReady) {
+        unsubscribe();
+        resolve();
+      }
+    });
+  });
+}
+
 try {
-  supabase.auth.getSession().then(({ data: { session } }) => {
+  const hasAuthCallbackInUrl =
+    typeof window !== 'undefined' &&
+    (window.location.hash.includes('access_token') ||
+      window.location.hash.includes('error') ||
+      window.location.search.includes('code=') ||
+      window.location.search.includes('error='));
+
+  supabase.auth.getSession().then(({ data: { session }, error }) => {
+    if (error) throw error;
     if (session?.user) {
-      syncAuthUser(session.user);
-    } else {
+      return syncAuthUser(session.user);
+    } else if (!hasAuthCallbackInUrl) {
+      useAuthStore.setState({ currentUser: null, authReady: true });
+    }
+  }).catch((err) => {
+    console.warn('[AuthStore] Gagal memulihkan sesi:', err);
+    if (!hasAuthCallbackInUrl) {
       useAuthStore.setState({ currentUser: null, authReady: true });
     }
   });
 
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
-      await syncAuthUser(session.user);
+  if (hasAuthCallbackInUrl) {
+    // Safety fallback: if Supabase onAuthStateChange takes > 3.5s, unblock
+    setTimeout(() => {
+      if (!useAuthStore.getState().authReady) {
+        useAuthStore.setState({ authReady: true });
+      }
+    }, 3500);
+  }
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (
+      (event === 'SIGNED_IN' ||
+        event === 'USER_UPDATED' ||
+        event === 'INITIAL_SESSION' ||
+        event === 'TOKEN_REFRESHED') &&
+      session?.user
+    ) {
+      setTimeout(() => {
+        syncAuthUser(session.user).catch((err) => {
+          console.warn('[AuthStore] Gagal sinkronisasi akun:', err);
+          useAuthStore.setState({ authReady: true });
+        });
+      }, 0);
     } else if (event === 'SIGNED_OUT') {
       useAuthStore.setState({ currentUser: null, authReady: true });
       clearAccountStores();

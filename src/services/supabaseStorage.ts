@@ -77,22 +77,43 @@ export async function fetchUserProfileFromSupabase(
       ? await query.eq('email', identifier).maybeSingle()
       : await query.eq('id', identifier).maybeSingle();
 
-    if (error) {
-      console.warn('[SupabaseStorage] Gagal mengambil profil:', error.message);
-      return null;
+    if (!error && data) {
+      const profile = mapDbToUserProfile(data);
+      // Update local cache
+      try {
+        localStorage.setItem(`siba_profile_${profile.id}`, JSON.stringify(profile));
+        if (profile.email) localStorage.setItem(`siba_profile_${profile.email}`, JSON.stringify(profile));
+      } catch {}
+      return profile;
     }
-
-    return data ? mapDbToUserProfile(data) : null;
   } catch (err) {
     console.warn('[SupabaseStorage] Network/Fetch error saat mengambil profil:', err);
-    return null;
   }
+
+  // Fallback to localStorage if Supabase profiles table is missing or network unavailable
+  try {
+    const cached = localStorage.getItem(`siba_profile_${identifier}`);
+    if (cached) {
+      return JSON.parse(cached) as UserProfile;
+    }
+  } catch {}
+
+  return null;
 }
 
 export async function saveUserProfileToSupabase(
   user: UserProfile
 ): Promise<UserProfile> {
   if (!user.id) return user;
+
+  // Always cache locally so same email retains data across OAuth and password logins
+  try {
+    localStorage.setItem(`siba_profile_${user.id}`, JSON.stringify(user));
+    if (user.email) {
+      localStorage.setItem(`siba_profile_${user.email}`, JSON.stringify(user));
+    }
+  } catch {}
+
   try {
     const dbPayload = mapUserProfileToDb(user);
     const { data, error } = await supabase
@@ -119,6 +140,16 @@ export async function syncWatchlistToSupabase(
   userId: string,
   watchlist: string[]
 ): Promise<boolean> {
+  try {
+    const raw = localStorage.getItem(`siba_profile_${userId}`);
+    if (raw) {
+      const p = JSON.parse(raw) as UserProfile;
+      p.defaultWatchlist = watchlist;
+      localStorage.setItem(`siba_profile_${userId}`, JSON.stringify(p));
+      if (p.email) localStorage.setItem(`siba_profile_${p.email}`, JSON.stringify(p));
+    }
+  } catch {}
+
   try {
     const { error } = await supabase
       .from('profiles')
