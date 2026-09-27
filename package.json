@@ -7,7 +7,7 @@
   "scripts": {
     "start": "bash start.sh",
     "dev": "vite",
-    "dev:all": "concurrently \"npm run dev\" \"cd bot && python3 main.py\"",
+    "dev:all": "concurrently \"npm run dev\" \"cd bot && . venv/bin/activate && python main.py\"",
     "demo:cli": "tsx src/demo.ts",
     "build": "tsc && vite build",
     "test": "vitest run",
