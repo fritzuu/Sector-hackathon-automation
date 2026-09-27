@@ -22,6 +22,10 @@ import { generateSecurePairingToken } from './utils/token.js';
 import { sectorsApi } from './services/sectorsApi.js';
 import { liveMarketService } from './services/liveMarketService.js';
 import { dispatchCaseAlert } from './services/telegramService.js';
+import {
+  fetchUserProfileFromSupabase,
+  saveUserProfileToSupabase,
+} from './services/supabaseStorage.js';
 import { TickerDataset } from './types/sectors.js';
 
 export function App() {
@@ -58,11 +62,13 @@ export function App() {
   const [newsForceRefresh, setNewsForceRefresh] = useState<number | undefined>(undefined);
   const [showMarketCloseToast, setShowMarketCloseToast] = useState(false);
 
-  // Save user session & persistent cache
+  // Save user session & persistent cache (Supabase + local cache)
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('siba_user', JSON.stringify(currentUser));
-      localStorage.setItem('siba_saved_session', JSON.stringify(currentUser));
+      saveUserProfileToSupabase(currentUser).catch((err) => {
+        console.warn('[App] Gagal simpan profil ke Supabase:', err);
+      });
     }
   }, [currentUser]);
 
@@ -121,29 +127,31 @@ export function App() {
     setAuthModalState({ isOpen: true, mode });
   };
 
-  const handleAuthSuccess = (userData: { name: string; email: string }) => {
-    // Check if there is a saved profile for this user
-    const saved = localStorage.getItem('siba_saved_session');
-    let previousProfile: UserProfile | null = null;
-    if (saved) {
-      try {
-        previousProfile = JSON.parse(saved);
-      } catch (e) {}
+  const handleAuthSuccess = async (userData: { name: string; email: string; avatar?: string }) => {
+    // 1. Try to fetch existing user profile from Supabase
+    let profile = await fetchUserProfileFromSupabase(userData.email);
+
+    if (!profile) {
+      // 2. If not found in Supabase, create a new profile and save to Supabase
+      const newUser: UserProfile = {
+        id: `usr-${Date.now()}`,
+        name: userData.name,
+        email: userData.email,
+        avatar: '',
+        role: 'Investor Ritel',
+        telegramChatId: null,
+        telegramUsername: null,
+        isTelegramLinked: false,
+        pairingToken: generateSecurePairingToken(),
+        defaultWatchlist: ['BBCA', 'TLKM', 'UNTR'],
+      };
+
+      profile = await saveUserProfileToSupabase(newUser);
     }
 
-    const newUser: UserProfile = {
-      id: previousProfile?.id || `usr-${Date.now()}`,
-      name: userData.name,
-      email: userData.email,
-      avatar: previousProfile?.avatar || '',
-      role: previousProfile?.role || 'Investor Ritel',
-      telegramChatId: previousProfile?.telegramChatId || null,
-      telegramUsername: previousProfile?.telegramUsername || null,
-      isTelegramLinked: previousProfile?.isTelegramLinked || false,
-      pairingToken: previousProfile?.pairingToken || generateSecurePairingToken(),
-      defaultWatchlist: previousProfile?.defaultWatchlist || [],
-    };
-    setCurrentUser(newUser);
+    setCurrentUser(profile);
+    setWatchlist(profile.defaultWatchlist);
+    setAuthModalState({ isOpen: false, mode: 'login' });
   };
 
   const handleLogout = () => {
@@ -391,7 +399,7 @@ export function App() {
           </div>
         ) : (
           /* Guest Landing Page */
-          <LandingPage onOpenAuth={handleOpenAuth} />
+          <LandingPage onOpenAuth={handleOpenAuth} onAuthSuccess={handleAuthSuccess} />
         )}
       </main>
 

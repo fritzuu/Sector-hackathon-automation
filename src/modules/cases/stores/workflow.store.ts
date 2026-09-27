@@ -6,6 +6,10 @@ import { processCaseTransition } from '../../../engine/caseEngine';
 import { renderCaseTemplate } from '../../../engine/templateRenderer';
 import { sectorsApi } from '../../../services/sectorsApi';
 import { dispatchCaseAlert } from '../../../services/telegramService';
+import {
+  saveAuditRunToSupabase,
+  fetchAuditRunsFromSupabase,
+} from '../../../services/supabaseStorage';
 import { TickerDataset } from '../../../types/sectors';
 import { useWatchlistStore } from '../../watchlist/stores/watchlist.store';
 import { useAuthStore } from '../../auth/stores/auth.store';
@@ -152,6 +156,9 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       durationMs,
     };
 
+    // Save to Supabase in background
+    saveAuditRunToSupabase(newAudit, currentUser?.id);
+
     set({
       activeCases: updatedCases,
       caseEvents: updatedEvents,
@@ -164,3 +171,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     });
   }
 }));
+
+// Hydrate audit runs from Supabase on init
+fetchAuditRunsFromSupabase().then((history) => {
+  if (history && history.length > 0) {
+    useWorkflowStore.setState({ auditRuns: history });
+  }
+});

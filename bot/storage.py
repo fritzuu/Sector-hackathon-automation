@@ -3,7 +3,8 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
-from config import STORAGE_FILE
+import httpx
+from config import STORAGE_FILE, SUPABASE_URL, SUPABASE_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -117,28 +118,37 @@ class StorageManager:
             data["subscribers"].append(chat_id_str)
 
         self._save(data)
+        self._sync_to_supabase(user)
         return user
 
-    def unlink_chat(self, chat_id: str) -> bool:
-        """Unlink a Telegram chat from all accounts."""
-        data = self._load()
-        modified = False
-        chat_id_str = str(chat_id)
-
-        for user in data["users"].values():
-            if str(user.get("telegram_chat_id")) == chat_id_str:
-                user["telegram_chat_id"] = None
-                user["telegram_username"] = None
-                user["is_linked"] = False
-                modified = True
-
-        if chat_id_str in data["subscribers"]:
-            data["subscribers"].remove(chat_id_str)
-            modified = True
-
-        if modified:
-            self._save(data)
-        return modified
+    def _sync_to_supabase(self, user: Dict[str, Any]):
+        """Persist or update user pairing record directly into Supabase profiles."""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            return
+        try:
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates",
+            }
+            payload = {
+                "id": user.get("id"),
+                "name": user.get("name"),
+                "email": user.get("email") or f"{user.get('id')}@siba.local",
+                "pairing_token": user.get("pairing_token"),
+                "telegram_chat_id": user.get("telegram_chat_id"),
+                "telegram_username": user.get("telegram_username"),
+                "is_telegram_linked": user.get("is_linked", False),
+                "watchlist": user.get("watchlist", []),
+                "updated_at": datetime.now(timezone.utc).isoformat() + "Z",
+            }
+            with httpx.Client(timeout=4.0) as client:
+                res = client.post(f"{SUPABASE_URL}/rest/v1/profiles", headers=headers, json=payload)
+                if res.status_code not in (200, 201):
+                    logger.warning(f"[Supabase Sync] Post error: {res.status_code} - {res.text}")
+        except Exception as e:
+            logger.warning(f"[Supabase Sync] Error syncing to Supabase: {e}")
 
     def get_user_by_chat_id(self, chat_id: str) -> Optional[Dict[str, Any]]:
         """Find user profile by their Telegram chat ID."""
@@ -150,9 +160,47 @@ class StorageManager:
         return None
 
     def get_user_by_token(self, token: str) -> Optional[Dict[str, Any]]:
-        """Find user profile by pairing token."""
+        """Find user profile by pairing token (checks local storage then Supabase)."""
         data = self._load()
-        return data["users"].get(token)
+        user = data["users"].get(token)
+        if user:
+            return user
+
+        # Query Supabase if not in local cache
+        if SUPABASE_URL and SUPABASE_KEY:
+            try:
+                headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                }
+                with httpx.Client(timeout=4.0) as client:
+                    res = client.get(
+                        f"{SUPABASE_URL}/rest/v1/profiles",
+                        headers=headers,
+                        params={"pairing_token": f"eq.{token}", "select": "*", "limit": "1"}
+                    )
+                    if res.status_code == 200:
+                        records = res.json()
+                        if records:
+                            row = records[0]
+                            profile = {
+                                "id": row.get("id"),
+                                "name": row.get("name"),
+                                "email": row.get("email"),
+                                "pairing_token": row.get("pairing_token"),
+                                "telegram_chat_id": row.get("telegram_chat_id"),
+                                "telegram_username": row.get("telegram_username"),
+                                "is_linked": row.get("is_telegram_linked", False),
+                                "watchlist": row.get("watchlist", []),
+                            }
+                            # Cache in local data
+                            data["users"][token] = profile
+                            self._save(data)
+                            return profile
+            except Exception as e:
+                logger.warning(f"[Supabase Fetch] Error fetching user by token: {e}")
+
+        return None
 
     # --- Subscribers Methods ---
 

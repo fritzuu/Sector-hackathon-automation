@@ -1,10 +1,9 @@
-import sys
 import json
 import argparse
 import asyncio
 import httpx
 from datetime import datetime, timezone
-from config import TELEGRAM_BOT_TOKEN, DEFAULT_CHAT_ID, WEBHOOK_PORT, is_token_valid, mask_token
+from config import TELEGRAM_BOT_TOKEN, DEFAULT_CHAT_ID, is_token_valid
 from formatter import (
     format_case_message_html,
     format_case_message_plain,

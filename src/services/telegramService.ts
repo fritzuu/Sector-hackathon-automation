@@ -121,10 +121,3 @@ export async function dispatchCaseAlert(
     return { success: false, result: err };
   }
 }
-
-/**
- * Kept for backwards compatibility — not used when bot server is running.
- */
-export async function sendPairingConfirmation(_chatId: string, _userName: string): Promise<boolean> {
-  return true; // bot handles this automatically on /start <token>
-}

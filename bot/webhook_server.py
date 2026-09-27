@@ -1,7 +1,7 @@
 import logging
 import httpx
 from aiohttp import web
-from typing import Optional, List, Dict, Any
+from typing import Dict, Any
 from config import (
     TELEGRAM_BOT_TOKEN,
     DEFAULT_CHAT_ID,

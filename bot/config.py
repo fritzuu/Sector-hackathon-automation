@@ -5,12 +5,14 @@ from dotenv import load_dotenv
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent
 
-# Load .env if present
+# Load .env if present (bot/.env first, then root .env)
 ENV_PATH = BASE_DIR / ".env"
 if ENV_PATH.exists():
     load_dotenv(dotenv_path=ENV_PATH)
-else:
-    load_dotenv()
+ROOT_ENV_PATH = BASE_DIR.parent / ".env"
+if ROOT_ENV_PATH.exists():
+    load_dotenv(dotenv_path=ROOT_ENV_PATH)
+load_dotenv()
 
 # Settings
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
@@ -21,6 +23,8 @@ WEBHOOK_SECRET_KEY = os.getenv("WEBHOOK_SECRET_KEY", "").strip()
 ENABLE_REPLAY_ALERTS = os.getenv("ENABLE_REPLAY_ALERTS", "false").lower() in ("true", "1", "yes")
 STORAGE_FILE = Path(os.getenv("STORAGE_FILE", str(BASE_DIR / "data" / "storage.json")))
 DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:5173").rstrip("/")
+SUPABASE_URL = (os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL", "")).strip()
+SUPABASE_KEY = (os.getenv("SUPABASE_KEY") or os.getenv("VITE_SUPABASE_PUBLISHABLE_KEY", "")).strip()
 
 def mask_token(token: str) -> str:
     """Safely mask tokens to avoid leaking credentials in logs."""

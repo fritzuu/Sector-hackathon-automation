@@ -6,7 +6,7 @@ import { TelegramAlertPreview } from '../shared/components/TelegramAlertPreview'
 import { MarketCloseToast } from '../modules/dashboard/components/MarketCloseToast';
 import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateSecurePairingToken } from '../utils/token';
 
 export const Route = createFileRoute('/_auth')({
@@ -27,6 +27,12 @@ function AuthLayout() {
   
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [showMarketCloseToast, setShowMarketCloseToast] = useState(false);
+
+  useEffect(() => {
+    if (currentUser?.defaultWatchlist && currentUser.defaultWatchlist.length > 0 && watchlist.length === 0) {
+      useWatchlistStore.getState().setWatchlist(currentUser.defaultWatchlist);
+    }
+  }, [currentUser]);
 
   if (!currentUser) return null;
 
