@@ -65,24 +65,24 @@ const WatchlistCard: React.FC<{
       className="group relative rounded-xl cursor-pointer select-none transition-all duration-200"
       style={{
         background: isAnom
-          ? 'linear-gradient(135deg, rgba(180,83,9,0.08) 0%, rgba(13,20,36,0.95) 100%)'
-          : 'linear-gradient(135deg, rgba(20,184,166,0.04) 0%, rgba(13,20,36,0.95) 100%)',
+          ? 'rgba(180,83,9,0.12)'
+          : 'hsl(301, 100%, 7%)',
         border: isAnom
           ? '1px solid rgba(217,119,6,0.3)'
-          : '1px solid rgba(255,255,255,0.06)',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+          : '1px solid hsl(301, 60%, 25%)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLDivElement;
-        el.style.borderColor = isAnom ? 'rgba(217,119,6,0.5)' : 'rgba(20,184,166,0.25)';
+        el.style.borderColor = isAnom ? 'rgba(217,119,6,0.5)' : 'hsl(288, 100%, 70%)';
         el.style.transform = 'translateY(-1px)';
-        el.style.boxShadow = isAnom ? '0 4px 20px rgba(180,83,9,0.2)' : '0 4px 20px rgba(20,184,166,0.1)';
+        el.style.boxShadow = isAnom ? '0 4px 20px rgba(180,83,9,0.2)' : '0 4px 20px rgba(230,102,255,0.15)';
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLDivElement;
-        el.style.borderColor = isAnom ? 'rgba(217,119,6,0.3)' : 'rgba(255,255,255,0.06)';
+        el.style.borderColor = isAnom ? 'rgba(217,119,6,0.3)' : 'hsl(301, 60%, 25%)';
         el.style.transform = 'translateY(0)';
-        el.style.boxShadow = '0 2px 12px rgba(0,0,0,0.3)';
+        el.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
       }}
     >
       {/* Remove button */}
@@ -101,8 +101,7 @@ const WatchlistCard: React.FC<{
         {/* Top row */}
         <div className="flex items-center gap-2 mb-2.5">
           <span
-            className="font-mono font-bold text-xs px-2 py-0.5 rounded-md"
-            style={{ background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(20,184,166,0.25)', color: '#5eead4' }}
+            className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-[hsl(141,100%,50%)]/15 border border-[hsl(141,100%,50%)]/30 text-[hsl(141,100%,50%)]"
           >
             {ticker}
           </span>
@@ -144,8 +143,8 @@ const WatchlistCard: React.FC<{
             <>
               <span className="text-sm font-bold font-mono text-white">Rp {fmt(metrics.lastPrice)}</span>
               <div className="flex items-center gap-1">
-                {isUp ? <TrendingUp className="w-3 h-3 text-emerald-400" /> : <TrendingDown className="w-3 h-3 text-red-400" />}
-                <span className="text-xs font-bold font-mono" style={{ color: isUp ? '#34d399' : '#f87171' }}>
+                {isUp ? <TrendingUp className="w-3 h-3 text-[hsl(141,100%,50%)]" /> : <TrendingDown className="w-3 h-3 text-rose-400" />}
+                <span className="text-xs font-bold font-mono" style={{ color: isUp ? 'hsl(141, 100%, 50%)' : '#f87171' }}>
                   {pct(metrics.changePercent)}
                 </span>
               </div>
@@ -226,12 +225,11 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
       >
         <div>
           <div className="flex items-center gap-2">
-            <Wifi className="w-3.5 h-3.5 text-teal-400" />
+            <Wifi className="w-3.5 h-3.5 text-[hsl(141,100%,50%)]" />
             <span className="text-xs font-bold text-white tracking-wide">
               Watchlist Dipantau
               <span
-                className="ml-2 font-mono text-[10px] px-1.5 py-0.5 rounded"
-                style={{ background: 'rgba(20,184,166,0.12)', color: '#5eead4' }}
+                className="ml-2 font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-[hsl(141,100%,50%)]/15 border border-[hsl(141,100%,50%)]/30 text-[hsl(141,100%,50%)] font-bold"
               >
                 {watchlist.length}
               </span>
@@ -249,10 +247,9 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
             )}
             {!companiesLoading && !companiesError && liveCompanies.length > 0 && (
               <div
-                className="flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded"
-                style={{ background: 'rgba(20,184,166,0.08)', color: 'rgba(20,184,166,0.7)', border: '1px solid rgba(20,184,166,0.15)' }}
+                className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[hsl(141,100%,50%)]/10 text-[hsl(141,100%,50%)] border border-[hsl(141,100%,50%)]/30 font-medium"
               >
-                <Globe className="w-2.5 h-2.5" />
+                <Globe className="w-2.5 h-2.5 text-[hsl(141,100%,50%)]" />
                 {liveCompanies.length} emiten IDX · Sectors API
               </div>
             )}
@@ -301,26 +298,11 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
               }}
               onFocus={() => setIsDropdownOpen(true)}
               placeholder={inputPlaceholder}
-              className="w-full pl-9 pr-9 py-2.5 text-sm text-white placeholder-slate-500 rounded-lg focus:outline-none transition-all duration-150 disabled:opacity-50"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                cursor: companiesError && liveCompanies.length === 0 ? 'not-allowed' : 'text',
-              }}
-              onFocusCapture={e => {
-                (e.target as HTMLInputElement).style.borderColor = 'rgba(20,184,166,0.4)';
-                (e.target as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(20,184,166,0.08)';
-              }}
-              onBlur={e => {
-                (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.08)';
-                (e.target as HTMLInputElement).style.boxShadow = 'none';
-              }}
+              className="w-full pl-9 pr-9 py-2.5 text-sm text-white placeholder-text/40 rounded-xl bg-[hsl(279,100%,3%)] border border-[hsl(301,60%,25%)] focus:border-[hsl(288,100%,70%)] focus:outline-none transition-all duration-150 disabled:opacity-50"
             />
             {companiesLoading && (
               <RefreshCw
-                className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 animate-spin pointer-events-none"
-                style={{ color: 'rgba(20,184,166,0.5)' }}
+                className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 animate-spin pointer-events-none text-[hsl(288,100%,70%)]"
               />
             )}
           </div>
@@ -328,12 +310,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
           {/* Autocomplete dropdown */}
           {isDropdownOpen && (
             <div
-              className="absolute left-0 right-0 top-full mt-1.5 rounded-xl overflow-hidden z-30"
-              style={{
-                background: 'rgba(10,15,29,0.98)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-              }}
+              className="absolute left-0 right-0 top-full mt-1.5 rounded-xl overflow-hidden z-30 bg-[hsl(301,100%,7%)] border border-[hsl(301,60%,25%)] shadow-2xl"
             >
               {/* Dropdown header */}
               <div
@@ -353,7 +330,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                   className="px-3.5 py-2.5 flex items-center justify-between gap-2 cursor-pointer bg-secondary/80 hover:bg-secondary border-b border-primary/30 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/30">
+                    <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-[hsl(141,100%,50%)]/15 text-[hsl(141,100%,50%)] border border-[hsl(141,100%,50%)]/30">
                       {searchQuery.trim().toUpperCase()}
                     </span>
                     <span className="text-xs text-white">Tambah &amp; fetch data pasar real-time langsung</span>
@@ -382,7 +359,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span
-                        className="font-mono font-bold text-xs px-2 py-0.5 rounded flex-shrink-0 bg-primary/15 border border-primary/30 text-primary"
+                        className="font-mono font-bold text-xs px-2 py-0.5 rounded flex-shrink-0 bg-[hsl(141,100%,50%)]/15 border border-[hsl(141,100%,50%)]/30 text-[hsl(141,100%,50%)]"
                       >
                         {company.symbol}
                       </span>

@@ -61,36 +61,43 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(9,13,22,0.88)', backdropFilter: 'blur(6px)' }}
+      style={{ background: 'rgba(9,0,12,0.88)', backdropFilter: 'blur(18px)' }}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg rounded-xl border border-slate-700 bg-[#0d1424] shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg rounded-2xl border border-[hsl(301,60%,25%)] bg-[hsl(301,100%,7%)] shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
+        {/* Top Accent Line */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+          background: 'hsl(288, 100%, 70%)',
+          opacity: 0.9,
+        }} />
+
         {/* Header */}
-        <div className={`px-5 py-4 border-b border-slate-800 flex items-start justify-between gap-3 ${isAnom ? 'bg-amber-950/20' : 'bg-[#111d2e]'}`}>
+        <div className={`px-5 py-4 border-b border-[hsl(301,60%,25%)] flex items-start justify-between gap-3 ${isAnom ? 'bg-amber-950/20' : 'bg-secondary/30'}`}>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono font-bold text-sm text-teal-300 bg-teal-950/60 px-2.5 py-1 rounded border border-teal-800/50">
+              <span className="font-mono font-bold text-sm text-[hsl(141,100%,50%)] bg-[hsl(141,100%,50%)]/15 px-2.5 py-1 rounded-lg border border-[hsl(141,100%,50%)]/30">
                 {symbol}
               </span>
               {metrics && (
-                <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded border ${
+                <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded-md border ${
                   isAnom
                     ? 'bg-amber-950/40 text-amber-400 border-amber-700/50'
-                    : 'bg-emerald-950/40 text-emerald-400 border-emerald-700/50'
+                    : 'bg-[hsl(141,100%,50%)]/15 text-[hsl(141,100%,50%)] border-[hsl(141,100%,50%)]/30'
                 }`}>
                   {isAnom ? 'ANOMALI' : 'NORMAL'}
                 </span>
               )}
             </div>
-            <div className="text-sm font-bold text-white mt-1.5 truncate">{displayName}</div>
-            <div className="text-xs text-slate-400 mt-0.5">
+            <div className="text-base font-extrabold text-white mt-1.5 truncate">{displayName}</div>
+            <div className="text-xs text-text/60 mt-0.5">
               {displaySector}{displaySub ? ` · ${displaySub}` : ''}
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white p-1 rounded hover:bg-slate-800 transition-colors flex-shrink-0">
+          <button onClick={onClose} className="text-text/50 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -100,11 +107,11 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
           {metricsLoading ? (
             <div className="space-y-2">
               {[100,75,60].map((w,i) => (
-                <div key={i} className="h-3 rounded animate-pulse bg-slate-800" style={{ width: `${w}%` }} />
+                <div key={i} className="h-3 rounded-md animate-pulse bg-secondary/50" style={{ width: `${w}%` }} />
               ))}
             </div>
           ) : metricsError ? (
-            <div className="p-3 rounded bg-red-950/30 border border-red-800/40 text-xs text-red-400 font-mono">
+            <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-800/40 text-xs text-rose-400 font-mono">
               {metricsError}
             </div>
           ) : metrics ? (
@@ -113,14 +120,14 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
               <div className="flex items-end justify-between">
                 <div>
                   <div className="text-2xl font-bold font-mono text-white">Rp {fmt(metrics.lastPrice)}</div>
-                  <div className={`text-sm font-semibold font-mono flex items-center gap-1 mt-0.5 ${metrics.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <div className={`text-sm font-semibold font-mono flex items-center gap-1 mt-0.5 ${metrics.changePercent >= 0 ? 'text-[hsl(141,100%,50%)]' : 'text-rose-400'}`}>
                     {metrics.changePercent >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                     {pct(metrics.changePercent)} hari ini
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-slate-500 font-mono">IHSG</div>
-                  <div className={`text-sm font-bold font-mono ${metrics.ihsgChangePercent >= 0 ? 'text-slate-300' : 'text-slate-400'}`}>
+                  <div className="text-xs text-text/50 font-mono">IHSG</div>
+                  <div className={`text-sm font-bold font-mono ${metrics.ihsgChangePercent >= 0 ? 'text-text/80' : 'text-text/60'}`}>
                     {pct(metrics.ihsgChangePercent)}
                   </div>
                 </div>
@@ -136,8 +143,8 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                   { label: 'Market Cap',      value: displayMcap ?? '—', hot: false },
                   { label: 'Rank IDX',        value: companyInfo ? `#${companyInfo.rank}` : '—', hot: false },
                 ].map(m => (
-                  <div key={m.label} className="bg-slate-900/70 border border-slate-800 rounded-lg p-2.5">
-                    <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{m.label}</div>
+                  <div key={m.label} className="bg-[hsl(279,100%,3%)] border border-[hsl(301,60%,25%)] rounded-xl p-2.5">
+                    <div className="text-[10px] text-text/50 uppercase tracking-wider mb-1 font-semibold">{m.label}</div>
                     <div className={`text-xs font-bold font-mono ${m.hot ? 'text-amber-400' : 'text-white'}`}>{m.value}</div>
                   </div>
                 ))}
@@ -145,7 +152,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
 
               {/* Anomaly flag */}
               {isAnom && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-950/25 border border-amber-700/40">
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-950/25 border border-amber-700/40">
                   <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                   <div className="text-xs text-amber-300 leading-relaxed">
                     {metrics.isVolumeAnomaly && <div>Volume {metrics.volumeMultiplier}× median — melampaui ambang 2.0×</div>}
@@ -154,7 +161,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                 </div>
               )}
 
-              <div className="text-[10px] text-slate-600 font-mono text-right">
+              <div className="text-[10px] text-text/40 font-mono text-right">
                 Yahoo Finance · Diperbarui {metrics.lastUpdated} · Cache 5 mnt
               </div>
             </>
@@ -162,12 +169,12 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-5 py-3.5 border-t border-[hsl(301,60%,25%)] bg-secondary/20 flex items-center justify-between gap-3 flex-wrap">
           <a
             href={`https://sectors.app/idx/${symbol}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 hover:underline transition-colors"
+            className="flex items-center gap-1.5 text-xs font-bold text-[hsl(288,100%,70%)] hover:underline transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             Lihat di Sectors.app/idx/{symbol}
@@ -175,7 +182,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => { onRemove(); onClose(); }}
-              className="px-3 py-1.5 text-xs font-semibold text-red-400 hover:text-white bg-red-950/30 hover:bg-red-900/50 border border-red-800/40 hover:border-red-600/60 rounded transition-all"
+              className="px-3.5 py-1.5 text-xs font-bold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl transition-all cursor-pointer"
             >
               Hapus dari Watchlist
             </button>
