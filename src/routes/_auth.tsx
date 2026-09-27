@@ -97,10 +97,10 @@ function AuthLayout() {
         onClose={() => setShowMarketCloseToast(false)}
       />
 
-      <footer className="border-t border-slate-800/60 bg-[#090d16] py-4 text-xs font-sans">
+      <footer className="border-t border-[hsl(301,60%,18%)] bg-[hsl(279,100%,3%)] py-4 text-xs font-sans">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="text-slate-500">SIBA • Sistem Informasi Bursa dan Aset (Track 02 — Automation & Workflows)</span>
-          <span className="font-mono text-teal-500/60 text-[11px]">Sectors API v2 • 100% Deterministik Tanpa LLM</span>
+          <span className="text-white/40">SIBA • Sistem Informasi Bursa dan Aset (Track 02 Automation &amp; Workflows)</span>
+          <span className="font-mono text-[hsl(288,100%,70%)]/50 text-[11px]">Sectors API v2 • 100% Deterministik Tanpa LLM</span>
         </div>
       </footer>
 
@@ -108,12 +108,15 @@ function AuthLayout() {
       <div id="tour-telegram-bot-cta" className="fixed bottom-6 right-6 z-40">
         <button
           onClick={() => setIsTelegramModalOpen(true)}
-          className="group relative flex items-center justify-center w-12 h-12 bg-[hsl(141,100%,50%)] hover:bg-[hsl(141,100%,45%)] text-[hsl(279,100%,3%)] rounded-full shadow-2xl transition-all duration-200 transform hover:scale-110 cursor-pointer border-2 border-[hsl(141,100%,70%)] opacity-100"
+          className="relative flex items-center justify-center w-12 h-12 bg-[hsl(141,100%,50%)] hover:bg-[hsl(141,100%,45%)] text-[hsl(279,100%,3%)] rounded-full shadow-2xl transition-all duration-200 transform hover:scale-110 cursor-pointer border-2 border-[hsl(141,100%,70%)]"
           title={currentUser?.isTelegramLinked ? 'Telegram Bot Terhubung' : 'Hubungkan Telegram Bot SIBA'}
         >
-          <Bot className="w-6 h-6" />
+          <Bot className="w-6 h-6 stroke-[2.5]" />
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping" />
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full" />
         </button>
       </div>
+
     </div>
   );
 }

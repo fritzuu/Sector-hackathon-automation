@@ -1,10 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
 import { BeginnerGuideBanner } from '../shared/components/BeginnerGuideBanner';
-import { SectorsApiBadge } from '../shared/components/SectorsApiBadge';
 import { AutomationOverview } from '../modules/dashboard/components/AutomationOverview';
 import { WatchlistManager } from '../modules/watchlist/components/WatchlistManager';
-import { WatchlistNewsFeed } from '../modules/watchlist/components/WatchlistNewsFeed';
 import { ActiveCasesList } from '../modules/cases/components/ActiveCasesList';
 import { RunAuditHistory } from '../modules/cases/components/RunAuditHistory';
 import { CaseDetailModal } from '../modules/cases/components/CaseDetailModal';
@@ -78,7 +76,7 @@ function DashboardPage() {
       alert("Please link Telegram first from the header."); // Fallback
       return;
     }
-    const summaryMsg = `📊 [SIBA — Rekap Watchlist Pribadi]\nPengguna: ${currentUser.name}\nTanggal: ${new Date().toLocaleDateString('id-ID')}\n\nSaham yang Dipantau (${watchlist.length}):\n${watchlist.map((t) => `• ${t}`).join('\n')}\n\nJadwal evaluasi otomatis berikutnya: 16:30 WIB.`;
+    const summaryMsg = `📊 [SIBA: Rekap Watchlist Pribadi]\nPengguna: ${currentUser.name}\nTanggal: ${new Date().toLocaleDateString('id-ID')}\n\nSaham yang Dipantau (${watchlist.length}):\n${watchlist.map((t) => `• ${t}`).join('\n')}\n\nJadwal evaluasi otomatis berikutnya: 16:30 WIB.`;
     setLatestTelegramAlert(summaryMsg);
   };
 
@@ -87,7 +85,6 @@ function DashboardPage() {
   return (
     <div className="space-y-5">
       <BeginnerGuideBanner userName={currentUser?.name || ''} onOpenTour={() => setIsTourOpen(true)} />
-      <SectorsApiBadge />
 
       <div id="tour-automation-kpis" className="scroll-mt-20">
         <AutomationOverview
@@ -119,7 +116,6 @@ function DashboardPage() {
         />
       </div>
 
-      <WatchlistNewsFeed watchlist={watchlist} forceRefreshAt={newsForceRefresh} />
 
       <div id="tour-active-cases" className="scroll-mt-20">
         <ActiveCasesList

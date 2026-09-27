@@ -14,7 +14,7 @@ interface BeginnerGuideBannerProps {
 
 const FEATURES = [
   { icon: <Zap className="w-3 h-3 flex-shrink-0" />,     text: 'Otomatis 16:30 WIB setiap hari bursa' },
-  { icon: <Shield className="w-3 h-3 flex-shrink-0" />,   text: '100% deterministik — nol halusinasi AI' },
+  { icon: <Shield className="w-3 h-3 flex-shrink-0" />,   text: '100% deterministik, nol halusinasi AI' },
   { icon: <BellRing className="w-3 h-3 flex-shrink-0" />, text: 'Notifikasi terisolasi ke akun Anda' },
 ];
 
@@ -67,7 +67,7 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({ userNa
             <p className="text-xs leading-relaxed max-w-3xl text-text/80">
               Masukkan saham ke <strong className="text-white">Watchlist</strong>, hubungkan{' '}
               <strong className="text-white">Telegram</strong>, dan SIBA akan memeriksa data resmi
-              Sectors API tiap hari bursa — notifikasi dikirim hanya saat ada pola penting.
+              Sectors API tiap hari bursa: notifikasi dikirim hanya saat ada pola penting.
             </p>
 
             {/* Feature chips */}
