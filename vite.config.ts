@@ -36,6 +36,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/sectors/, ""),
       },
+      // Telebot bridge — proxied to the local Python bot server (bot/main.py).
+      // Start it with: cd bot && python main.py
+      // The bot token never enters the browser bundle.
+      '/bot-api': {
+        target: 'http://127.0.0.1:8088',
+        changeOrigin: false,
+        rewrite: (path) => path.replace(/^\/bot-api/, ''),
+      },
     },
   },
   test: {

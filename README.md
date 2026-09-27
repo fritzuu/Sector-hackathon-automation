@@ -25,6 +25,17 @@ Baca SECTOR-HACKATHON-AI/rules/siba.md dan SECTOR-HACKATHON-AI/STATE.md. Gunakan
 
 ---
 
+### Login Google (Supabase Auth)
+
+1. Salin `.env.example` ke `.env.local` di root proyek, lalu isi URL proyek dan **publishable key** Supabase. Jangan masukkan Google Client Secret atau service-role key ke variabel `VITE_`.
+2. Di Google Auth Platform, buat OAuth Client tipe **Web application**. Tambahkan origin aplikasi (misalnya `http://localhost:3000`) dan gunakan URL callback yang ditampilkan Supabase Auth → Sign In / Providers → Google sebagai **Authorized redirect URI** di Google.
+3. Aktifkan Google provider di Supabase dengan Client ID dan Client Secret tersebut. Di Supabase Auth → URL Configuration, izinkan `http://localhost:3000/` sebagai redirect URL. Tambahkan URL aplikasi produksi saat akan deploy.
+4. Jalankan `npm run dev`, klik **Masuk dengan Google**, lalu pastikan kembali ke dashboard. Login Google memakai redirect halaman penuh; aplikasi memulihkan sesi saat halaman dimuat ulang.
+
+Konfigurasi Google di layanan eksternal diperlukan untuk uji login nyata. `npm test` dan `npm run build` hanya memverifikasi kode lokal.
+
+---
+
 ## 2. Navigasi Dokumen & Arsitektur
 
 Gunakan tabel referensi berikut sesuai konteks pekerjaan kamu:

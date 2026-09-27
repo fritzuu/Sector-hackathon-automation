@@ -10,9 +10,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError, IhsgUnavailableError } from '../../../services/liveMarketService.js';
 import { sectorsApi, LiveIdxCompany } from '../../../services/sectorsApi.js';
+import { InlineAuthPanel } from '../../auth/components/InlineAuthPanel';
 
 interface LandingPageProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
+  onAuthSuccess: (userData: { name: string; email: string; avatar?: string }) => void;
 }
 
 const fmt  = (n: number) => n.toLocaleString('id-ID');
@@ -103,9 +105,15 @@ const GLOBAL_CSS = `
     max-width: 1120px; margin: 0 auto;
     padding: 120px 24px 80px;
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
   }
+  @media (max-width: 900px) {
+    .siba-hero { grid-template-columns: 1fr; gap: 40px; }
+  }
+  .hero-left { display: flex; flex-direction: column; }
+  .hero-right { display: flex; justify-content: flex-end; }
   .hero-eyebrow {
     font-family: var(--font-mono);
     font-size: 11px; font-weight: 700;
@@ -574,7 +582,7 @@ const GLOBAL_CSS = `
   }
 `;
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onAuthSuccess }) => {
   const [selected, setSelected]         = useState('');
   const [tickers, setTickers]           = useState<Record<string, RealTickerMetrics>>({});
   const [liveCompanies, setLiveCompanies] = useState<LiveIdxCompany[]>([]);
@@ -765,47 +773,47 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
       )}
 
       {/* ── MARQUEE HERO ────────────────────────────────────── */}
-      <div className="siba-hero">
-        <div className="hero-eyebrow">
-          Evaluasi otomatis · Setiap 16:30 WIB · Data real bursa IDX
-        </div>
-        <h1 className="hero-h1">
-          Portofolio IDX Anda<br />
-          dipantau <em>otomatis</em><br />
-          setiap hari bursa.
-        </h1>
-        <p className="hero-sub">
-          SIBA mengecek volume transaksi, pergerakan harga relatif terhadap IHSG,
-          dan dokumen keterbukaan resmi BEI — lalu mengirimkan ringkasannya ke Telegram Anda.
-          Tidak ada AI yang menebak. Hanya matematika.
-        </p>
-        <div className="hero-ctas">
-          <button className="btn-primary" onClick={() => onOpenAuth('register')}>
-            Mulai Pantau Saham Saya — Gratis
-          </button>
-          <button className="btn-ghost" onClick={() => onOpenAuth('login')}>
-            Sudah punya akun? Masuk
-          </button>
+      <div className="siba-hero" id="siba-hero-auth">
+        {/* Left column: copy + stats */}
+        <div className="hero-left">
+          <div className="hero-eyebrow">
+            Evaluasi otomatis · Setiap 16:30 WIB · Data real bursa IDX
+          </div>
+          <h1 className="hero-h1">
+            Portofolio IDX Anda<br />
+            dipantau <em>otomatis</em><br />
+            setiap hari bursa.
+          </h1>
+          <p className="hero-sub">
+            SIBA mengecek volume transaksi, pergerakan harga relatif terhadap IHSG,
+            dan dokumen keterbukaan resmi BEI — lalu mengirimkan ringkasannya ke Telegram Anda.
+            Tidak ada AI yang menebak. Hanya matematika.
+          </p>
+
+          {/* Real data stat row — no invented metrics */}
+          <div className="stat-row">
+            <div className="stat-cell">
+              <div className="stat-num"><span className="ac">16:30</span></div>
+              <div className="stat-desc">Waktu evaluasi harian (WIB setiap hari bursa)</div>
+            </div>
+            <div className="stat-cell">
+              <div className="stat-num"><span className="ac">2.0</span>x</div>
+              <div className="stat-desc">Ambang batas rasio volume untuk anomali</div>
+            </div>
+            <div className="stat-cell">
+              <div className="stat-num">20</div>
+              <div className="stat-desc">Sesi bursa historis untuk median volume</div>
+            </div>
+            <div className="stat-cell">
+              <div className="stat-num">3</div>
+              <div className="stat-desc">Indikator deterministik yang dievaluasi SIBA</div>
+            </div>
+          </div>
         </div>
 
-        {/* Real data stat row — no invented metrics */}
-        <div className="stat-row">
-          <div className="stat-cell">
-            <div className="stat-num"><span className="ac">16:30</span></div>
-            <div className="stat-desc">Waktu evaluasi harian (WIB setiap hari bursa)</div>
-          </div>
-          <div className="stat-cell">
-            <div className="stat-num"><span className="ac">2.0</span>x</div>
-            <div className="stat-desc">Ambang batas rasio volume untuk anomali</div>
-          </div>
-          <div className="stat-cell">
-            <div className="stat-num">20</div>
-            <div className="stat-desc">Sesi bursa historis untuk median volume</div>
-          </div>
-          <div className="stat-cell">
-            <div className="stat-num">3</div>
-            <div className="stat-desc">Indikator deterministik yang dievaluasi SIBA</div>
-          </div>
+        {/* Right column: inline auth panel */}
+        <div className="hero-right">
+          <InlineAuthPanel onAuthSuccess={onAuthSuccess} initialView="login" />
         </div>
       </div>
 

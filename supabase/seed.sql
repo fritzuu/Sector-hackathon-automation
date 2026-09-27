@@ -1,0 +1,1 @@
+-- Tidak ada user dummy. Profil dibuat otomatis saat akun Auth terdaftar.

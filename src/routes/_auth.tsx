@@ -4,7 +4,7 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { useAuthStore } from "../modules/auth/stores/auth.store";
+import { useAuthStore, waitForAuthReady } from "../modules/auth/stores/auth.store";
 import { Header } from "../modules/dashboard/components/Header";
 import { Sidebar } from "../modules/dashboard/components/Sidebar";
 import { TelegramConnectModal } from "../modules/auth/components/TelegramConnectModal";
@@ -17,9 +17,10 @@ import { Bot } from "lucide-react";
 import { generateSecurePairingToken } from "../utils/token";
 
 export const Route = createFileRoute("/_auth")({
-  beforeLoad: () => {
-    const user = useAuthStore.getState().currentUser;
-    if (!user) {
+  beforeLoad: async () => {
+    await waitForAuthReady();
+    const { currentUser } = useAuthStore.getState();
+    if (!currentUser) {
       throw redirect({ to: "/" });
     }
   },
@@ -47,7 +48,19 @@ function AuthLayout() {
     return () => window.removeEventListener('open-telegram-modal', handleOpen);
   }, []);
 
-  if (!currentUser) return null;
+  useEffect(() => {
+    if (currentUser?.defaultWatchlist && currentUser.defaultWatchlist.length > 0 && watchlist.length === 0) {
+      useWatchlistStore.getState().setWatchlist(currentUser.defaultWatchlist);
+    }
+  }, [currentUser, watchlist.length]);
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-bg text-text-muted flex items-center justify-center text-sm font-mono">
+        Memuat akun...
+      </div>
+    );
+  }
 
   const handleLinkTelegram = (chatId: string, username: string) => {
     updateUser({
@@ -116,6 +129,7 @@ function AuthLayout() {
 
       <TelegramConnectModal
         user={currentUser}
+        watchlist={watchlist}
         isOpen={isTelegramModalOpen}
         onClose={() => setIsTelegramModalOpen(false)}
         onLinkSuccess={handleLinkTelegram}
