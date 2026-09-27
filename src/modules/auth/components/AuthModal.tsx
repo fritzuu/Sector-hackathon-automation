@@ -11,9 +11,9 @@ interface AuthModalProps {
 type ModalView = 'login' | 'register' | 'forgot' | 'forgot-sent';
 
 const INPUT_BASE =
-  'w-full pl-10 pr-10 py-3 bg-[#060c1a] border border-[#1e2d45] rounded-xl text-sm text-[#f0f4ff] placeholder-[#4a5a82] focus:outline-none focus:border-teal-500/70 focus:ring-2 focus:ring-teal-500/10 transition-all duration-200';
+  'w-full pl-10 pr-10 py-3 bg-[hsl(279,100%,3%)] border border-[hsl(301,60%,25%)] rounded-xl text-sm text-text placeholder-text/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200';
 
-const FIELD_ICON = 'w-4 h-4 text-[#4a5a82] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none';
+const FIELD_ICON = 'w-4 h-4 text-text/50 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none';
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -104,35 +104,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(4,7,16,0.85)', backdropFilter: 'blur(18px)' }}
+      style={{ background: 'rgba(9,0,12,0.88)', backdropFilter: 'blur(18px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) { clearForm(); onClose(); } }}
     >
       <div
         className="relative w-full max-w-md overflow-hidden"
         style={{
-          background: 'linear-gradient(160deg, #0a1220 0%, #060c1a 100%)',
-          border: '1px solid #1e2d45',
+          background: 'linear-gradient(160deg, hsl(301, 100%, 8%) 0%, hsl(279, 100%, 4%) 100%)',
+          border: '1px solid hsl(301, 60%, 25%)',
           borderRadius: 20,
-          boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(20,184,166,0.06)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.85), 0 0 30px rgba(230,102,255,0.15)',
         }}
       >
         {/* ── TOP GLOW BAR ── */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-          background: 'linear-gradient(90deg, transparent 0%, #14b8a6 40%, #2dd4bf 60%, transparent 100%)',
-          opacity: 0.7,
+          background: 'linear-gradient(90deg, transparent 0%, hsl(288,100%,70%) 40%, hsl(141,100%,50%) 60%, transparent 100%)',
+          opacity: 0.9,
         }} />
 
         {/* ── HEADER ── */}
-        <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #1e2d45' }}>
+        <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid hsl(301, 60%, 25%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {/* Icon */}
               <div style={{
                 width: 40, height: 40, borderRadius: 12,
-                background: 'linear-gradient(135deg, #14b8a6, #2dd4bf)',
+                background: 'linear-gradient(135deg, hsl(288,100%,70%), hsl(141,100%,50%))',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(20,184,166,0.3)',
+                boxShadow: '0 4px 16px rgba(230,102,255,0.3)',
                 flexShrink: 0,
               }}>
                 {view === 'forgot' || view === 'forgot-sent'
@@ -141,20 +141,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
               </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#f0f4ff', lineHeight: 1.2 }}>{heading}</div>
-                {sub && <div style={{ fontSize: 12, color: '#4a5a82', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#ffffff', lineHeight: 1.2 }}>{heading}</div>
+                {sub && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
               </div>
             </div>
             <button
               onClick={() => { clearForm(); onClose(); }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#4a5a82', padding: 4, borderRadius: 8,
+                color: 'rgba(255,255,255,0.4)', padding: 4, borderRadius: 8,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'color 150ms',
+                transition: 'all 150ms',
               }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#f0f4ff')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#4a5a82')}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = '#ffffff';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+                e.currentTarget.style.background = 'none';
+              }}
             >
               <X size={18} />
             </button>
@@ -162,17 +168,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* Tab switcher — only for login / register */}
           {(view === 'login' || view === 'register') && (
-            <div style={{ display: 'flex', gap: 4, marginTop: 18, background: '#060c1a', borderRadius: 10, padding: 4, border: '1px solid #1e2d45' }}>
+            <div style={{ display: 'flex', gap: 4, marginTop: 18, background: 'hsl(301, 100%, 6%)', borderRadius: 10, padding: 4, border: '1px solid hsl(301, 60%, 25%)' }}>
               {(['login', 'register'] as const).map(v => (
                 <button
                   key={v}
                   onClick={() => { clearForm(); switchView(v); }}
                   style={{
-                    flex: 1, padding: '8px 0', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                    flex: 1, padding: '8px 0', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 800,
                     transition: 'all 180ms',
-                    background: view === v ? 'linear-gradient(135deg, #14b8a6, #2dd4bf)' : 'transparent',
-                    color: view === v ? '#040710' : '#4a5a82',
-                    boxShadow: view === v ? '0 2px 10px rgba(20,184,166,0.25)' : 'none',
+                    background: view === v ? 'hsl(141, 100%, 50%)' : 'transparent',
+                    color: view === v ? 'hsl(279, 100%, 3%)' : 'rgba(255,255,255,0.5)',
+                    boxShadow: view === v ? '0 2px 12px rgba(0,255,85,0.3)' : 'none',
+                  }}
+                  onMouseEnter={e => {
+                    if (view !== v) {
+                      e.currentTarget.style.color = '#ffffff';
+                      e.currentTarget.style.background = 'rgba(230, 102, 255, 0.15)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (view !== v) {
+                      e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+                      e.currentTarget.style.background = 'transparent';
+                    }
                   }}
                 >
                   {v === 'login' ? 'Masuk' : 'Daftar Gratis'}
@@ -188,11 +206,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#4a5a82', fontSize: 12, fontWeight: 600, marginTop: 12, padding: 0,
+                color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: 600, marginTop: 12, padding: 0,
                 transition: 'color 150ms',
               }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#2dd4bf')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#4a5a82')}
+              onMouseEnter={e => (e.currentTarget.style.color = 'hsl(288, 100%, 70%)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
             >
               <ArrowLeft size={13} /> Kembali ke Masuk
             </button>
@@ -268,11 +286,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {view === 'register' && (
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#8b9abf', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>
                       Nama Lengkap
                     </label>
                     <div style={{ position: 'relative' }}>
-                      <User size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#4a5a82', pointerEvents: 'none' }} />
+                      <User size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'hsl(288, 100%, 70%)', opacity: 0.7, pointerEvents: 'none' }} />
                       <input
                         type="text"
                         value={name}
@@ -286,11 +304,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 )}
 
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#8b9abf', marginBottom: 6 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>
                     Alamat Email
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#4a5a82', pointerEvents: 'none' }} />
+                    <Mail size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'hsl(288, 100%, 70%)', opacity: 0.7, pointerEvents: 'none' }} />
                     <input
                       type="email"
                       value={email}
@@ -304,25 +322,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#8b9abf' }}>Kata Sandi</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>Kata Sandi</label>
                     {view === 'login' && (
                       <button
                         type="button"
                         onClick={() => switchView('forgot')}
                         style={{
                           background: 'none', border: 'none', cursor: 'pointer',
-                          fontSize: 11, fontWeight: 600, color: '#4a5a82',
+                          fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
                           padding: 0, transition: 'color 150ms',
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.color = '#2dd4bf')}
-                        onMouseLeave={e => (e.currentTarget.style.color = '#4a5a82')}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'hsl(288, 100%, 70%)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
                       >
                         Lupa kata sandi?
                       </button>
                     )}
                   </div>
                   <div style={{ position: 'relative' }}>
-                    <Lock size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#4a5a82', pointerEvents: 'none' }} />
+                    <Lock size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'hsl(288, 100%, 70%)', opacity: 0.7, pointerEvents: 'none' }} />
                     <input
                       type={showPass ? 'text' : 'password'}
                       value={password}
@@ -336,11 +354,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       style={{
                         position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
                         background: 'none', border: 'none', cursor: 'pointer',
-                        color: '#4a5a82', padding: 2, display: 'flex', alignItems: 'center',
+                        color: 'rgba(255,255,255,0.5)', padding: 2, display: 'flex', alignItems: 'center',
                         transition: 'color 150ms',
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#2dd4bf')}
-                      onMouseLeave={e => (e.currentTarget.style.color = '#4a5a82')}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'hsl(288, 100%, 70%)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
                     >
                       {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -355,9 +373,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0 16px' }}>
-                <div style={{ flex: 1, height: 1, background: '#1e2d45' }} />
-                <span style={{ fontSize: 11, color: '#4a5a82', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>atau</span>
-                <div style={{ flex: 1, height: 1, background: '#1e2d45' }} />
+                <div style={{ flex: 1, height: 1, background: 'hsl(301, 60%, 25%)' }} />
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>atau</span>
+                <div style={{ flex: 1, height: 1, background: 'hsl(301, 60%, 25%)' }} />
               </div>
 
               {/* Google */}
@@ -365,8 +383,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               {/* Trust badge */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 18 }}>
-                <ShieldCheck size={13} color="#14b8a6" strokeWidth={2} />
-                <span style={{ fontSize: 11, color: '#4a5a82' }}>Data & watchlist tersimpan terenkripsi.</span>
+                <ShieldCheck size={13} color="hsl(141, 100%, 50%)" strokeWidth={2} />
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Data & watchlist tersimpan terenkripsi.</span>
               </div>
             </>
           )}
@@ -401,18 +419,30 @@ function SubmitBtn({ loading, label }: { loading: boolean; label: string }) {
       disabled={loading}
       style={{
         width: '100%', padding: '13px 0', marginTop: 4,
-        background: loading ? '#1e2d45' : 'linear-gradient(135deg, #14b8a6, #2dd4bf)',
-        border: 'none', borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer',
-        fontSize: 13, fontWeight: 800, color: loading ? '#4a5a82' : '#040710',
+        background: loading ? 'hsl(301, 100%, 15%)' : 'hsl(141, 100%, 50%)',
+        border: '1px solid hsl(141, 100%, 50%)', borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer',
+        fontSize: 13, fontWeight: 900, color: 'hsl(279, 100%, 3%)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        boxShadow: loading ? 'none' : '0 4px 24px rgba(20,184,166,0.28)',
+        boxShadow: loading ? 'none' : '0 4px 24px rgba(0, 255, 85, 0.35)',
         transition: 'all 200ms',
+      }}
+      onMouseEnter={e => {
+        if (!loading) {
+          e.currentTarget.style.opacity = '0.95';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+        }
+      }}
+      onMouseLeave={e => {
+        if (!loading) {
+          e.currentTarget.style.opacity = '1';
+          e.currentTarget.style.transform = 'translateY(0)';
+        }
       }}
     >
       {loading ? (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ffffff' }}>
           <svg width="14" height="14" viewBox="0 0 14 14" style={{ animation: 'spin 0.8s linear infinite' }}>
-            <circle cx="7" cy="7" r="5.5" stroke="#4a5a82" strokeWidth="2" fill="none" strokeDasharray="22" strokeDashoffset="8" />
+            <circle cx="7" cy="7" r="5.5" stroke="rgba(255,255,255,0.4)" strokeWidth="2" fill="none" strokeDasharray="22" strokeDashoffset="8" />
           </svg>
           Memproses...
         </span>
@@ -433,10 +463,10 @@ function GoogleBtn({ onClick }: { onClick: () => void }) {
       onMouseLeave={() => setHov(false)}
       style={{
         width: '100%', padding: '11px 0',
-        background: hov ? '#111d2e' : '#0d1424',
-        border: `1px solid ${hov ? '#2dd4bf40' : '#1e2d45'}`,
+        background: hov ? 'hsl(301, 100%, 18%)' : 'hsl(301, 100%, 12%)',
+        border: `1px solid ${hov ? 'hsl(288, 100%, 70%)' : 'hsl(301, 60%, 25%)'}`,
         borderRadius: 12, cursor: 'pointer',
-        fontSize: 13, fontWeight: 600, color: '#8b9abf',
+        fontSize: 13, fontWeight: 700, color: '#ffffff',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
         transition: 'all 180ms',
       }}

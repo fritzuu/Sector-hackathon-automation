@@ -31,17 +31,17 @@ const KpiCard: React.FC<KpiCardProps> = ({
   <div
     className="rounded-xl p-4 flex flex-col gap-3 transition-all duration-200"
     style={{
-      background: 'linear-gradient(135deg, rgba(13,20,36,0.95) 0%, rgba(9,13,22,0.98) 100%)',
-      border: '1px solid rgba(255,255,255,0.06)',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.35)',
+      background: 'linear-gradient(135deg, hsl(301, 100%, 8%) 0%, hsl(279, 100%, 4%) 100%)',
+      border: '1px solid hsl(301, 60%, 25%)',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
     }}
     onMouseEnter={e => {
-      (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 24px ${glowColor}, 0 2px 12px rgba(0,0,0,0.35)`;
-      (e.currentTarget as HTMLDivElement).style.borderColor = `${accentColor}40`;
+      (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 24px ${glowColor}, 0 2px 12px rgba(0,0,0,0.5)`;
+      (e.currentTarget as HTMLDivElement).style.borderColor = `hsl(288, 100%, 70%)`;
     }}
     onMouseLeave={e => {
-      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.35)';
-      (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.06)';
+      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.5)';
+      (e.currentTarget as HTMLDivElement).style.borderColor = 'hsl(301, 60%, 25%)';
     }}
   >
     <div className="flex items-center justify-between">

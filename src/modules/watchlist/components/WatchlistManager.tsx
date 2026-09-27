@@ -249,13 +249,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
 
   return (
     <div className="space-y-4 font-sans">
-      {/* Zone A — Sector Presets Grid */}
-      <SectorPresetsGrid
-        watchlist={watchlist}
-        onAddPreset={onAddPreset}
-      />
-
-      {/* Zone B — Search + Watchlist Cards */}
+      {/* Search + Watchlist Cards */}
       <WatchlistSearchPanel
         watchlist={watchlist}
         isTelegramLinked={isTelegramLinked}

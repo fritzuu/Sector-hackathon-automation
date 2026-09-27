@@ -8,6 +8,8 @@ import { WatchlistNewsFeed } from '../modules/watchlist/components/WatchlistNews
 import { ActiveCasesList } from '../modules/cases/components/ActiveCasesList';
 import { RunAuditHistory } from '../modules/cases/components/RunAuditHistory';
 import { CaseDetailModal } from '../modules/cases/components/CaseDetailModal';
+import { DashboardTourModal } from '../modules/dashboard/components/DashboardTourModal';
+import { TelegramLogViewer, TelegramLogEntry } from '../modules/dashboard/components/TelegramLogViewer';
 import { useAuthStore } from '../modules/auth/stores/auth.store';
 import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
@@ -30,6 +32,14 @@ function DashboardPage() {
   const [selectedCase, setSelectedCase] = useState<CaseState | null>(null);
   const [newsForceRefresh, setNewsForceRefresh] = useState<number | undefined>(undefined);
   const [lastAutoRunDate, setLastAutoRunDate] = useState<string | null>(null);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [telegramLogs, setTelegramLogs] = useState<TelegramLogEntry[]>([]);
+
+  useEffect(() => {
+    const handleOpenTour = () => setIsTourOpen(true);
+    window.addEventListener('open-siba-tour', handleOpenTour);
+    return () => window.removeEventListener('open-siba-tour', handleOpenTour);
+  }, []);
 
   // Auto-scheduler
   useEffect(() => {
@@ -76,33 +86,47 @@ function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      <BeginnerGuideBanner userName={currentUser?.name || ''} />
+      <BeginnerGuideBanner userName={currentUser?.name || ''} onOpenTour={() => setIsTourOpen(true)} />
       <SectorsApiBadge />
 
-      <AutomationOverview
-        lastRunTime={lastRunTime}
-        activeCasesCount={activeCasesArray.length}
-        totalWatchlistCount={watchlist.length}
-        lastRunStatus={isRunning ? 'RUNNING' : 'IDLE'}
-        totalRunsCount={auditRuns.length}
-      />
+      <div id="tour-automation-kpis" className="scroll-mt-20">
+        <AutomationOverview
+          lastRunTime={lastRunTime}
+          activeCasesCount={activeCasesArray.length}
+          totalWatchlistCount={watchlist.length}
+          lastRunStatus={isRunning ? 'RUNNING' : 'IDLE'}
+          totalRunsCount={auditRuns.length}
+        />
+      </div>
 
-      <WatchlistManager
-        watchlist={watchlist}
-        onAddTicker={addTicker}
-        onRemoveTicker={removeTicker}
-        onAddPreset={addPresets}
-        isTelegramLinked={currentUser?.isTelegramLinked || false}
-        onOpenTelegramModal={() => alert("Open modal from header")} // Simplification
-        onSendTelegramSummary={handleSendTelegramSummary}
-      />
+      <div id="tour-watchlist-manager" className="scroll-mt-20">
+        <WatchlistManager
+          watchlist={watchlist}
+          onAddTicker={addTicker}
+          onRemoveTicker={removeTicker}
+          onAddPreset={addPresets}
+          isTelegramLinked={currentUser?.isTelegramLinked || false}
+          onOpenTelegramModal={() => alert("Open modal from header")} // Simplification
+          onSendTelegramSummary={handleSendTelegramSummary}
+        />
+      </div>
+
+      <div id="tour-telegram-logs" className="scroll-mt-20">
+        <TelegramLogViewer
+          user={currentUser!}
+          logs={telegramLogs}
+          onClearLogs={() => setTelegramLogs([])}
+        />
+      </div>
 
       <WatchlistNewsFeed watchlist={watchlist} forceRefreshAt={newsForceRefresh} />
 
-      <ActiveCasesList
-        cases={activeCasesArray}
-        onSelectCase={(c) => setSelectedCase(c)}
-      />
+      <div id="tour-active-cases" className="scroll-mt-20">
+        <ActiveCasesList
+          cases={activeCasesArray}
+          onSelectCase={(c) => setSelectedCase(c)}
+        />
+      </div>
 
       <RunAuditHistory runs={auditRuns} />
 
@@ -111,6 +135,11 @@ function DashboardPage() {
         events={selectedCase ? caseEvents.get(selectedCase.symbol) || [] : []}
         template={selectedCase ? caseTemplates.get(selectedCase.symbol) || null : null}
         onClose={() => setSelectedCase(null)}
+      />
+
+      <DashboardTourModal
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
       />
     </div>
   );

@@ -64,6 +64,10 @@ function AuthLayout() {
         onOpenTelegramModal={() => setIsTelegramModalOpen(true)}
         onRunWorkflow={runWorkflow}
         onResetReplay={resetReplay}
+        onOpenTour={() => {
+          // Dispatch a custom event or trigger tour
+          window.dispatchEvent(new CustomEvent('open-siba-tour'));
+        }}
         isRunning={isRunning}
         totalWatchlist={watchlist.length}
       />
