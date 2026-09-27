@@ -1,17 +1,16 @@
 /**
  * AutomationOverview — 4 KPI cards premium redesign.
- * Hallmark · redesign · genre: atmospheric · theme: Midnight
- * Workbench macrostructure · no AI slop · real data only
+ * Clean, native Tailwind implementation with semantic colors.
  */
 
-import React from 'react';
-import { Activity, Eye, Layers, Clock, Zap } from 'lucide-react';
+import React from "react";
+import { Eye, Layers, Clock, Zap } from "lucide-react";
 
 interface OverviewProps {
   lastRunTime: string | null;
   activeCasesCount: number;
   totalWatchlistCount: number;
-  lastRunStatus: 'SUCCESS' | 'PARTIAL' | 'IDLE' | 'RUNNING';
+  lastRunStatus: "SUCCESS" | "PARTIAL" | "IDLE" | "RUNNING";
   totalRunsCount: number;
 }
 
@@ -20,113 +19,120 @@ interface KpiCardProps {
   value: string;
   sub: string;
   icon: React.ReactNode;
-  accentColor: string;
-  glowColor: string;
+  iconBgClass: string;
+  iconColorClass: string;
   pulse?: boolean;
 }
 
 const KpiCard: React.FC<KpiCardProps> = ({
-  label, value, sub, icon, accentColor, glowColor, pulse,
+  label,
+  value,
+  sub,
+  icon,
+  iconBgClass,
+  iconColorClass,
+  pulse,
 }) => (
-  <div
-    className="rounded-xl p-4 flex flex-col gap-3 transition-all duration-200"
-    style={{
-      background: 'hsl(301, 100%, 7%)',
-      border: '1px solid hsl(301, 60%, 25%)',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
-    }}
-    onMouseEnter={e => {
-      (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 24px ${glowColor}, 0 2px 12px rgba(0,0,0,0.5)`;
-      (e.currentTarget as HTMLDivElement).style.borderColor = `hsl(288, 100%, 70%)`;
-    }}
-    onMouseLeave={e => {
-      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.5)';
-      (e.currentTarget as HTMLDivElement).style.borderColor = 'hsl(301, 60%, 25%)';
-    }}
-  >
+  <div className="rounded-xl p-4 flex flex-col gap-3 transition-all duration-300 bg-secondary/50 border border-border hover:border-primary hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] group cursor-default">
     <div className="flex items-center justify-between">
-      <span
-        className="text-[10px] font-mono font-bold uppercase tracking-widest"
-        style={{ color: 'rgba(148,163,184,0.5)' }}
-      >
+      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-text-muted">
         {label}
       </span>
       <div
-        className="w-7 h-7 rounded-lg flex items-center justify-center relative"
-        style={{ background: `${accentColor}15`, border: `1px solid ${accentColor}25` }}
+        className={`w-7 h-7 rounded-lg flex items-center justify-center relative ${iconBgClass}`}
       >
         {pulse && (
           <span
-            className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse"
-            style={{ background: accentColor }}
+            className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse ${iconColorClass.replace("text-", "bg-")}`}
           />
         )}
-        {icon}
+        <div
+          className={`transition-transform duration-300 group-hover:scale-110 ${iconColorClass}`}
+        >
+          {icon}
+        </div>
       </div>
     </div>
     <div>
       <div
-        className="text-xl font-bold font-mono tracking-tight"
-        style={{ color: accentColor }}
+        className={`text-xl font-bold font-mono tracking-tight transition-colors duration-300 group-hover:text-primary`}
       >
         {value}
       </div>
-      <div className="text-[10px] mt-0.5 font-mono" style={{ color: 'rgba(148,163,184,0.45)' }}>
-        {sub}
-      </div>
+      <div className="text-xs mt-0.5 font-mono text-text-muted">{sub}</div>
     </div>
   </div>
 );
 
 export const AutomationOverview: React.FC<OverviewProps> = ({
-  lastRunTime, activeCasesCount, totalWatchlistCount, lastRunStatus, totalRunsCount,
+  lastRunTime,
+  activeCasesCount,
+  totalWatchlistCount,
+  lastRunStatus,
+  totalRunsCount,
 }) => {
-  const isRunning  = lastRunStatus === 'RUNNING';
-  const statusText = isRunning ? 'Mengevaluasi...' : 'Aktif · 16:30 WIB';
+  const isRunning = lastRunStatus === "RUNNING";
+  const statusText = isRunning ? "Mengevaluasi..." : "Aktif · 16:30 WIB";
 
   const cards: KpiCardProps[] = [
     {
-      label:       'Status Pipeline',
-      value:       statusText,
-      sub:         isRunning ? 'Workflow sedang berjalan' : 'Unattended Scheduler IDX',
-      icon:        <Zap className="w-3.5 h-3.5" style={{ color: isRunning ? '#fbbf24' : 'hsl(141, 100%, 50%)' }} />,
-      accentColor: isRunning ? '#fbbf24' : 'hsl(141, 100%, 50%)',
-      glowColor:   isRunning ? 'rgba(251,191,36,0.12)' : 'rgba(0,255,85,0.15)',
-      pulse:       isRunning,
+      label: "Watchlist",
+      value: `${totalWatchlistCount}`,
+      sub: "Saham dalam pemantauan",
+      icon: <Eye className="w-3.5 h-3.5" />,
+      iconBgClass: "bg-accent/10 border border-accent/20",
+      iconColorClass: "text-accent",
     },
     {
-      label:       'Watchlist',
-      value:       `${totalWatchlistCount}`,
-      sub:         'Saham dalam pemantauan',
-      icon:        <Eye className="w-3.5 h-3.5" style={{ color: 'hsl(141, 100%, 50%)' }} />,
-      accentColor: 'hsl(141, 100%, 50%)',
-      glowColor:   'rgba(0,255,85,0.15)',
+      label: "Kasus Aktif",
+      value: `${activeCasesCount}`,
+      sub: "Pola terdeteksi hari ini",
+      icon: <Layers className="w-3.5 h-3.5" />,
+      iconBgClass:
+        activeCasesCount > 0
+          ? "bg-amber-500/10 border border-amber-500/20"
+          : "bg-text-muted/10 border border-text-muted/20",
+      iconColorClass:
+        activeCasesCount > 0 ? "text-amber-500" : "text-text-muted",
     },
     {
-      label:       'Kasus Aktif',
-      value:       `${activeCasesCount}`,
-      sub:         'Pola terdeteksi hari ini',
-      icon:        <Layers className="w-3.5 h-3.5" style={{ color: '#fbbf24' }} />,
-      accentColor: activeCasesCount > 0 ? '#fbbf24' : 'rgba(148,163,184,0.5)',
-      glowColor:   'rgba(251,191,36,0.12)',
-    },
-    {
-      label:       'Pemeriksaan Terakhir',
-      value:       lastRunTime
-        ? new Date(lastRunTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-        : '—',
-      sub:         `Total ${totalRunsCount} unattended run`,
-      icon:        <Clock className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />,
-      accentColor: '#a78bfa',
-      glowColor:   'rgba(167,139,250,0.12)',
+      label: "Pemeriksaan Terakhir",
+      value: isRunning 
+        ? "Mengevaluasi..." 
+        : lastRunTime
+          ? new Date(lastRunTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+          : "—",
+      sub: isRunning 
+        ? "Sistem sedang memproses data" 
+        : `Total ${totalRunsCount} eksekusi otomatis`,
+      icon: isRunning ? <Zap className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />,
+      iconBgClass: isRunning 
+        ? "bg-amber-500/10 border border-amber-500/20" 
+        : "bg-primary/10 border border-primary/20",
+      iconColorClass: isRunning ? "text-amber-500" : "text-primary",
+      pulse: isRunning,
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-sans">
-      {cards.map(card => (
-        <KpiCard key={card.label} {...card} />
-      ))}
+    <div className="space-y-3 font-sans">
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-sm font-bold text-text-main flex items-center gap-2">
+          Ringkasan Otomatisasi
+        </h2>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 border border-accent/20">
+          <div className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'bg-amber-400 animate-pulse' : 'bg-accent shadow-[0_0_8px_rgba(0,255,85,0.8)]'}`} />
+          <span className={`text-[10px] font-mono font-bold ${isRunning ? 'text-amber-400' : 'text-accent'}`}>
+            {isRunning ? 'PIPELINE MENGEVALUASI...' : 'SCHEDULER AKTIF · 16:30 WIB'}
+          </span>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {cards.map((card) => (
+          <KpiCard key={card.label} {...card} />
+        ))}
+      </div>
     </div>
   );
 };

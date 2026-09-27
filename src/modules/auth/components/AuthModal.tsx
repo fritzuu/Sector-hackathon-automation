@@ -11,7 +11,7 @@ interface AuthModalProps {
 type ModalView = 'login' | 'register' | 'forgot' | 'forgot-sent';
 
 const INPUT_BASE =
-  'w-full pl-10 pr-10 py-3 bg-[hsl(279,100%,3%)] border border-[hsl(301,60%,25%)] rounded-xl text-sm text-text placeholder-text/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200';
+  'w-full pl-10 pr-10 py-3 bg-bg border border-border rounded-xl text-sm text-text placeholder-text/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200';
 
 const FIELD_ICON = 'w-4 h-4 text-text/50 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none';
 
@@ -110,8 +110,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       <div
         className="relative w-full max-w-md overflow-hidden"
         style={{
-          background: 'hsl(301, 100%, 7%)',
-          border: '1px solid hsl(301, 60%, 25%)',
+          backgroundColor: 'var(--color-secondary)',
+          borderColor: 'var(--color-border)',
           borderRadius: 20,
           boxShadow: '0 32px 80px rgba(0,0,0,0.85)',
         }}
@@ -119,7 +119,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* ── TOP ACCENT BAR ── */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-          background: 'hsl(288, 100%, 70%)',
+          backgroundColor: 'var(--color-secondary)',
           opacity: 0.9,
         }} />
 
@@ -130,7 +130,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Icon */}
               <div style={{
                 width: 40, height: 40, borderRadius: 12,
-                background: 'hsl(288, 100%, 70%)',
+                backgroundColor: 'var(--color-secondary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>
@@ -167,7 +167,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* Tab switcher — only for login / register */}
           {(view === 'login' || view === 'register') && (
-            <div style={{ display: 'flex', gap: 4, marginTop: 18, background: 'hsl(301, 100%, 6%)', borderRadius: 10, padding: 4, border: '1px solid hsl(301, 60%, 25%)' }}>
+            <div style={{ display: 'flex', gap: 4, marginTop: 18, backgroundColor: 'var(--color-secondary)', borderRadius: 10, padding: 4, borderColor: 'var(--color-border)' }}>
               {(['login', 'register'] as const).map(v => (
                 <button
                   key={v}
@@ -372,9 +372,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0 16px' }}>
-                <div style={{ flex: 1, height: 1, background: 'hsl(301, 60%, 25%)' }} />
+                <div style={{ flex: 1, height: 1, backgroundColor: 'var(--color-secondary)' }} />
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>atau</span>
-                <div style={{ flex: 1, height: 1, background: 'hsl(301, 60%, 25%)' }} />
+                <div style={{ flex: 1, height: 1, backgroundColor: 'var(--color-secondary)' }} />
               </div>
 
               {/* Google */}

@@ -1,16 +1,9 @@
-/**
- * WatchlistSearchPanel — Search bar + watchlist cards grid.
- * Live data only — no hardcoded company list.
- * Company list is passed in from WatchlistManager (fetched from Sectors API).
- */
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Search, X, TrendingUp, TrendingDown, AlertTriangle,
-  Send, Wifi, WifiOff, RefreshCw, Globe, ServerCrash,
+  Search, Globe, RefreshCw, ServerCrash, Wifi
 } from 'lucide-react';
-import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError } from '../../../services/liveMarketService.js';
-import { LiveIdxCompany } from '../../../services/sectorsApi.js';
+import { LiveIdxCompany } from '../../../services/sectorsApi';
+import { WatchlistCard } from './WatchlistCard';
 
 interface WatchlistSearchPanelProps {
   watchlist: string[];
@@ -20,156 +13,22 @@ interface WatchlistSearchPanelProps {
   onOpenTelegramModal: () => void;
   onSendTelegramSummary: () => void;
   onOpenStockModal: (symbol: string) => void;
-  // Lifted from WatchlistManager — single source of truth
   liveCompanies: LiveIdxCompany[];
   companiesLoading: boolean;
   companiesError: boolean;
   onRetryCompanies: () => void;
 }
 
-const fmt = (n: number) => n.toLocaleString('id-ID');
-const pct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
-
-// ── WATCHLIST CARD ─────────────────────────────────────────────────────────────
-
-const WatchlistCard: React.FC<{
-  ticker: string;
-  companyInfo: LiveIdxCompany | null;
-  onRemove: () => void;
-  onClick: () => void;
-}> = ({ ticker, companyInfo, onRemove, onClick }) => {
-  const [metrics, setMetrics] = useState<RealTickerMetrics | null>(null);
-  const [loading, setLoading]  = useState(true);
-  const [error, setError]      = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    setLoading(true); setError(false);
-    liveMarketService.fetchTickerMetrics(ticker)
-      .then(m  => { if (alive) { setMetrics(m);  setLoading(false); } })
-      .catch(() => { if (alive) { setError(true); setLoading(false); } });
-    return () => { alive = false; };
-  }, [ticker]);
-
-  const isAnom = metrics ? (metrics.isVolumeAnomaly || metrics.isSpreadAnomaly) : false;
-  const isUp   = (metrics?.changePercent ?? 0) >= 0;
-
-  // Name/sector from live Sectors API if available, else from Yahoo Finance meta
-  const displayName   = companyInfo?.name   ?? metrics?.name   ?? ticker;
-  const displaySector = companyInfo?.sector  ?? metrics?.sector ?? 'Emiten IDX';
-  const displayMcap   = companyInfo?.marketCapTrillion;
-
-  return (
-    <div
-      onClick={onClick}
-      className="group relative rounded-xl cursor-pointer select-none transition-all duration-200"
-      style={{
-        background: isAnom
-          ? 'rgba(180,83,9,0.12)'
-          : 'hsl(301, 100%, 7%)',
-        border: isAnom
-          ? '1px solid rgba(217,119,6,0.3)'
-          : '1px solid hsl(301, 60%, 25%)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-      }}
-      onMouseEnter={e => {
-        const el = e.currentTarget as HTMLDivElement;
-        el.style.borderColor = isAnom ? 'rgba(217,119,6,0.5)' : 'hsl(288, 100%, 70%)';
-        el.style.transform = 'translateY(-1px)';
-        el.style.boxShadow = isAnom ? '0 4px 20px rgba(180,83,9,0.2)' : '0 4px 20px rgba(230,102,255,0.15)';
-      }}
-      onMouseLeave={e => {
-        const el = e.currentTarget as HTMLDivElement;
-        el.style.borderColor = isAnom ? 'rgba(217,119,6,0.3)' : 'hsl(301, 60%, 25%)';
-        el.style.transform = 'translateY(0)';
-        el.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
-      }}
-    >
-      {/* Remove button */}
-      <button
-        onClick={e => { e.stopPropagation(); onRemove(); }}
-        title={`Hapus ${ticker}`}
-        className="absolute top-2.5 right-2.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-md p-1"
-        style={{ background: 'rgba(239,68,68,0.1)', color: 'rgba(252,165,165,0.7)' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#f87171'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(252,165,165,0.7)'; }}
-      >
-        <X className="w-3 h-3" />
-      </button>
-
-      <div className="p-4 pr-8">
-        {/* Top row */}
-        <div className="flex items-center gap-2 mb-2.5">
-          <span
-            className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-[hsl(141,100%,50%)]/15 border border-[hsl(141,100%,50%)]/30 text-[hsl(141,100%,50%)]"
-          >
-            {ticker}
-          </span>
-          {isAnom && (
-            <span
-              className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5"
-              style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#fbbf24' }}
-            >
-              <AlertTriangle className="w-2.5 h-2.5" />
-              ANOM
-            </span>
-          )}
-          {displayMcap != null && displayMcap > 0 && (
-            <span className="ml-auto text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.5)' }}>
-              Rp {displayMcap} T
-            </span>
-          )}
-        </div>
-
-        {/* Name + sector */}
-        <div className="text-xs font-semibold text-white truncate mb-0.5">{displayName}</div>
-        <div className="text-[10px] truncate mb-3" style={{ color: 'rgba(148,163,184,0.5)' }}>
-          {displaySector}
-        </div>
-
-        {/* Price row */}
-        <div className="flex items-center justify-between pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <div className="h-2.5 w-20 rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />
-              <div className="h-2.5 w-12 rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
-            </div>
-          ) : error ? (
-            <div className="flex items-center gap-1.5 text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.4)' }}>
-              <WifiOff className="w-3 h-3" />
-              Harga tidak tersedia
-            </div>
-          ) : metrics ? (
-            <>
-              <span className="text-sm font-bold font-mono text-white">Rp {fmt(metrics.lastPrice)}</span>
-              <div className="flex items-center gap-1">
-                {isUp ? <TrendingUp className="w-3 h-3 text-[hsl(141,100%,50%)]" /> : <TrendingDown className="w-3 h-3 text-rose-400" />}
-                <span className="text-xs font-bold font-mono" style={{ color: isUp ? 'hsl(141, 100%, 50%)' : '#f87171' }}>
-                  {pct(metrics.changePercent)}
-                </span>
-              </div>
-            </>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── MAIN PANEL ────────────────────────────────────────────────────────────────
-
 export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
-  watchlist, isTelegramLinked,
+  watchlist,
   onAddTicker, onRemoveTicker,
-  onOpenTelegramModal, onSendTelegramSummary,
   onOpenStockModal,
   liveCompanies, companiesLoading, companiesError, onRetryCompanies,
 }) => {
-  const [searchQuery,    setSearchQuery]    = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ── Search filtering ───────────────────────────────────────────────────────
   const filteredCompanies = liveCompanies.filter(c => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
@@ -200,7 +59,6 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
     liveCompanies.find(c => c.symbol === symbol) ?? null,
   [liveCompanies]);
 
-  // Search input placeholder
   const inputPlaceholder = companiesLoading
     ? 'Memuat daftar emiten IDX live...'
     : companiesError
@@ -210,83 +68,61 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
         : 'Memuat emiten IDX...';
 
   return (
-    <div
-      className="rounded-xl overflow-hidden font-sans"
-      style={{
-        background: 'hsl(301, 100%, 7%)',
-        border: '1px solid hsl(301, 60%, 25%)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-      }}
-    >
-      {/* Header */}
-      <div
-        className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-      >
+    <div className="rounded-xl font-sans bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+      {/* Header Info */}
+      <div className="rounded-t-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 bg-secondary/30">
         <div>
-          <div className="flex items-center gap-2">
-            <Wifi className="w-3.5 h-3.5 text-[hsl(141,100%,50%)]" />
-            <span className="text-xs font-bold text-white tracking-wide">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Wifi className="w-3.5 h-3.5 text-accent" />
+            <span className="text-xs font-bold text-text-main tracking-wide">
               Watchlist Dipantau
-              <span
-                className="ml-2 font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-[hsl(141,100%,50%)]/15 border border-[hsl(141,100%,50%)]/30 text-[hsl(141,100%,50%)] font-bold"
-              >
-                {watchlist.length}
-              </span>
+            </span>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-accent border border-accent text-bg font-bold ml-1">
+              {watchlist.length}
             </span>
           </div>
-          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <div className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.5)' }}>
-              Harga: Yahoo Finance live · cache 5 mnt
+          
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="text-[10px] font-mono text-text-muted/60">
+              Harga: Yahoo Finance · cache 5 mnt
             </div>
-            {companiesLoading && (
-              <div className="flex items-center gap-1 text-[10px] font-mono" style={{ color: 'rgba(20,184,166,0.6)' }}>
-                <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+            
+            {companiesLoading ? (
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-primary animate-pulse">
+                <RefreshCw className="w-3 h-3 animate-spin" />
                 Mengambil emiten IDX...
               </div>
-            )}
-            {!companiesLoading && !companiesError && liveCompanies.length > 0 && (
-              <div
-                className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[hsl(141,100%,50%)]/10 text-[hsl(141,100%,50%)] border border-[hsl(141,100%,50%)]/30 font-medium"
-              >
-                <Globe className="w-2.5 h-2.5 text-[hsl(141,100%,50%)]" />
-                {liveCompanies.length} emiten IDX · Sectors API
-              </div>
-            )}
-            {!companiesLoading && companiesError && (
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-1 text-[10px] font-mono" style={{ color: 'rgba(239,68,68,0.7)' }}>
-                  <ServerCrash className="w-2.5 h-2.5" />
-                  Sectors API tidak tersedia
+            ) : companiesError ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-[10px] font-mono text-rose-400">
+                  <ServerCrash className="w-3 h-3" />
+                  API Gagal
                 </div>
                 <button
                   onClick={onRetryCompanies}
-                  className="flex items-center gap-1 text-[10px] font-mono transition-colors"
-                  style={{ color: 'rgba(20,184,166,0.7)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#5eead4'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(20,184,166,0.7)'; }}
+                  className="flex items-center gap-1 text-[10px] font-mono text-primary hover:text-primary-hover transition-colors cursor-pointer"
                 >
-                  <RefreshCw className="w-2.5 h-2.5" />
+                  <RefreshCw className="w-3 h-3" />
                   Retry
                 </button>
               </div>
-            )}
+            ) : liveCompanies.length > 0 ? (
+              <div className="flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded-lg bg-accent/10 text-accent border border-accent/20 font-medium">
+                <Globe className="w-3 h-3" />
+                {liveCompanies.length} emiten live
+              </div>
+            ) : null}
           </div>
         </div>
-
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Search bar */}
+      <div className="p-5 space-y-5">
+        {/* Search Bar */}
         <div className="relative" ref={dropdownRef}>
-          <div className="relative">
-            <Search
-              className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: 'rgba(148,163,184,0.4)' }}
-            />
+          <div className="relative group">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted/50 group-focus-within:text-primary transition-colors" />
             <input
               type="text"
-              id="watchlist-search"
               value={searchQuery}
               disabled={companiesError && liveCompanies.length === 0}
               onChange={e => { setSearchQuery(e.target.value); setIsDropdownOpen(true); }}
@@ -298,97 +134,77 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
               }}
               onFocus={() => setIsDropdownOpen(true)}
               placeholder={inputPlaceholder}
-              className="w-full pl-9 pr-9 py-2.5 text-sm text-white placeholder-text/40 rounded-xl bg-[hsl(279,100%,3%)] border border-[hsl(301,60%,25%)] focus:border-[hsl(288,100%,70%)] focus:outline-none transition-all duration-150 disabled:opacity-50"
+              className="w-full pl-10 pr-10 py-3 text-sm text-text-main placeholder-text-muted/40 rounded-xl bg-bg border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all disabled:opacity-50 shadow-inner"
             />
             {companiesLoading && (
-              <RefreshCw
-                className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 animate-spin pointer-events-none text-[hsl(288,100%,70%)]"
-              />
+              <RefreshCw className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 animate-spin text-primary pointer-events-none" />
             )}
           </div>
 
-          {/* Autocomplete dropdown */}
-          {isDropdownOpen && (
-            <div
-              className="absolute left-0 right-0 top-full mt-1.5 rounded-xl overflow-hidden z-30 bg-[hsl(301,100%,7%)] border border-[hsl(301,60%,25%)] shadow-2xl"
-            >
-              {/* Dropdown header */}
-              <div
-                className="px-3.5 py-2 flex items-center justify-between text-[10px] font-mono bg-secondary/60 border-b border-primary/20 text-primary"
-              >
+          {/* Autocomplete Dropdown */}
+          {isDropdownOpen && !companiesError && (
+            <div className="absolute left-0 right-0 top-full mt-2 rounded-xl z-30 bg-secondary border border-border shadow-2xl divide-y divide-border/50 max-h-[350px] overflow-y-auto">
+              <div className="px-4 py-2.5 flex items-center justify-between text-[10px] font-mono bg-bg/50 text-text-muted">
                 <div className="flex items-center gap-1.5 font-bold">
-                  <Globe className="w-3 h-3 text-accent" />
-                  {searchQuery.trim() ? `${filteredCompanies.length} Hasil Pencarian` : 'Rekomendasi Top 3 Saham Pilihan'}
+                  <Globe className="w-3 h-3 text-primary" />
+                  {searchQuery.trim() ? `${filteredCompanies.length} Hasil Pencarian` : 'Top 3 Saham Pilihan'}
                 </div>
-                <span className="text-text/50">Tekan Enter untuk menambah</span>
+                <span>Tekan Enter ⏎</span>
               </div>
 
-              {/* Direct Add custom ticker banner if query typed */}
               {searchQuery.trim().length > 0 && !watchlist.includes(searchQuery.trim().toUpperCase()) && (
                 <div
                   onClick={() => handleSelect(searchQuery.trim().toUpperCase())}
-                  className="px-3.5 py-2.5 flex items-center justify-between gap-2 cursor-pointer bg-secondary/80 hover:bg-secondary border-b border-primary/30 transition-colors"
+                  className="px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-bg/50 transition-colors group"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-[hsl(141,100%,50%)]/15 text-[hsl(141,100%,50%)] border border-[hsl(141,100%,50%)]/30">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-bold text-xs px-2 py-1 rounded bg-accent text-bg shadow-sm">
                       {searchQuery.trim().toUpperCase()}
                     </span>
-                    <span className="text-xs text-white">Tambah &amp; fetch data pasar real-time langsung</span>
+                    <span className="text-xs text-text-muted group-hover:text-text-main transition-colors">
+                      Tambah & fetch data real-time
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    className="px-2.5 py-1 rounded text-xs font-bold bg-primary text-background hover:opacity-90 transition-colors cursor-pointer"
-                  >
+                  <button type="button" className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-bg hover:opacity-90 transition-all shadow-md shadow-primary/20">
                     + Tambah
                   </button>
                 </div>
               )}
 
-              {/* Results (Top 3 suggested when empty query, filtered when typed) */}
               {(searchQuery.trim() ? filteredCompanies : liveCompanies.slice(0, 3)).map(company => {
                 const isAdded = watchlist.includes(company.symbol);
                 return (
                   <div
                     key={company.symbol}
                     onClick={() => !isAdded && handleSelect(company.symbol)}
-                    className="px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors duration-100 hover:bg-secondary/40 border-b border-border/40"
-                    style={{
-                      cursor: isAdded ? 'default' : 'pointer',
-                      opacity: isAdded ? 0.5 : 1,
-                    }}
+                    className={`px-4 py-3 flex items-center justify-between gap-3 transition-colors ${
+                      isAdded ? 'opacity-50 cursor-default bg-bg/20' : 'cursor-pointer hover:bg-bg/50 group'
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className="font-mono font-bold text-xs px-2 py-0.5 rounded flex-shrink-0 bg-[hsl(141,100%,50%)]/15 border border-[hsl(141,100%,50%)]/30 text-[hsl(141,100%,50%)]"
-                      >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-mono font-bold text-xs px-2 py-1 rounded flex-shrink-0 bg-accent text-bg shadow-sm">
                         {company.symbol}
                       </span>
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold text-white truncate">{company.name}</div>
-                        <div className="text-[10px] font-mono truncate text-text/50">
+                        <div className="text-xs font-bold text-text-main truncate group-hover:text-primary transition-colors">{company.name}</div>
+                        <div className="text-[10px] font-mono truncate text-text-muted">
                           {company.sector}
                           {company.marketCapTrillion > 0 ? ` · Rp ${company.marketCapTrillion} T` : ''}
-                          {company.rank > 0 ? ` · #${company.rank}` : ''}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-3 flex-shrink-0">
                       {company.lastPrice > 0 && (
-                        <span className="text-xs font-mono font-semibold text-text/80 hidden sm:block">
+                        <span className="text-xs font-mono font-bold text-text-muted hidden sm:block">
                           Rp {company.lastPrice.toLocaleString('id-ID')}
                         </span>
                       )}
                       {isAdded ? (
-                        <span
-                          className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-accent/15 text-accent border border-accent/30"
-                        >
+                        <span className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-accent/15 text-accent border border-accent/30">
                           Dipantau
                         </span>
                       ) : (
-                        <button
-                          type="button"
-                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/20 border border-primary/40 text-primary hover:bg-primary hover:text-background transition-colors cursor-pointer"
-                        >
+                        <button type="button" className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/20 border border-primary/40 text-primary group-hover:bg-primary group-hover:text-bg transition-all">
                           + Tambah
                         </button>
                       )}
@@ -399,55 +215,44 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
             </div>
           )}
 
-          {/* Error dropdown — no fallback, just error state */}
           {isDropdownOpen && companiesError && liveCompanies.length === 0 && (
-            <div
-              className="absolute left-0 right-0 top-full mt-1.5 rounded-xl overflow-hidden z-30"
-              style={{
-                background: 'rgba(10,15,29,0.98)',
-                border: '1px solid rgba(239,68,68,0.2)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-              }}
-            >
-              <div className="p-5 flex flex-col items-center gap-3 text-center">
-                <ServerCrash className="w-8 h-8" style={{ color: 'rgba(239,68,68,0.4)' }} />
-                <div>
-                  <div className="text-xs font-semibold text-white mb-1">Data Emiten Tidak Tersedia</div>
-                  <div className="text-[11px] font-mono" style={{ color: 'rgba(148,163,184,0.5)' }}>
-                    Gagal mengambil daftar emiten dari Sectors API.<br />
-                    Pastikan API key valid dan koneksi aktif.
-                  </div>
-                </div>
-                <button
-                  onClick={() => { onRetryCompanies(); setIsDropdownOpen(false); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                  style={{ background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(20,184,166,0.25)', color: '#5eead4' }}
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Coba Lagi
-                </button>
+            <div className="absolute left-0 right-0 top-full mt-2 rounded-xl overflow-hidden z-30 bg-bg border border-rose-500/30 shadow-2xl p-6 flex flex-col items-center gap-3 text-center">
+              <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center">
+                <ServerCrash className="w-6 h-6 text-rose-500" />
               </div>
+              <div>
+                <div className="text-sm font-bold text-text-main mb-1">Data Emiten Tidak Tersedia</div>
+                <div className="text-[11px] font-mono text-text-muted">
+                  Gagal mengambil daftar emiten dari Sectors API.<br />
+                  Pastikan API key valid dan koneksi aktif.
+                </div>
+              </div>
+              <button
+                onClick={() => { onRetryCompanies(); setIsDropdownOpen(false); }}
+                className="mt-2 flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-primary/20 text-primary border border-primary/30 hover:bg-primary hover:text-bg transition-all"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Coba Lagi
+              </button>
             </div>
           )}
         </div>
 
-        {/* Watchlist cards */}
+        {/* Watchlist Cards Grid */}
         {watchlist.length === 0 ? (
-          <div
-            className="py-10 text-center rounded-xl"
-            style={{ border: '1px dashed rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.01)' }}
-          >
-            <div className="text-xs font-semibold mb-1" style={{ color: 'rgba(148,163,184,0.5)' }}>
+          <div className="py-12 text-center rounded-xl border border-dashed border-border bg-bg/30 flex flex-col items-center justify-center gap-2">
+            <Globe className="w-8 h-8 text-text-muted/40 mb-2" />
+            <div className="text-sm font-bold text-text-muted">
               Watchlist Anda masih kosong
             </div>
-            <div className="text-[11px] font-mono" style={{ color: 'rgba(148,163,184,0.35)' }}>
+            <div className="text-[11px] font-mono text-text-muted/50">
               {liveCompanies.length > 0
-                ? `Cari dari ${liveCompanies.length} emiten IDX di atas atau pasang paket sektor`
+                ? `Cari dari ${liveCompanies.length} emiten IDX di atas atau pasang preset sektor`
                 : 'Tunggu data emiten dimuat, lalu cari saham di atas'}
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {watchlist.map(ticker => (
               <WatchlistCard
                 key={ticker}

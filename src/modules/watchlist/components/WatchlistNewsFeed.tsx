@@ -78,16 +78,16 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
   if (watchlist.length === 0) return null;
 
   return (
-    <div className="bg-[#0f172a] border border-slate-800 rounded-lg p-5 space-y-4 font-sans">
+    <div className="bg-secondary border border-border rounded-lg p-5 space-y-4 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Newspaper className="w-4 h-4 text-teal-400 flex-shrink-0" />
           <div>
             <h2 className="text-sm font-bold text-white uppercase tracking-wider">
               News &amp; Market Intelligence
               {!loading && totalNews > 0 && (
-                <span className="ml-1.5 text-xs font-mono text-slate-400 normal-case tracking-normal">
+                <span className="ml-1.5 text-xs font-mono text-text-muted normal-case tracking-normal">
                   ({totalNews} artikel)
                 </span>
               )}
@@ -107,7 +107,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-teal-300 border border-slate-700 hover:border-teal-600 px-2.5 py-1 rounded transition-all disabled:opacity-40"
+            className="flex items-center gap-1.5 text-xs font-semibold text-text-muted hover:text-teal-300 border border-border hover:border-teal-600 px-2.5 py-1 rounded transition-all disabled:opacity-40"
           >
             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -119,11 +119,11 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[1,2,3,4].map(i => (
-            <div key={i} className="p-3.5 rounded-lg border border-slate-800 space-y-2 animate-pulse">
-              <div className="h-2.5 bg-slate-800 rounded w-1/3" />
-              <div className="h-3 bg-slate-800 rounded w-full" />
-              <div className="h-3 bg-slate-800 rounded w-4/5" />
-              <div className="h-2 bg-slate-800 rounded w-1/4 mt-3" />
+            <div key={i} className="p-3.5 rounded-lg border border-border space-y-2 animate-pulse">
+              <div className="h-2.5 bg-secondary rounded w-1/3" />
+              <div className="h-3 bg-secondary rounded w-full" />
+              <div className="h-3 bg-secondary rounded w-4/5" />
+              <div className="h-2 bg-secondary rounded w-1/4 mt-3" />
             </div>
           ))}
         </div>
@@ -131,9 +131,9 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
 
       {/* No news state */}
       {!loading && newsByTicker.length === 0 && (
-        <div className="py-8 text-center border border-dashed border-slate-800 rounded-lg bg-slate-900/30">
+        <div className="py-8 text-center border border-dashed border-border rounded-lg bg-secondary/30">
           <Newspaper className="w-6 h-6 text-slate-700 mx-auto mb-2" />
-          <p className="text-xs font-semibold text-slate-400">
+          <p className="text-xs font-semibold text-text-muted">
             Tidak ada berita terbaru dari Yahoo Finance untuk saham di watchlist Anda.
           </p>
           <p className="text-[11px] text-slate-500 mt-1 font-mono">
@@ -149,7 +149,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
             items.map((news, idx) => (
               <div
                 key={`${ticker}-${idx}`}
-                className="p-3.5 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between gap-2.5"
+                className="p-3.5 rounded-lg bg-secondary/80 border border-border hover:border-border transition-all flex flex-col justify-between gap-2.5"
               >
                 <div>
                   {/* Ticker badge + publisher */}
@@ -179,7 +179,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
                 </div>
 
                 {/* Footer — only sectors.app/idx link */}
-                <div className="pt-2 border-t border-slate-800/50 flex items-center justify-between text-[10px]">
+                <div className="pt-2 border-t border-border flex items-center justify-between text-[10px]">
                   <span className="text-slate-600 font-mono">Yahoo Finance</span>
                   <a
                     href={`https://sectors.app/idx/${ticker}`}

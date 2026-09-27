@@ -47,8 +47,8 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
       <div
         className="relative w-full max-w-lg overflow-hidden my-6"
         style={{
-          background: 'hsl(301, 100%, 7%)',
-          border: '1px solid hsl(301, 60%, 25%)',
+          backgroundColor: 'var(--color-secondary)',
+          borderColor: 'var(--color-border)',
           borderRadius: 20,
           boxShadow: '0 32px 80px rgba(0,0,0,0.85)',
         }}
@@ -56,14 +56,14 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
         {/* Top Accent Line */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-          background: 'hsl(288, 100%, 70%)',
+          backgroundColor: 'var(--color-secondary)',
           opacity: 0.9,
         }} />
 
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[hsl(301,60%,25%)] flex items-center justify-between bg-secondary/30">
+        <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-secondary/30">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-[hsl(288,100%,70%)] flex items-center justify-center text-[hsl(279,100%,3%)] font-black flex-shrink-0 shadow-md shadow-primary/30">
+            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center text-bg font-black flex-shrink-0 shadow-md shadow-primary/30">
               <Send className="w-4 h-4 -translate-x-0.5 stroke-[2.5]" />
             </div>
             <div>
@@ -92,7 +92,7 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
                 <span>Telegram Terhubung & Terkunci Permanen</span>
               </div>
               <p className="text-xs text-text/80 leading-relaxed">
-                Akun Telegram <strong className="text-white font-mono">{user.telegramUsername}</strong> (Chat ID: <span className="font-mono text-[hsl(288,100%,70%)]">{user.telegramChatId}</span>) telah dipairing secara permanen ke akun ini. Setiap pembaruan kasus pada watchlist Anda otomatis dikirimkan ke chat tersebut.
+                Akun Telegram <strong className="text-white font-mono">{user.telegramUsername}</strong> (Chat ID: <span className="font-mono text-primary">{user.telegramChatId}</span>) telah dipairing secara permanen ke akun ini. Setiap pembaruan kasus pada watchlist Anda otomatis dikirimkan ke chat tersebut.
               </p>
               <div className="pt-2 border-t border-emerald-500/20 flex items-center justify-between">
                 <span className="text-[10px] text-text/50">Status: Aktif</span>
@@ -112,12 +112,12 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
                   Kode Pairing Kriptografis Unik (24+ Karakter):
                 </label>
                 <div className="flex items-center space-x-2">
-                  <div className="flex-1 px-3 py-2.5 bg-[hsl(279,100%,3%)] border border-[hsl(301,60%,25%)] rounded-xl font-mono text-xs text-[hsl(141,100%,50%)] font-bold truncate select-all">
+                  <div className="flex-1 px-3 py-2.5 bg-bg border border-border rounded-xl font-mono text-xs text-accent font-bold truncate select-all">
                     {fullCommand}
                   </div>
                   <button
                     onClick={handleCopy}
-                    className="px-3.5 py-2.5 bg-[hsl(141,100%,50%)]/15 hover:bg-[hsl(141,100%,50%)]/25 text-[hsl(141,100%,50%)] rounded-xl text-xs font-bold border border-[hsl(141,100%,50%)]/40 transition-colors flex items-center space-x-1.5 flex-shrink-0 cursor-pointer"
+                    className="px-3.5 py-2.5 bg-accent hover:bg-accent text-bg rounded-xl text-xs font-bold border border-accent transition-colors flex items-center space-x-1.5 flex-shrink-0 cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>{copied ? 'Tersalin!' : 'Salin Perintah'}</span>
@@ -130,26 +130,26 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
 
               {/* Step by step */}
               <div className="space-y-2.5 pt-1 text-xs">
-                <div className="flex items-start space-x-2.5 p-3 rounded-xl bg-[hsl(279,100%,3%)]/80 border border-[hsl(301,60%,25%)]/60">
-                  <span className="w-5 h-5 rounded-lg bg-[hsl(141,100%,50%)]/20 text-[hsl(141,100%,50%)] border border-[hsl(141,100%,50%)]/40 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                <div className="flex items-start space-x-2.5 p-3 rounded-xl bg-bg border border-border">
+                  <span className="w-5 h-5 rounded-lg bg-accent text-bg border border-accent flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                     1
                   </span>
                   <div className="text-text/80 leading-relaxed">
-                    Buka Telegram dan cari bot resmi <strong className="text-[hsl(141,100%,50%)] bg-[hsl(141,100%,50%)]/15 px-1.5 py-0.5 rounded border border-[hsl(141,100%,50%)]/30 font-mono">@{botUsername}</strong>.
+                    Buka Telegram dan cari bot resmi <strong className="text-bg bg-accent px-1.5 py-0.5 rounded border border-accent font-mono">@{botUsername}</strong>.
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-2.5 p-3 rounded-xl bg-[hsl(279,100%,3%)]/80 border border-[hsl(301,60%,25%)]/60">
-                  <span className="w-5 h-5 rounded-lg bg-[hsl(141,100%,50%)]/20 text-[hsl(141,100%,50%)] border border-[hsl(141,100%,50%)]/40 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                <div className="flex items-start space-x-2.5 p-3 rounded-xl bg-bg border border-border">
+                  <span className="w-5 h-5 rounded-lg bg-accent text-bg border border-accent flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                     2
                   </span>
                   <div className="text-text/80 leading-relaxed">
-                    Kirim perintah <strong className="text-[hsl(141,100%,50%)] bg-[hsl(141,100%,50%)]/15 px-1.5 py-0.5 rounded border border-[hsl(141,100%,50%)]/30 font-mono">/start &lt;token&gt;</strong> yang sudah Anda salin di atas.
+                    Kirim perintah <strong className="text-bg bg-accent px-1.5 py-0.5 rounded border border-accent font-mono">/start &lt;token&gt;</strong> yang sudah Anda salin di atas.
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-2.5 p-3 rounded-xl bg-[hsl(279,100%,3%)]/80 border border-[hsl(301,60%,25%)]/60">
-                  <span className="w-5 h-5 rounded-lg bg-[hsl(141,100%,50%)]/20 text-[hsl(141,100%,50%)] border border-[hsl(141,100%,50%)]/40 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                <div className="flex items-start space-x-2.5 p-3 rounded-xl bg-bg border border-border">
+                  <span className="w-5 h-5 rounded-lg bg-accent text-bg border border-accent flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                     3
                   </span>
                   <div className="text-text/80 leading-relaxed">
@@ -159,10 +159,10 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
               </div>
 
               {/* Action */}
-              <div className="pt-2 border-t border-[hsl(301,60%,25%)]">
+              <div className="pt-2 border-t border-border">
                 <button
                   onClick={handleSimulateLink}
-                  className="w-full py-3 px-4 bg-[hsl(141,100%,50%)] hover:bg-[hsl(141,100%,45%)] text-[hsl(279,100%,3%)] font-black text-xs rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-lg shadow-accent/20"
+                  className="w-full py-3 px-4 bg-accent hover:bg-accent text-bg font-black text-xs rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-lg shadow-accent/20"
                 >
                   <Send className="w-4 h-4 stroke-[2.5]" />
                   <span>Simulasikan / Konfirmasi Sambungan Bot</span>
@@ -172,7 +172,7 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
           )}
 
           <div className="flex items-center space-x-2 text-[10px] text-text/40 justify-center pt-1">
-            <Shield className="w-3.5 h-3.5 text-[hsl(141,100%,50%)] flex-shrink-0" />
+            <Shield className="w-3.5 h-3.5 text-accent flex-shrink-0" />
             <span>Isolasi Aman: Watchlist pengguna lain tidak akan pernah masuk ke Telegram Anda.</span>
           </div>
         </div>

@@ -54,7 +54,7 @@ function GuestIndexPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col selection:bg-teal-500 selection:text-white font-sans">
+    <div className="min-h-screen bg-bg text-text flex flex-col selection:bg-teal-500 selection:text-white font-sans">
       <Header
         currentUser={null}
         onOpenAuth={handleOpenAuth}

@@ -53,11 +53,11 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl bg-[#0d1424] border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden my-6 max-h-[90vh] flex flex-col"
+        className="relative w-full max-w-3xl bg-[#0d1424] border border-border rounded-xl shadow-2xl overflow-hidden my-6 max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-start justify-between p-5 border-b border-slate-800 bg-[#111d2e]">
+        <div className="flex items-start justify-between p-5 border-b border-border bg-[#111d2e]">
           <div className="flex items-start gap-3.5 min-w-0">
             <div className="w-10 h-10 rounded-lg bg-teal-950/80 border border-teal-600/40 flex items-center justify-center text-teal-300 font-mono font-bold text-sm flex-shrink-0 mt-0.5">
               {caseItem.symbol}
@@ -75,12 +75,12 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   {caseItem.status}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400 mt-1 font-mono flex-wrap">
+              <div className="flex items-center gap-2 text-xs text-text-muted mt-1 font-mono flex-wrap">
                 <span>{companySector}{companySubSector ? ` · ${companySubSector}` : ''}</span>
                 <span>•</span>
                 <span className="text-slate-500">ID: {caseItem.caseId}</span>
                 <span>•</span>
-                <span className="text-slate-400">
+                <span className="text-text-muted">
                   Dibuka: {new Date(caseItem.openedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, {new Date(caseItem.openedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
                 </span>
               </div>
@@ -88,7 +88,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex-shrink-0"
+            className="p-1.5 rounded-lg text-text-muted hover:text-white hover:bg-secondary transition-colors flex-shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -98,9 +98,9 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         <div className="p-5 overflow-y-auto space-y-4 text-xs">
           {/* Live Market HUD / KPI Strip */}
           {metrics && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800/60">
-                <div className="text-[10px] font-mono text-slate-400">Harga Terakhir</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-secondary/80 border border-border">
+              <div className="p-2 rounded-lg bg-slate-950/40 border border-border">
+                <div className="text-[10px] font-mono text-text-muted">Harga Terakhir</div>
                 <div className="text-sm font-bold font-mono text-white mt-0.5">
                   Rp {fmt(metrics.lastPrice)}
                 </div>
@@ -110,32 +110,32 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 </div>
               </div>
 
-              <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800/60">
-                <div className="text-[10px] font-mono text-slate-400">Volume Hari Ini</div>
+              <div className="p-2 rounded-lg bg-slate-950/40 border border-border">
+                <div className="text-[10px] font-mono text-text-muted">Volume Hari Ini</div>
                 <div className="text-sm font-bold font-mono text-white mt-0.5">
                   {vol(metrics.todayVolume)} lot
                 </div>
-                <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                <div className="text-[10px] font-mono text-text-muted mt-0.5">
                   Med: {vol(metrics.medianVolume20d)} lot
                 </div>
               </div>
 
-              <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800/60">
-                <div className="text-[10px] font-mono text-slate-400">Rasio Volume</div>
+              <div className="p-2 rounded-lg bg-slate-950/40 border border-border">
+                <div className="text-[10px] font-mono text-text-muted">Rasio Volume</div>
                 <div className={`text-sm font-bold font-mono mt-0.5 ${metrics.isVolumeAnomaly ? 'text-amber-400' : 'text-teal-300'}`}>
                   {metrics.volumeMultiplier}x
                 </div>
-                <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                <div className="text-[10px] font-mono text-text-muted mt-0.5">
                   {metrics.isVolumeAnomaly ? '≥ 2.0x Spike' : 'Batas Wajar'}
                 </div>
               </div>
 
-              <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800/60">
-                <div className="text-[10px] font-mono text-slate-400">Spread vs IHSG</div>
+              <div className="p-2 rounded-lg bg-slate-950/40 border border-border">
+                <div className="text-[10px] font-mono text-text-muted">Spread vs IHSG</div>
                 <div className={`text-sm font-bold font-mono mt-0.5 ${metrics.isSpreadAnomaly ? 'text-amber-400' : 'text-slate-200'}`}>
                   {pct(metrics.spreadVsIhsg)}
                 </div>
-                <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                <div className="text-[10px] font-mono text-text-muted mt-0.5">
                   IHSG: {pct(metrics.ihsgChangePercent)}
                 </div>
               </div>
@@ -145,7 +145,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           {template && (
             <div className="space-y-3.5">
               {/* Facts Card */}
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-teal-500/30 space-y-2">
+              <div className="p-4 rounded-xl bg-secondary/90 border border-teal-500/30 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-teal-300 font-bold text-xs uppercase tracking-wider">
                     <CheckCircle className="w-4 h-4 text-teal-400" />
@@ -166,12 +166,12 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               </div>
 
               {/* Limited Interpretations */}
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-sky-500/20 space-y-2">
+              <div className="p-4 rounded-xl bg-secondary/90 border border-sky-500/20 space-y-2">
                 <div className="flex items-center gap-2 text-sky-300 font-bold text-xs uppercase tracking-wider">
                   <Shield className="w-4 h-4 text-sky-400" />
                   <span>INTERPRETASI TERBATAS (Berdasarkan Parameter Matematika)</span>
                 </div>
-                <ul className="space-y-1.5 text-slate-300 pl-1 text-[11px] leading-relaxed">
+                <ul className="space-y-1.5 text-text-muted pl-1 text-[11px] leading-relaxed">
                   {template.limitedInterpretations.map((item, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="text-sky-400 font-bold">•</span>
@@ -182,12 +182,12 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               </div>
 
               {/* Unknowns */}
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-amber-500/20 space-y-2">
+              <div className="p-4 rounded-xl bg-secondary/90 border border-amber-500/20 space-y-2">
                 <div className="flex items-center gap-2 text-amber-300 font-bold text-xs uppercase tracking-wider">
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
                   <span>BATAS INFORMASI (Tidak Ditebak / Spekulasi)</span>
                 </div>
-                <ul className="space-y-1.5 text-slate-300 pl-1 text-[11px] leading-relaxed">
+                <ul className="space-y-1.5 text-text-muted pl-1 text-[11px] leading-relaxed">
                   {template.unknowns.map((u, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="text-amber-400 font-bold">•</span>
@@ -198,7 +198,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               </div>
 
               {/* Disclaimer */}
-              <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/20 text-slate-400 text-[11px] leading-relaxed">
+              <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/20 text-text-muted text-[11px] leading-relaxed">
                 <strong className="text-amber-300 block mb-1">⚠️ Disclaimer Mandatori:</strong>
                 {template.disclaimer}
               </div>
@@ -206,8 +206,8 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           )}
 
           {/* Official Intelligence Links */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/40 border border-slate-800 text-[11px] font-mono">
-            <span className="text-slate-400">Verifikasi Langsung ke Sumber Resmi:</span>
+          <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border text-[11px] font-mono">
+            <span className="text-text-muted">Verifikasi Langsung ke Sumber Resmi:</span>
             <div className="flex items-center gap-2">
               <a
                 href={`https://sectors.app/idx/${caseItem.symbol}`}
@@ -232,24 +232,24 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           </div>
 
           {/* Timeline */}
-          <div className="border-t border-slate-800 pt-4">
+          <div className="border-t border-border pt-4">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
               <Clock className="w-4 h-4 text-teal-400" />
               <span>Linimasa Perkembangan Kasus ({events.length} Catatan Evaluasi)</span>
             </h4>
 
-            <div className="relative pl-5 space-y-3 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+            <div className="relative pl-5 space-y-3 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-secondary">
               {events.map((evt, idx) => (
                 <div key={evt.eventId || idx} className="relative">
                   <div className="absolute -left-5 top-1.5 w-2 h-2 rounded-full bg-teal-400 ring-2 ring-[#0d1424]" />
-                  <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-secondary/90 border border-border">
                     <div className="flex items-center justify-between text-[11px] mb-1 font-mono">
                       <span className="font-bold text-white">Status: {evt.newStatus}</span>
-                      <span className="text-slate-400">
+                      <span className="text-text-muted">
                         {new Date(evt.timestamp).toLocaleString('id-ID')}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed font-mono">{evt.renderedSummary}</p>
+                    <p className="text-[11px] text-text-muted leading-relaxed font-mono">{evt.renderedSummary}</p>
                   </div>
                 </div>
               ))}
@@ -258,13 +258,13 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3.5 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between">
+        <div className="p-3.5 border-t border-border bg-secondary/60 flex items-center justify-between">
           <span className="text-[10px] font-mono text-slate-500">
             SIBA Engine · Evaluasi Penutupan 16:30 WIB
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+            className="px-4 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-secondary hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
           >
             Tutup
           </button>

@@ -1,18 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --color-text: hsl(0, 0%, 100%);
+  --color-text: hsl(276, 30%, 95%);
+  --color-text-muted: hsl(276, 20%, 65%);
   --color-bg: hsl(279, 100%, 3%);
-  --color-primary: hsl(288, 100%, 70%);
-  --color-secondary: hsl(301, 100%, 20%);
+  /* A true, darker purple for cards/secondary instead of the bright magenta */
+  --color-secondary: hsl(270, 70%, 12%); 
+  --color-border: hsl(270, 60%, 25%);
+  --color-primary: hsl(280, 80%, 65%);
   --color-accent: hsl(141, 100%, 50%);
+}
+
+@theme {
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-bg: var(--color-bg);
+  --color-secondary: var(--color-secondary);
+  --color-border: var(--color-border);
+  --color-primary: var(--color-primary);
+  --color-accent: var(--color-accent);
 }
 
 @layer base {
   body {
     background-color: var(--color-bg);
     color: var(--color-text);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
 
   /* Every clickable element & button gets pointer cursor globally */
@@ -68,7 +85,10 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
-

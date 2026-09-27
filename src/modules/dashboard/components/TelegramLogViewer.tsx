@@ -44,15 +44,10 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
 
   return (
     <div
-      className="rounded-xl p-5 space-y-4 font-sans"
-      style={{
-        background: 'hsl(301, 100%, 7%)',
-        border: '1px solid hsl(301, 60%, 25%)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-      }}
+      className="rounded-xl p-5 space-y-4 font-sans bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[hsl(301,60%,20%)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-secondary/30 text-accent border border-secondary flex items-center justify-center flex-shrink-0">
             <Send className="w-4 h-4 text-accent" />
@@ -94,7 +89,7 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Cari dalam riwayat log Telegram..."
-            className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-xs text-text placeholder:text-text/40 outline-none focus:border-primary transition-colors"
+            className="w-full pl-9 pr-3 py-2 bg-bg border border-border rounded-lg text-xs text-text placeholder:text-text/40 outline-none focus:border-primary transition-colors"
           />
         </div>
       )}
@@ -104,8 +99,8 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
         <div
           className="py-8 text-center border border-dashed rounded-xl space-y-2"
           style={{
-            background: 'hsl(301, 100%, 5%)',
-            borderColor: 'hsl(301, 60%, 20%)',
+            backgroundColor: 'var(--color-secondary)',
+            borderColor: 'var(--color-border)',
           }}
         >
           <Send className="w-8 h-8 text-primary/40 mx-auto" />
@@ -125,7 +120,7 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
           {filteredLogs.map(log => (
             <div
               key={log.id}
-              className="p-4 rounded-xl bg-background border border-border/80 hover:border-primary/40 transition-all space-y-2.5"
+              className="p-4 rounded-xl bg-bg border border-border/80 hover:border-primary/40 transition-all space-y-2.5"
             >
               {/* Top metadata */}
               <div className="flex items-center justify-between gap-2 flex-wrap text-xs">

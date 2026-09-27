@@ -60,21 +60,16 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({ cases, onSelec
 
   return (
     <div
-      className="rounded-xl p-5 space-y-4 font-sans"
-      style={{
-        background: 'hsl(301, 100%, 7%)',
-        border: '1px solid hsl(301, 60%, 25%)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-      }}
+      className="rounded-xl p-5 space-y-4 font-sans bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[hsl(301,60%,20%)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border">
         <div className="flex items-center space-x-2">
           <ShieldAlert className="w-4 h-4 text-amber-400" />
           <h2 className="text-sm font-bold text-white uppercase tracking-wider">
             Kasus Pemantauan Terbuka ({cases.length})
           </h2>
         </div>
-        <div className="flex items-center space-x-1.5 self-start sm:self-auto px-2 py-0.5 bg-background border border-border rounded text-[11px] text-text/60 font-mono">
+        <div className="flex items-center space-x-1.5 self-start sm:self-auto px-2 py-0.5 bg-bg border border-border rounded text-[11px] text-text/60 font-mono">
           <span>P0-05 Stateful Timeline</span>
         </div>
       </div>
@@ -83,8 +78,8 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({ cases, onSelec
         <div
           className="py-8 text-center border border-dashed rounded-xl space-y-1"
           style={{
-            background: 'hsl(301, 100%, 5%)',
-            borderColor: 'hsl(301, 60%, 20%)',
+            backgroundColor: 'var(--color-secondary)',
+            borderColor: 'var(--color-border)',
           }}
         >
           <ShieldAlert className="w-6 h-6 text-primary/40 mx-auto mb-2" />
@@ -99,7 +94,7 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({ cases, onSelec
             <div
               key={c.caseId}
               onClick={() => onSelectCase(c)}
-              className="p-4 rounded-xl bg-background hover:bg-secondary/40 border border-border hover:border-primary/40 transition-all cursor-pointer group flex flex-col justify-between"
+              className="p-4 rounded-xl bg-bg hover:bg-secondary/40 border border-border hover:border-primary/40 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-2">

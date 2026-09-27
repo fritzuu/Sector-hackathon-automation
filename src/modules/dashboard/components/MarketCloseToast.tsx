@@ -100,7 +100,7 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
               <p className="text-sm font-semibold text-white mt-0.5 leading-snug">
                 Data pasar sudah diperbarui
               </p>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+              <p className="text-[11px] text-text-muted mt-1 leading-relaxed">
                 Harga penutupan &amp; berita terbaru untuk{' '}
                 <span className="text-teal-300 font-bold font-mono">{watchlistCount} saham</span>{' '}
                 di watchlist Anda sudah tersedia.
@@ -110,7 +110,7 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
             {/* Close button */}
             <button
               onClick={onClose}
-              className="flex-shrink-0 text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-800/60 transition-colors"
+              className="flex-shrink-0 text-slate-500 hover:text-white p-1 rounded-lg hover:bg-secondary/60 transition-colors"
               aria-label="Tutup notifikasi"
             >
               <X className="w-3.5 h-3.5" />
@@ -156,7 +156,7 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
         </div>
 
         {/* Progress bar — auto dismiss countdown */}
-        <div className="h-0.5 bg-slate-800/60">
+        <div className="h-0.5 bg-secondary/60">
           <div
             className="h-full bg-teal-500"
             style={{

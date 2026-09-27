@@ -17,21 +17,16 @@ interface RunAuditHistoryProps {
 export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs }) => {
   return (
     <div
-      className="rounded-xl p-5 space-y-4 font-sans"
-      style={{
-        background: 'hsl(301, 100%, 7%)',
-        border: '1px solid hsl(301, 60%, 25%)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-      }}
+      className="rounded-xl p-5 space-y-4 font-sans bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[hsl(301,60%,20%)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border">
         <div className="flex items-center space-x-2">
           <History className="w-4 h-4 text-primary" />
           <h2 className="text-sm font-bold text-white uppercase tracking-wider">
             Audit Trail Unattended Run ({runs.length})
           </h2>
         </div>
-        <div className="flex items-center space-x-1.5 self-start sm:self-auto px-2 py-0.5 bg-background border border-border rounded text-[11px] text-text/60 font-mono">
+        <div className="flex items-center space-x-1.5 self-start sm:self-auto px-2 py-0.5 bg-bg border border-border rounded text-[11px] text-text/60 font-mono">
           <span>P0-02 Unattended Execution Proof</span>
         </div>
       </div>

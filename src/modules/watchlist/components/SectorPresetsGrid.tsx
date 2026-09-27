@@ -37,8 +37,8 @@ export const SectorPresetsGrid: React.FC<SectorPresetsGridProps> = ({ watchlist,
     <div
       className="rounded-xl overflow-hidden font-sans"
       style={{
-        background: 'hsl(301, 100%, 7%)',
-        border: '1px solid hsl(301, 60%, 25%)',
+        backgroundColor: 'var(--color-secondary)',
+        borderColor: 'var(--color-border)',
         boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
       }}
     >
@@ -87,9 +87,9 @@ export const SectorPresetsGrid: React.FC<SectorPresetsGridProps> = ({ watchlist,
             Pengelompokan emiten terlikuid berdasarkan data <strong className="text-slate-200">Sectors API v2</strong> — bukan rekomendasi beli/jual.
           </p>
           <ul className="text-[11px] space-y-1 pl-3 list-disc" style={{ color: 'rgba(148,163,184,0.65)' }}>
-            <li><strong className="text-slate-300">Konstituen Resmi LQ45 &amp; IDX30:</strong> Saham dengan nilai transaksi &amp; frekuensi tertinggi di BEI.</li>
-            <li><strong className="text-slate-300">Kapitalisasi Pasar Terbesar:</strong> Total nilai pasar puluhan hingga ribuan Triliun Rupiah.</li>
-            <li><strong className="text-slate-300">Klasifikasi IDX-IC:</strong> Pengelompokan sektor terstandarisasi Bursa Efek Indonesia.</li>
+            <li><strong className="text-text-muted">Konstituen Resmi LQ45 &amp; IDX30:</strong> Saham dengan nilai transaksi &amp; frekuensi tertinggi di BEI.</li>
+            <li><strong className="text-text-muted">Kapitalisasi Pasar Terbesar:</strong> Total nilai pasar puluhan hingga ribuan Triliun Rupiah.</li>
+            <li><strong className="text-text-muted">Klasifikasi IDX-IC:</strong> Pengelompokan sektor terstandarisasi Bursa Efek Indonesia.</li>
           </ul>
         </div>
       )}
