@@ -8,47 +8,105 @@ import { ChevronRight, ChevronLeft, X, Sparkles, CheckCircle2, Target } from 'lu
 
 interface TourStep {
   targetId: string;
+  path: DashboardPath;
   title: string;
   description: string;
   actionHint: string;
 }
 
+export type DashboardPath = '/dashboard' | '/dashboard/watchlist' | '/dashboard/cases' | '/dashboard/audit';
+
 const TOUR_STEPS: TourStep[] = [
   {
-    targetId: 'tour-watchlist-manager',
-    title: '1. Cari & Tambahkan Saham ke Watchlist',
-    description: 'Langkah pertama: Gunakan kolom pencarian di panel ini untuk menemukan saham IDX pilihan Anda atau pasang preset 6 sektor langsung.',
-    actionHint: 'Target: Panel Watchlist & Pencarian Emiten',
+    targetId: 'tour-sidebar-overview',
+    path: '/dashboard',
+    title: '1. Overview',
+    description: 'Buka halaman awal untuk melihat ringkasan otomatisasi, jumlah saham dalam pantauan, kasus aktif, dan pemeriksaan terakhir.',
+    actionHint: 'Menu sidebar: Overview',
   },
   {
-    targetId: 'tour-header-actions',
-    title: '2. Pipeline Evaluasi & Sectors API',
-    description: 'Di modul ini Anda dapat memantau status Sectors API v2 dan tombol kontrol workflow untuk mengevaluasi data transaksi bursa.',
-    actionHint: 'Target: Sectors API Core Pipeline Badge',
+    targetId: 'tour-overview-content',
+    path: '/dashboard',
+    title: '2. Ringkasan Overview',
+    description: 'Bagian ini merangkum jumlah saham pantauan, kasus aktif, waktu pemeriksaan terakhir, dan status scheduler.',
+    actionHint: 'Konten Overview · Ringkasan otomatisasi',
   },
   {
-    targetId: 'tour-automation-kpis',
-    title: '3. Status Otomasi 16:30 WIB',
-    description: 'Lihat ringkasan otomatisasi harian, total saham dipantau, dan jumlah audit run deterministik tanpa LLM.',
-    actionHint: 'Target: Automation Overview KPI Cards',
+    targetId: 'tour-sidebar-watchlist',
+    path: '/dashboard/watchlist',
+    title: '3. Watchlist',
+    description: 'Menu ini membuka pengelolaan saham yang Anda pantau.',
+    actionHint: 'Menu sidebar: Watchlist',
   },
   {
-    targetId: 'tour-telegram-logs',
-    title: '4. Riwayat Log Entri Telegram',
-    description: 'Semua pesan rekap watchlist dan alert anomali bursa yang terkirim ke bot Telegram diarsipkan di log entri ini.',
-    actionHint: 'Target: Log Entri Telegram Sent',
+    targetId: 'tour-watchlist-content',
+    path: '/dashboard/watchlist',
+    title: '4. Kelola Watchlist',
+    description: 'Cari dan tambahkan emiten, pilih preset, buka detail saham, hapus saham dari daftar, atau kirim rekap ke Telegram.',
+    actionHint: 'Konten Watchlist · Pencarian dan daftar saham',
   },
   {
-    targetId: 'tour-telegram-bot-cta',
-    title: '5. Hubungkan Telegram Bot SIBA',
-    description: 'Klik tombol bot melayang ini kapan saja untuk menghubungkan Chat ID Telegram Anda atau memverifikasi status bot.',
-    actionHint: 'Target: Floating Telegram Bot CTA',
+    targetId: 'tour-sidebar-cases',
+    path: '/dashboard/cases',
+    title: '5. Kasus Aktif',
+    description: 'Menu ini membuka daftar kasus yang dibuat dari hasil evaluasi saham.',
+    actionHint: 'Menu sidebar: Kasus Aktif',
+  },
+  {
+    targetId: 'tour-cases-content',
+    path: '/dashboard/cases',
+    title: '6. Tinjau Kasus',
+    description: 'Lihat status dan aturan pemicu kasus. Pilih satu kasus untuk membuka detail serta timeline perubahannya.',
+    actionHint: 'Konten Kasus Aktif · Pilih kasus untuk detail',
+  },
+  {
+    targetId: 'tour-sidebar-audit',
+    path: '/dashboard/audit',
+    title: '7. Audit Trail',
+    description: 'Menu ini membuka riwayat eksekusi workflow.',
+    actionHint: 'Menu sidebar: Audit Trail',
+  },
+  {
+    targetId: 'tour-audit-content',
+    path: '/dashboard/audit',
+    title: '8. Riwayat Eksekusi',
+    description: 'Tabel ini mencatat waktu run, jumlah ticker, trigger aktif, durasi, dan status hasil evaluasi.',
+    actionHint: 'Konten Audit Trail · Tabel riwayat run',
+  },
+  {
+    targetId: 'tour-header-reset',
+    path: '/dashboard',
+    title: '9. Reset Sesi',
+    description: 'Reset menghapus data replay sementara agar workflow dapat diuji kembali dari kondisi awal.',
+    actionHint: 'Header dashboard · Reset',
+  },
+  {
+    targetId: 'tour-header-run',
+    path: '/dashboard',
+    title: '10. Jalankan Run',
+    description: 'Jalankan evaluasi watchlist secara langsung. Tombol nonaktif bila tidak ada saham yang dipantau atau proses sedang berjalan.',
+    actionHint: 'Header dashboard · Jalankan Run',
+  },
+  {
+    targetId: 'tour-header-online',
+    path: '/dashboard',
+    title: '11. Sistem Online',
+    description: 'Indikator ini menunjukkan status sistem pada dashboard.',
+    actionHint: 'Header dashboard · Sistem Online',
+  },
+  {
+    targetId: 'tour-user-info',
+    path: '/dashboard',
+    title: '12. Info Pengguna',
+    description: 'Dari bagian ini Anda dapat melihat identitas dan peran akun, mengulangi tur, atau keluar.',
+    actionHint: 'Overview · Info Pengguna di bagian bawah sidebar',
   },
 ];
 
 interface DashboardTourModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onNavigate: (path: DashboardPath) => void;
 }
 
 interface TargetRect {
@@ -58,7 +116,7 @@ interface TargetRect {
   height: number;
 }
 
-export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, onClose }) => {
+export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, onClose, onNavigate }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
 
@@ -66,41 +124,52 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
   const isFirst = currentStepIndex === 0;
   const isLast = currentStepIndex === TOUR_STEPS.length - 1;
 
-  // Measure and scroll target into view
-  const updateSpotlight = () => {
-    if (!isOpen) return;
-    const el = document.getElementById(currentStep.targetId);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Small timeout to get accurate rect after scroll finishes
-      setTimeout(() => {
-        const rect = el.getBoundingClientRect();
-        setTargetRect({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height,
-        });
-      }, 100);
-    } else {
+  useEffect(() => {
+    if (!isOpen) {
       setTargetRect(null);
+      return;
     }
-  };
+
+    document.body.style.overflow = 'hidden';
+    setTargetRect(null);
+    onNavigate(currentStep.path);
+
+    let frameId = 0;
+    let attempts = 0;
+    const measureTarget = () => {
+      const target = document.getElementById(currentStep.targetId);
+      if (!target) {
+        attempts += 1;
+        if (attempts < 90) frameId = window.requestAnimationFrame(measureTarget);
+        return;
+      }
+
+      target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      frameId = window.requestAnimationFrame(() => {
+        const rect = target.getBoundingClientRect();
+        setTargetRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+      });
+    };
+
+    frameId = window.requestAnimationFrame(measureTarget);
+    const updateTargetRect = () => {
+      const target = document.getElementById(currentStep.targetId);
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      setTargetRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+    };
+    window.addEventListener('resize', updateTargetRect);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', updateTargetRect);
+    };
+  }, [isOpen, currentStep, onNavigate]);
 
   useEffect(() => {
-    if (isOpen) {
-      // Lock scroll on body to prevent manual user scroll background
-      document.body.style.overflow = 'hidden';
-
-      const timer = setTimeout(updateSpotlight, 150);
-      window.addEventListener('resize', updateSpotlight);
-      return () => {
-        document.body.style.overflow = '';
-        clearTimeout(timer);
-        window.removeEventListener('resize', updateSpotlight);
-      };
-    }
-  }, [isOpen, currentStepIndex]);
+    if (!isOpen) setCurrentStepIndex(0);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

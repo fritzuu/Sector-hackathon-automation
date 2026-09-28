@@ -33,7 +33,7 @@ Gunakan tabel referensi berikut sesuai konteks pekerjaan kamu:
 | --- | --- |
 | [rules/siba.md](rules/siba.md) | Aturan operasional wajib setiap sesi coding Antigravity |
 | [STATE.md](STATE.md) | **Single source of truth**: status aktif, handoff, blocker, dan next step |
-| [PRD.md](PRD.md) | Spesifikasi produk, pernyataan masalah, batasan data, dan FR P0 |
+| [PRD.md](../PRD.md) | **Acuan produk kanonis v0.4** di root repository |
 | [DECISIONS.md](DECISIONS.md) | Stack teknologi yang disepakati, batas kuota API, dan arsitektur |
 | [BACKLOG.md](BACKLOG.md) | Roadmap pengerjaan berbasis slice terukur (S0 s/d S5) |
 | [references/domain.md](references/domain.md) | Logika bursa IDX, case lifecycle state machine, replay, dan dedup |

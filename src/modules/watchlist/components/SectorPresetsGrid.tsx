@@ -10,6 +10,7 @@
 import React, { useState } from 'react';
 import { Check, Info, ShieldCheck, LayoutGrid, Plus } from 'lucide-react';
 import { POPULAR_PRESETS } from '../../../data/idxCompanies.js';
+import { MAX_WATCHLIST_SIZE } from '../watchlist.rules';
 
 interface SectorPresetsGridProps {
   watchlist: string[];
@@ -97,7 +98,12 @@ export const SectorPresetsGrid: React.FC<SectorPresetsGridProps> = ({ watchlist,
       {/* Preset grid — 3 cols on lg, 2 on sm */}
       <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {POPULAR_PRESETS.map((preset, idx) => {
-          const allAdded = preset.tickers.every(t => watchlist.includes(t));
+          const addedCount = preset.tickers.filter(t => watchlist.includes(t)).length;
+          const allAdded = addedCount === preset.tickers.length;
+          const newTickerCount = preset.tickers.filter(t => !watchlist.includes(t)).length;
+          const remainingSlots = MAX_WATCHLIST_SIZE - watchlist.length;
+          const canAddPreset = newTickerCount > 0 && remainingSlots > 0;
+          const addCount = Math.min(newTickerCount, remainingSlots);
           const accentKey = PRESET_ACCENT_KEYS[idx] ?? 'default';
           const accent = SECTOR_ACCENTS[accentKey] ?? SECTOR_ACCENTS.default;
 
@@ -136,7 +142,7 @@ export const SectorPresetsGrid: React.FC<SectorPresetsGridProps> = ({ watchlist,
                 style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
               >
                 <span className="text-[10px] font-mono font-semibold" style={{ color: 'rgba(203,213,225,0.7)' }}>
-                  {preset.tickers.join(' · ')}
+                  {addedCount}/{preset.tickers.length} dipantau
                 </span>
                 {allAdded ? (
                   <span className={`flex items-center gap-1 text-[10px] font-bold font-mono flex-shrink-0 ${accent.label}`}>
@@ -146,8 +152,10 @@ export const SectorPresetsGrid: React.FC<SectorPresetsGridProps> = ({ watchlist,
                 ) : (
                   <button
                     type="button"
+                    disabled={!canAddPreset}
+                    title={!canAddPreset ? `Watchlist penuh. Hapus saham untuk menambah dari preset ini.` : undefined}
                     onClick={() => onAddPreset(preset.tickers)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all duration-150 flex-shrink-0 cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all duration-150 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                     style={{
                       background: 'rgba(20,184,166,0.15)',
                       border: '1px solid rgba(20,184,166,0.3)',
@@ -162,8 +170,8 @@ export const SectorPresetsGrid: React.FC<SectorPresetsGridProps> = ({ watchlist,
                       (e.currentTarget as HTMLButtonElement).style.color = 'rgba(20,184,166,0.9)';
                     }}
                   >
-                    <Plus className="w-3 h-3" />
-                    Pasang
+                    {canAddPreset ? <Plus className="w-3 h-3" /> : null}
+                    {canAddPreset ? `Tambah ${addCount} saham` : 'Batas tercapai'}
                   </button>
                 )}
               </div>

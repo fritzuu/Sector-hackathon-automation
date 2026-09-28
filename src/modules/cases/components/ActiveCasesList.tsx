@@ -60,6 +60,7 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({ cases, onSelec
 
   return (
     <div
+      id="tour-cases-content"
       className="rounded-xl p-5 space-y-4 font-sans bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border">

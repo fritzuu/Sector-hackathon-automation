@@ -128,7 +128,7 @@ export const AutomationOverview: React.FC<OverviewProps> = ({
   ];
 
   return (
-    <div className="space-y-3 font-sans">
+    <div id="tour-automation-kpis" className="space-y-3 font-sans">
       <div className="flex items-center justify-between px-1">
         <h2 className="text-sm font-bold text-text-main flex items-center gap-2">
           Ringkasan Otomatisasi

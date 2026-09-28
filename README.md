@@ -34,6 +34,12 @@ Baca SECTOR-HACKATHON-AI/rules/siba.md dan SECTOR-HACKATHON-AI/STATE.md. Gunakan
 
 Konfigurasi Google di layanan eksternal diperlukan untuk uji login nyata. `npm test` dan `npm run build` hanya memverifikasi kode lokal.
 
+### Fungsi tombol Jalankan Run
+
+`Jalankan Run` memulai satu siklus evaluasi langsung untuk ticker di watchlist saat ini. Untuk setiap ticker, aplikasi mengambil transaksi harian Sectors, data IHSG untuk tanggal yang sama, dan filing yang tersedia; mengevaluasi tiga rule deterministik; lalu membuka, memperbarui, memantau, atau menutup kasus beserta event dan template-nya. Jika Telegram terhubung, notifikasi dikirim untuk event material. Hasil run dan workspace kasus juga dicatat.
+
+Run manual ini tidak memprediksi harga, memberi rekomendasi, atau melakukan transaksi. Scheduler pascapasar adalah pemicu terpisah. Pada implementasi saat ini, scheduler web berjalan saat dashboard terbuka; eksekusi terjadwal tanpa browser masih perlu dipindahkan ke worker/server. Selain itu, kegagalan API saat ini ditangkap, tetapi audit run tetap ditulis dengan status `SUCCESS`; status ini belum dapat dijadikan bukti bahwa semua ticker berhasil diperiksa.
+
 ---
 
 ## 2. Navigasi Dokumen & Arsitektur
@@ -44,7 +50,7 @@ Gunakan tabel referensi berikut sesuai konteks pekerjaan kamu:
 | --- | --- |
 | [rules/siba.md](SECTOR-HACKATHON-AI/rules/siba.md) | Aturan operasional wajib setiap sesi coding Antigravity |
 | [STATE.md](SECTOR-HACKATHON-AI/STATE.md) | **Single source of truth**: status aktif, handoff, blocker, dan next step |
-| [PRD.md](SECTOR-HACKATHON-AI/PRD.md) | Spesifikasi produk, pernyataan masalah, batasan data, dan FR P0 |
+| [PRD.md](PRD.md) | **Acuan produk kanonis v0.4**: ruang lingkup MVP, batasan data, dan FR P0 |
 | [DECISIONS.md](SECTOR-HACKATHON-AI/DECISIONS.md) | Stack teknologi yang disepakati, batas kuota API, dan arsitektur |
 | [BACKLOG.md](SECTOR-HACKATHON-AI/BACKLOG.md) | Roadmap pengerjaan berbasis slice terukur (S0 s/d S5) |
 | [references/domain.md](SECTOR-HACKATHON-AI/references/domain.md) | Logika bursa IDX, case lifecycle state machine, replay, dan dedup |

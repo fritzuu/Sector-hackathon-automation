@@ -5,6 +5,15 @@ import { Header } from "../modules/dashboard/components/Header";
 import { AuthModal } from "../modules/auth/components/AuthModal";
 import { useAuthStore } from "../modules/auth/stores/auth.store";
 
+const LANDING_SECTIONS = [
+  { id: "landing-market", label: "Pasar" },
+  { id: "landing-telegram", label: "Laporan" },
+  { id: "landing-how-it-works", label: "Cara Kerja" },
+  { id: "landing-rules", label: "Kriteria" },
+  { id: "landing-coverage", label: "Daftar Saham" },
+  { id: "faq-section", label: "FAQ" },
+];
+
 export const Route = createFileRoute("/_guest/")({
   component: GuestIndexPage,
 });
@@ -51,6 +60,7 @@ function GuestIndexPage() {
     <div className="min-h-screen bg-bg text-text flex flex-col selection:bg-teal-500 selection:text-white font-sans">
       <Header
         currentUser={null}
+        landingSections={LANDING_SECTIONS}
         onOpenAuth={handleOpenAuth}
         onLogout={() => {}}
         onOpenTelegramModal={() => {}}

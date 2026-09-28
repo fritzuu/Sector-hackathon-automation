@@ -233,7 +233,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               }}>
                 {view === 'forgot' || view === 'forgot-sent' || view === 'confirm-email'
                   ? <KeyRound size={18} color="#040710" strokeWidth={2.5} />
-                  : <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 900, color: '#040710', letterSpacing: '-0.04em' }}>SIBA</span>
+                  : <img src="/siba-symbol.svg" alt="" style={{ width: 29, height: 32, objectFit: 'contain' }} />
                 }
               </div>
               <div>
