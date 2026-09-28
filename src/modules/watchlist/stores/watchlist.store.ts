@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { useAuthStore } from '../../auth/stores/auth.store';
 import { syncWatchlistToSupabase } from '../../../services/supabaseStorage';
+import {
+  addWatchlistTicker,
+  addWatchlistTickers,
+  limitWatchlist,
+} from '../watchlist.rules';
 
 interface WatchlistState {
   watchlist: string[];
@@ -23,9 +28,13 @@ function syncToDb(updatedList: string[]) {
 
 export const useWatchlistStore = create<WatchlistState>((set) => ({
   watchlist: [],
-  setWatchlist: (watchlist) => set({ watchlist }),
+  setWatchlist: (watchlist) => {
+    const limited = limitWatchlist(watchlist);
+    set({ watchlist: limited });
+    syncToDb(limited);
+  },
   addTicker: (ticker) => set((state) => {
-    const next = state.watchlist.includes(ticker) ? state.watchlist : [...state.watchlist, ticker];
+    const next = addWatchlistTicker(state.watchlist, ticker);
     syncToDb(next);
     return { watchlist: next };
   }),
@@ -35,7 +44,7 @@ export const useWatchlistStore = create<WatchlistState>((set) => ({
     return { watchlist: next };
   }),
   addPresets: (tickers) => set((state) => {
-    const next = Array.from(new Set([...state.watchlist, ...tickers]));
+    const next = addWatchlistTickers(state.watchlist, tickers);
     syncToDb(next);
     return { watchlist: next };
   }),

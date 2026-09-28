@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { LiveIdxCompany } from '../../../services/sectorsApi';
 import { WatchlistCard } from './WatchlistCard';
+import { MAX_WATCHLIST_SIZE } from '../watchlist.rules';
 
 interface WatchlistSearchPanelProps {
   watchlist: string[];
@@ -29,6 +30,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isWatchlistFull = watchlist.length >= MAX_WATCHLIST_SIZE;
 
   const filteredCompanies = liveCompanies.filter(c => {
     const q = searchQuery.toLowerCase().trim();
@@ -52,7 +54,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
   }, []);
 
   const handleSelect = (symbol: string) => {
-    if (!watchlist.includes(symbol)) onAddTicker(symbol);
+    if (!watchlist.includes(symbol) && !isWatchlistFull) onAddTicker(symbol);
     setSearchQuery(''); setIsDropdownOpen(false);
   };
 
@@ -79,7 +81,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
               Watchlist Dipantau
             </span>
             <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-accent border border-accent text-bg font-bold ml-1">
-              {watchlist.length}
+              {watchlist.length}/{MAX_WATCHLIST_SIZE}
             </span>
           </div>
           
@@ -117,7 +119,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
         </div>
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="space-y-5 p-4 sm:p-5">
         {/* Search Bar */}
         <div className="relative" ref={dropdownRef}>
           <div className="relative group">
@@ -142,6 +144,15 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
             )}
           </div>
 
+          {isWatchlistFull && (
+            <p
+              role="status"
+              className="mt-2 border-l-2 border-amber-400/70 bg-amber-400/5 px-3 py-2 text-xs leading-5 text-amber-200"
+            >
+              Batas 5 saham tercapai. Hapus salah satu saham sebelum menambah yang lain.
+            </p>
+          )}
+
           {/* Autocomplete Dropdown */}
           {isDropdownOpen && !companiesError && (
             <div className="absolute left-0 right-0 top-full mt-2 rounded-xl z-30 bg-secondary border border-border shadow-2xl divide-y divide-border/50 max-h-[350px] overflow-y-auto">
@@ -153,7 +164,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                 <span>Tekan Enter ⏎</span>
               </div>
 
-              {searchQuery.trim().length > 0 && !watchlist.includes(searchQuery.trim().toUpperCase()) && (
+              {searchQuery.trim().length > 0 && !watchlist.includes(searchQuery.trim().toUpperCase()) && !isWatchlistFull && (
                 <div
                   onClick={() => handleSelect(searchQuery.trim().toUpperCase())}
                   className="px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-bg/50 transition-colors group"
@@ -172,14 +183,28 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                 </div>
               )}
 
+              {companiesLoading && liveCompanies.length === 0 && (
+                <div aria-label="Memuat daftar emiten" aria-busy="true" className="space-y-2 p-4">
+                  {[0, 1, 2].map((item) => (
+                    <div key={item} className="h-12 animate-pulse bg-bg/70" />
+                  ))}
+                </div>
+              )}
+
+              {isWatchlistFull && searchQuery.trim().length > 0 && !watchlist.includes(searchQuery.trim().toUpperCase()) && (
+                <div className="px-4 py-3 text-xs text-amber-200" role="status">
+                  Watchlist sudah mencapai batas 5 saham.
+                </div>
+              )}
+
               {(searchQuery.trim() ? filteredCompanies : liveCompanies.slice(0, 3)).map(company => {
                 const isAdded = watchlist.includes(company.symbol);
                 return (
                   <div
                     key={company.symbol}
-                    onClick={() => !isAdded && handleSelect(company.symbol)}
+                    onClick={() => !isAdded && !isWatchlistFull && handleSelect(company.symbol)}
                     className={`px-4 py-3 flex items-center justify-between gap-3 transition-colors ${
-                      isAdded ? 'opacity-50 cursor-default bg-bg/20' : 'cursor-pointer hover:bg-bg/50 group'
+                      isAdded ? 'opacity-50 cursor-default bg-bg/20' : isWatchlistFull ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-bg/50 group'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -205,7 +230,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                           Dipantau
                         </span>
                       ) : (
-                        <button type="button" className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/20 border border-primary/40 text-primary group-hover:bg-primary group-hover:text-bg transition-all">
+                        <button type="button" disabled={isWatchlistFull} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/20 border border-primary/40 text-primary group-hover:bg-primary group-hover:text-bg transition-all disabled:cursor-not-allowed disabled:border-border disabled:bg-bg disabled:text-text-muted">
                           + Tambah
                         </button>
                       )}
@@ -254,7 +279,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
           </div>
         ) : (
           <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3 sm:gap-4"
             variants={{
               hidden: { opacity: 0 },
               show: { opacity: 1, transition: { staggerChildren: 0.05 } }

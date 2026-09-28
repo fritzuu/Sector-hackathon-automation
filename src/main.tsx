@@ -4,6 +4,7 @@ import { routeTree } from './routeTree.gen';
 import "./styles/index.css";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient.js";
+import { RouteErrorPage, RoutePendingPage } from "./shared/components/RouteStates";
 import {
   createRootRoute,
   createRoute,
@@ -18,6 +19,8 @@ const router = createRouter({
     queryClient,
   },
   defaultPreload: "intent",
+  defaultErrorComponent: RouteErrorPage,
+  defaultPendingComponent: RoutePendingPage,
 });
 
 declare module "@tanstack/react-router" {

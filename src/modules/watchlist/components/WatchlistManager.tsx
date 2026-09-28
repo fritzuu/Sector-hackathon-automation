@@ -304,7 +304,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
 }) => {
   // ── Live company list — single source of truth, no hardcode ───────────────
   const [liveCompanies, setLiveCompanies] = useState<LiveIdxCompany[]>([]);
-  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
   const [companiesError, setCompaniesError] = useState(false);
 
   const loadCompanies = useCallback(async (force = false) => {

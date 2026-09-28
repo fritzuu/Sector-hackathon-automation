@@ -28,6 +28,11 @@ import {
 } from './services/supabaseStorage.js';
 import { supabase } from './lib/supabaseClient.js';
 import { TickerDataset } from './types/sectors.js';
+import {
+  addWatchlistTicker,
+  addWatchlistTickers,
+  limitWatchlist,
+} from './modules/watchlist/watchlist.rules.js';
 
 export function App() {
   // Auth state - default to null so landing page is ALWAYS the entry point
@@ -153,7 +158,7 @@ export function App() {
     }
 
     setCurrentUser(profile);
-    setWatchlist(profile.defaultWatchlist);
+    setWatchlist(limitWatchlist(profile.defaultWatchlist || []));
     setAuthModalState({ isOpen: false, mode: 'login' });
   };
 
@@ -166,7 +171,7 @@ export function App() {
 
   // Watchlist Handlers
   const handleAddTicker = (ticker: string) => {
-    setWatchlist((prev) => (prev.includes(ticker) ? prev : [...prev, ticker]));
+    setWatchlist((prev) => addWatchlistTicker(prev, ticker));
   };
 
   const handleRemoveTicker = (ticker: string) => {
@@ -174,7 +179,7 @@ export function App() {
   };
 
   const handleAddPreset = (tickers: string[]) => {
-    setWatchlist((prev) => Array.from(new Set([...prev, ...tickers])));
+    setWatchlist((prev) => addWatchlistTickers(prev, tickers));
   };
 
   // Link / Unlink Telegram

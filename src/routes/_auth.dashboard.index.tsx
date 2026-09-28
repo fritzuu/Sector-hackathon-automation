@@ -11,6 +11,7 @@ import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
 import { liveMarketService } from '../services/liveMarketService';
 import { sectorsApi } from '../services/sectorsApi';
+import { claimMarketCloseRun } from '../utils/marketCloseGuard';
 
 export const Route = createFileRoute('/_auth/dashboard/')({
   component: DashboardOverviewPage,
@@ -24,7 +25,6 @@ function DashboardOverviewPage() {
     lastRunTime, isRunning, runWorkflow 
   } = useWorkflowStore();
 
-  const [lastAutoRunDate, setLastAutoRunDate] = useState<string | null>(null);
   const [telegramLogs, setTelegramLogs] = useState<TelegramLogEntry[]>([]);
   const [isTourOpen, setIsTourOpen] = useState(false);
 
@@ -49,11 +49,8 @@ function DashboardOverviewPage() {
 
       const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
       const is1630Window = hh === 16 && mm >= 30 && mm <= 31;
-      const notYetRun = lastAutoRunDate !== dateStr;
-
-      if (isWeekday && is1630Window && notYetRun && !isRunning) {
+      if (isWeekday && is1630Window && !isRunning && claimMarketCloseRun(currentUser.id, dateStr)) {
         console.log('[AutoScheduler] 16:30 WIB triggered — invalidating caches.');
-        setLastAutoRunDate(dateStr);
         liveMarketService.invalidateAll();
         sectorsApi.invalidateAll();
         runWorkflow();
@@ -63,7 +60,7 @@ function DashboardOverviewPage() {
     const id = setInterval(tick, 30_000);
     tick();
     return () => clearInterval(id);
-  }, [currentUser?.id, lastAutoRunDate, isRunning, runWorkflow]);
+  }, [currentUser?.id, isRunning, runWorkflow]);
 
   const activeCasesArray = Array.from(activeCases.values());
 

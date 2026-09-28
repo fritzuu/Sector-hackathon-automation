@@ -42,15 +42,22 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   clearLatestAlert: () => set({ latestTelegramAlert: null }),
   setLatestTelegramAlert: (msg) => set({ latestTelegramAlert: msg }),
 
-  resetReplay: () => set({
-    activeCases: new Map(),
-    caseEvents: new Map(),
-    caseTemplates: new Map(),
-    auditRuns: [],
-    lastRunTime: null,
-    runIndex: 1,
-    latestTelegramAlert: null
-  }),
+  resetReplay: () => {
+    const emptyWorkspace = {
+      activeCases: new Map<string, CaseState>(),
+      caseEvents: new Map<string, CaseEvent[]>(),
+      caseTemplates: new Map<string, RenderedTemplate>(),
+      lastRunTime: null,
+      runIndex: 1,
+    };
+    set({
+      ...emptyWorkspace,
+      auditRuns: [],
+      latestTelegramAlert: null,
+    });
+    const userId = useAuthStore.getState().currentUser?.id;
+    if (userId) void saveUserWorkspaceToSupabase(userId, emptyWorkspace);
+  },
 
   runWorkflow: async () => {
     const { activeCases, caseEvents, caseTemplates, runIndex } = get();
@@ -172,7 +179,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
     if (currentUser?.id) {
       saveAuditRunToSupabase(newAudit, currentUser.id);
-      saveUserWorkspaceToSupabase(currentUser.id, {
+      void saveUserWorkspaceToSupabase(currentUser.id, {
         activeCases: updatedCases,
         caseEvents: updatedEvents,
         caseTemplates: updatedTemplates,

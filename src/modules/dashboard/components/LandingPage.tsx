@@ -569,6 +569,16 @@ const GLOBAL_CSS = `
     border-radius: 3px;
     height: 14px;
   }
+  .sk-text { height: 12px; }
+  .sk-heading { height: 18px; }
+  .sk-value { height: 24px; }
+  .sk-tape { width: 260px; height: 36px; flex: 0 0 auto; border-right: 1px solid var(--ed); }
+  .sk-table-row td { cursor: default; }
+  .sk-table-row:hover td { background: transparent !important; }
+  .sk-table-row .sk { display: block; }
+  @media (prefers-reduced-motion: reduce) {
+    .sk { animation: none; }
+  }
   @keyframes sk-anim { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
 
   /* ── RESPONSIVE ───────────────────────────────────────── */
@@ -592,6 +602,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onAuthSucc
   const [loading, setLoading]           = useState(true);
   const [copied, setCopied]             = useState(false);
   const [search, setSearch]             = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
   const [searchErr, setSearchErr]       = useState('');
   const tapeRef = useRef<HTMLDivElement>(null);
 
@@ -703,6 +714,7 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
     const sym = search.trim().toUpperCase().replace('.JK', '');
     if (!sym) return;
     setSearchErr('');
+    setSearchLoading(true);
     try {
       const data = await liveMarketService.fetchTickerMetrics(sym);
       setTickers(prev => ({ ...prev, [sym]: data }));
@@ -714,6 +726,8 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
         ? err.message
         : `Kode "${sym}" tidak dapat dimuat. Cek koneksi atau coba lagi.`;
       setSearchErr(msg);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -727,7 +741,7 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
 
 
       {/* ── TICKER TAPE ─────────────────────────────────────── */}
-      {tapeItems.length > 0 && (
+      {tapeItems.length > 0 ? (
         <div className="tape-wrap">
           <div className="tape-inner" ref={tapeRef}>
             {tapeDouble.map((item, i) => (
@@ -744,7 +758,11 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
             ))}
           </div>
         </div>
-      )}
+      ) : loading ? (
+        <div className="tape-wrap" role="status" aria-label="Memuat ringkasan harga saham" aria-busy="true">
+          {[0, 1, 2, 3].map(item => <div key={item} className="sk sk-tape" aria-hidden="true" />)}
+        </div>
+      ) : null}
 
       {/* ── GLOBAL ERROR BANNER (network / IHSG down) ───────── */}
       {globalErr && (
@@ -856,9 +874,10 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
                 </button>
               </div>
             ) : companiesLoading ? (
-              <div style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[80, 65, 90, 70, 85].map((w, i) => (
-                  <div key={i} className="sk" style={{ width: `${w}%`, height: 16 }} />
+              <div className="api-loading-sidebar" role="status" aria-live="polite" aria-busy="true" style={{ display: 'block', padding: '10px 12px' }}>
+                <span className="sr-only">Memuat daftar emiten</span>
+                {[0, 1, 2, 3, 4].map(item => (
+                  <div key={item} className="sk" aria-hidden="true" style={{ height: 36, marginBottom: 8 }} />
                 ))}
               </div>
             ) : (
@@ -885,10 +904,31 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
           {/* Main panel */}
           <div className="console-main">
             {loading && !active ? (
-              <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {[100, 75, 60, 88, 50].map((w, i) => (
-                  <div key={i} className="sk" style={{ width: `${w}%` }} />
-                ))}
+              <div className="console-skeleton" role="status" aria-live="polite" aria-busy="true" style={{ padding: 20 }}>
+                <span className="sr-only">Memuat data pasar</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
+                  <div style={{ display: 'grid', gap: 10, width: '55%' }}>
+                    <div className="sk sk-heading" aria-hidden="true" style={{ width: '42%' }} />
+                    <div className="sk sk-text" aria-hidden="true" style={{ width: '86%' }} />
+                  </div>
+                  <div style={{ display: 'grid', justifyItems: 'end', gap: 10, width: '35%' }}>
+                    <div className="sk sk-value" aria-hidden="true" style={{ width: '75%' }} />
+                    <div className="sk sk-text" aria-hidden="true" style={{ width: '55%' }} />
+                  </div>
+                </div>
+                <div className="console-metrics">
+                  {[0, 1, 2, 3, 4, 5].map(item => (
+                    <div className="metric-card" key={item} aria-hidden="true">
+                      <div className="sk sk-text" style={{ width: '72%', marginBottom: 12 }} />
+                      <div className="sk sk-value" style={{ width: '54%' }} />
+                      <div className="sk sk-text" style={{ width: '28%', marginTop: 8 }} />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 18 }}>
+                  <div className="sk sk-text" aria-hidden="true" style={{ width: 150 }} />
+                  <div className="sk" aria-hidden="true" style={{ width: 150, height: 34 }} />
+                </div>
               </div>
             ) : active ? (
               <>
@@ -1023,8 +1063,14 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
                   </button>
                 </div>
               </div>
-              <pre className="tg-body">
-                {active ? telegramText : 'Pilih saham di konsol di atas untuk melihat contoh laporan.'}
+              <pre className="tg-body" aria-busy={loading && !active}>
+                {active ? telegramText : loading ? (
+                  <span role="status" aria-label="Memuat contoh laporan" style={{ display: 'grid', gap: 10, padding: '8px 0' }}>
+                    {[82, 96, 70, 90, 62, 88, 75].map((width, index) => (
+                      <span key={index} className="sk sk-text" aria-hidden="true" style={{ display: 'block', width: `${width}%` }} />
+                    ))}
+                  </span>
+                ) : 'Pilih saham di konsol di atas untuk melihat contoh laporan.'}
               </pre>
               <div className="tg-foot">
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--tx-2)' }}>
@@ -1125,7 +1171,16 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
               onChange={e => { setSearch(e.target.value); setSearchErr(''); }}
               placeholder="Cari kode saham..."
             />
-            <button type="submit" className="btn-primary btn-sm" style={{ padding: '9px 16px' }}>Cari</button>
+            <button
+              type="submit"
+              className="btn-primary btn-sm"
+              style={{ padding: '9px 16px' }}
+              disabled={searchLoading}
+              aria-busy={searchLoading}
+            >
+              {searchLoading && <span className="api-loading-spinner api-loading-spinner-sm" aria-hidden="true" />}
+              {searchLoading ? 'Memuat' : 'Cari'}
+            </button>
           </form>
         </div>
 
@@ -1137,7 +1192,7 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
 
         <div style={{ border: '1px solid var(--ed)', borderRadius: 'var(--r2)', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table className="cov-table">
+            <table className="cov-table" aria-busy={loading && Object.values(tickers).length === 0}>
               <thead>
                 <tr>
                   {['Kode', 'Nama Emiten', 'Harga', 'Perubahan', 'Volume Hari Ini', 'Rasio Volume', 'Status'].map(h => (
@@ -1152,11 +1207,23 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
                     ? Object.values(tickers).filter(t => t.symbol.toLowerCase().includes(search.toLowerCase()) || t.name.toLowerCase().includes(search.toLowerCase()))
                     : demoSyms.map(s => tickers[s]).filter(Boolean);
 
+                  if (loading && Object.values(tickers).length === 0) {
+                    return Array.from({ length: 5 }, (_, rowIndex) => (
+                      <tr className="sk-table-row" key={`skeleton-${rowIndex}`} aria-hidden="true">
+                        {[42, 150, 74, 52, 76, 48, 64].map((width, cellIndex) => (
+                          <td key={cellIndex}>
+                            <span className={`sk ${cellIndex === 0 || cellIndex === 2 ? 'sk-text' : ''}`} style={{ width, maxWidth: '100%' }} />
+                          </td>
+                        ))}
+                      </tr>
+                    ));
+                  }
+
                   if (displayedList.length === 0) {
                     return (
                       <tr>
                         <td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--tx-2)' }}>
-                          {Object.values(tickers).length === 0 ? 'Memuat data bursa…' : `Tidak ada emiten dengan kode "${search}"`}
+                          {`Tidak ada emiten dengan kode "${search}"`}
                         </td>
                       </tr>
                     );

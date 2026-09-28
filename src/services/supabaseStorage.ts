@@ -65,6 +65,92 @@ function objectToMap<T>(value: unknown): Map<string, T> {
   return new Map(Object.entries(value as Record<string, T>));
 }
 
+interface CachedWatchlist {
+  watchlist: string[];
+  updatedAt: string;
+}
+
+interface CachedWorkspace {
+  workspace: {
+    activeCases: Record<string, CaseState>;
+    caseEvents: Record<string, CaseEvent[]>;
+    caseTemplates: Record<string, RenderedTemplate>;
+    lastRunTime: string | null;
+    runIndex: number;
+  };
+  updatedAt: string;
+}
+
+function readCachedWatchlist(userId: string): CachedWatchlist | null {
+  try {
+    const raw = localStorage.getItem(`siba_watchlist_${userId}`);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as CachedWatchlist;
+    return Array.isArray(cached.watchlist) && typeof cached.updatedAt === 'string'
+      ? cached
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function withFreshCachedWatchlist(
+  profile: UserProfile,
+  serverUpdatedAt?: string,
+): UserProfile {
+  const cached = readCachedWatchlist(profile.id);
+  if (
+    cached &&
+    (!serverUpdatedAt || Date.parse(cached.updatedAt) > Date.parse(serverUpdatedAt))
+  ) {
+    return { ...profile, defaultWatchlist: cached.watchlist };
+  }
+  return profile;
+}
+
+function workspaceToRecord(workspace: UserWorkspace): CachedWorkspace['workspace'] {
+  return {
+    activeCases: Object.fromEntries(workspace.activeCases),
+    caseEvents: Object.fromEntries(workspace.caseEvents),
+    caseTemplates: Object.fromEntries(workspace.caseTemplates),
+    lastRunTime: workspace.lastRunTime,
+    runIndex: workspace.runIndex,
+  };
+}
+
+function readCachedWorkspace(userId: string): CachedWorkspace | null {
+  try {
+    const raw = localStorage.getItem(`siba_workspace_${userId}`);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as CachedWorkspace;
+    if (!cached.workspace || typeof cached.updatedAt !== 'string') return null;
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+function cacheWorkspace(userId: string, workspace: UserWorkspace, updatedAt: string) {
+  try {
+    localStorage.setItem(
+      `siba_workspace_${userId}`,
+      JSON.stringify({ workspace: workspaceToRecord(workspace), updatedAt }),
+    );
+  } catch (err) {
+    console.warn('[SupabaseStorage] Gagal menyimpan cache workspace lokal:', err);
+  }
+}
+
+function workspaceFromRecord(value: CachedWorkspace['workspace']): UserWorkspace {
+  return {
+    activeCases: objectToMap<CaseState>(value.activeCases),
+    caseEvents: objectToMap<CaseEvent[]>(value.caseEvents),
+    caseTemplates: objectToMap<RenderedTemplate>(value.caseTemplates),
+    lastRunTime: value.lastRunTime || null,
+    runIndex: typeof value.runIndex === 'number' ? value.runIndex : 1,
+  };
+}
+
 export async function fetchUserProfileFromSupabase(
   identifier: string
 ): Promise<UserProfile | null> {
@@ -78,7 +164,10 @@ export async function fetchUserProfileFromSupabase(
       : await query.eq('id', identifier).maybeSingle();
 
     if (!error && data) {
-      const profile = mapDbToUserProfile(data);
+      const profile = withFreshCachedWatchlist(
+        mapDbToUserProfile(data),
+        data.updated_at,
+      );
       // Update local cache
       try {
         localStorage.setItem(`siba_profile_${profile.id}`, JSON.stringify(profile));
@@ -94,7 +183,7 @@ export async function fetchUserProfileFromSupabase(
   try {
     const cached = localStorage.getItem(`siba_profile_${identifier}`);
     if (cached) {
-      return JSON.parse(cached) as UserProfile;
+      return withFreshCachedWatchlist(JSON.parse(cached) as UserProfile);
     }
   } catch {}
 
@@ -140,6 +229,16 @@ export async function syncWatchlistToSupabase(
   userId: string,
   watchlist: string[]
 ): Promise<boolean> {
+  const updatedAt = new Date().toISOString();
+  try {
+    localStorage.setItem(
+      `siba_watchlist_${userId}`,
+      JSON.stringify({ watchlist, updatedAt }),
+    );
+  } catch (err) {
+    console.warn('[SupabaseStorage] Gagal menyimpan cache watchlist lokal:', err);
+  }
+
   try {
     const raw = localStorage.getItem(`siba_profile_${userId}`);
     if (raw) {
@@ -268,18 +367,32 @@ export async function fetchUserWorkspaceFromSupabase(
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (error || !data) return null;
+    const cached = readCachedWorkspace(userId);
+    if (error || !data) {
+      return cached ? workspaceFromRecord(cached.workspace) : null;
+    }
 
-    return {
+    const remoteUpdatedAt = data.updated_at as string | undefined;
+    if (
+      cached &&
+      (!remoteUpdatedAt || Date.parse(cached.updatedAt) > Date.parse(remoteUpdatedAt))
+    ) {
+      return workspaceFromRecord(cached.workspace);
+    }
+
+    const workspace = {
       activeCases: objectToMap<CaseState>(data.active_cases),
       caseEvents: objectToMap<CaseEvent[]>(data.case_events),
       caseTemplates: objectToMap<RenderedTemplate>(data.case_templates),
       lastRunTime: data.last_run_time || null,
       runIndex: typeof data.run_index === 'number' ? data.run_index : 1,
     };
+    cacheWorkspace(userId, workspace, remoteUpdatedAt || new Date().toISOString());
+    return workspace;
   } catch (err) {
     console.warn('[SupabaseStorage] Error saat mengambil workspace:', err);
-    return null;
+    const cached = readCachedWorkspace(userId);
+    return cached ? workspaceFromRecord(cached.workspace) : null;
   }
 }
 
@@ -288,6 +401,8 @@ export async function saveUserWorkspaceToSupabase(
   workspace: UserWorkspace
 ): Promise<boolean> {
   if (!userId) return false;
+  const updatedAt = new Date().toISOString();
+  cacheWorkspace(userId, workspace, updatedAt);
   try {
     const { error } = await supabase.from('user_workspaces').upsert(
       {
@@ -297,7 +412,7 @@ export async function saveUserWorkspaceToSupabase(
         case_templates: Object.fromEntries(workspace.caseTemplates),
         last_run_time: workspace.lastRunTime,
         run_index: workspace.runIndex,
-        updated_at: new Date().toISOString(),
+        updated_at: updatedAt,
       },
       { onConflict: 'user_id' }
     );
