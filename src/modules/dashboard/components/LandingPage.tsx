@@ -600,7 +600,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onAuthSucc
   const [failedSyms, setFailed]         = useState<Record<string, string>>({});  // sym → error msg
   const [globalErr, setGlobalErr]       = useState<string>('');                  // IHSG / network down
   const [loading, setLoading]           = useState(true);
-  const [copied, setCopied]             = useState(false);
   const [search, setSearch]             = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchErr, setSearchErr]       = useState('');
@@ -702,12 +701,7 @@ dalam data transaksi resmi bursa.
 DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
     : '';
 
-  const handleCopy = () => {
-    if (!telegramText) return;
-    navigator.clipboard.writeText(telegramText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1049,19 +1043,7 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
                     {selected} · {new Date().toLocaleDateString('id-ID')}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span className={`badge ${active?.isVolumeAnomaly || active?.isSpreadAnomaly ? 'badge-anom' : 'badge-idle'}`}>
-                    {active?.isVolumeAnomaly || active?.isSpreadAnomaly ? 'OPEN' : 'MONITORING'}
-                  </span>
-                  <button
-                    className="btn-ghost btn-sm"
-                    onClick={handleCopy}
-                    disabled={!active}
-                    style={{ fontSize: 11 }}
-                  >
-                    {copied ? 'Tersalin' : 'Salin'}
-                  </button>
-                </div>
+
               </div>
               <pre className="tg-body" aria-busy={loading && !active}>
                 {active ? telegramText : loading ? (
