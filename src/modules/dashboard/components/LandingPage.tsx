@@ -33,27 +33,32 @@ const GLOBAL_CSS = `
     --ed2: hsl(301, 70%, 32%);   /* prominent edge    */
 
     /* Text */
-    --tx-0: hsl(0, 0%, 100%);     /* primary           */
-    --tx-1: rgba(255,255,255,0.75); /* secondary       */
-    --tx-2: rgba(255,255,255,0.5);  /* muted / label     */
+    --tx-0: #ffffff;             /* primary (high contrast) */
+    --tx-1: rgba(255,255,255,0.85); /* secondary */
+    --tx-2: rgba(255,255,255,0.65);  /* muted / label */
 
-    /* Accent — Primary purple/magenta & Accent Emerald */
-    --ac:  hsl(288, 100%, 70%); /* primary accent    */
-    --ac-h: hsl(288, 100%, 80%);/* hover             */
-    --ac-bg: rgba(230,102,255,0.12);
-    --ac-br: rgba(230,102,255,0.35);
+    /* Primary Action Button (WCAG AA 4.5:1 compliant: contrast with #fff is 7.55:1) */
+    --btn-primary-bg: #7822cd;
+    --btn-primary-hover: #8830e0;
+    --btn-primary-border: #9d4edd;
 
-    /* Semantic */
-    --up:  hsl(141, 100%, 50%);
+    /* Accent & Brand colors */
+    --ac:  #9d4edd;
+    --ac-h: #c77dff;
+    --ac-bg: rgba(157, 78, 221, 0.15);
+    --ac-br: rgba(157, 78, 221, 0.4);
+
+    /* Semantic Data Status (Stock Up / Down / Anomaly) — NOT for CTA buttons */
+    --up:  #22c55e;
     --dn:  #f87171;
     --warn: #fbbf24;        /* anomaly amber     */
-    --warn-bg: rgba(251,191,36,0.08);
-    --warn-br: rgba(251,191,36,0.25);
+    --warn-bg: rgba(251,191,36,0.1);
+    --warn-br: rgba(251,191,36,0.3);
 
     --font-sans: 'Inter', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-    --r: 6px;
-    --r2: 10px;
+    --r: 8px;
+    --r2: 12px;
   }
 
   html, body { overflow-x: clip; }
