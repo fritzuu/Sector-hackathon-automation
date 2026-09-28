@@ -10,7 +10,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError, IhsgUnavailableError } from '../../../services/liveMarketService.js';
 import { sectorsApi, LiveIdxCompany } from '../../../services/sectorsApi.js';
-import { InlineAuthPanel } from '../../auth/components/InlineAuthPanel';
 
 interface LandingPageProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
@@ -811,10 +810,6 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
           </div>
         </div>
 
-        {/* Right column: inline auth panel */}
-        <div className="hero-right">
-          <InlineAuthPanel onAuthSuccess={onAuthSuccess} initialView="login" />
-        </div>
       </div>
 
       {/* ── LIVE MARKET CONSOLE ─────────────────────────────── */}
