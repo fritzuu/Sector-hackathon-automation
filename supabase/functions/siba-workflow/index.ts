@@ -24,6 +24,11 @@ serve(async (req) => {
   const timestamp = new Date().toISOString()
   const dateStr = timestamp.slice(0, 10).replace(/-/g, '')
 
+  // Cache to prevent duplicate API calls for the same ticker across different users
+  const pricesCache = new Map<string, any>()
+  const benchmarkCache = new Map<string, any>()
+  const filingsCache = new Map<string, any>()
+
   for (const user of users) {
     if (!user.watchlist || user.watchlist.length === 0) continue
 
@@ -42,9 +47,20 @@ serve(async (req) => {
     let totalTriggersFound = 0
 
     for (const ticker of user.watchlist) {
-      const prices = await sectorsApi.fetchDailyTransactions(ticker)
-      const benchmark = await sectorsApi.fetchBenchmarkData(prices.map((p) => p.date))
-      const filings = await sectorsApi.fetchCompanyFilings(ticker)
+      if (!pricesCache.has(ticker)) {
+        pricesCache.set(ticker, await sectorsApi.fetchDailyTransactions(ticker))
+      }
+      const prices = pricesCache.get(ticker)
+
+      if (!benchmarkCache.has(ticker)) {
+        benchmarkCache.set(ticker, await sectorsApi.fetchBenchmarkData(prices.map((p: any) => p.date)))
+      }
+      const benchmark = benchmarkCache.get(ticker)
+
+      if (!filingsCache.has(ticker)) {
+        filingsCache.set(ticker, await sectorsApi.fetchCompanyFilings(ticker))
+      }
+      const filings = filingsCache.get(ticker)
 
       const dataset = {
         symbol: ticker,
