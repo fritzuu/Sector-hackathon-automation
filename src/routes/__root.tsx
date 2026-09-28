@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { createRootRouteWithContext, Outlet, useRouter } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet, useRouter, ScrollRestoration } from "@tanstack/react-router";
 import { QueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../modules/auth/stores/auth.store";
 import { RouteNotFoundPage } from "../shared/components/RouteStates";
@@ -18,7 +18,12 @@ function RootLayout() {
     });
   }, [router]);
 
-  return <Outlet />;
+  return (
+    <>
+      <ScrollRestoration />
+      <Outlet />
+    </>
+  );
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
