@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" role="img" aria-label="SIBA">
+  <defs>
+    <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f06aff"/>
+      <stop offset=".58" stop-color="#d940f3"/>
+      <stop offset="1" stop-color="#9e19e8"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#53ffb5"/>
+      <stop offset="1" stop-color="#00e686"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#purple)" d="M86 8 17 53a12 12 0 0 0-5 10v69a12 12 0 0 0 5 10l67 43v-51l-43-27a11 11 0 0 1 0-19l45-28V8Z"/>
+  <path fill="url(#purple)" d="m93 76 48 30a12 12 0 0 1 6 10v47a12 12 0 0 1-6 10l-48 31V76Z"/>
+  <path fill="url(#green)" d="M107 1 143 24a10 10 0 0 1 4 8v51l-40-25V1Z"/>
+</svg>

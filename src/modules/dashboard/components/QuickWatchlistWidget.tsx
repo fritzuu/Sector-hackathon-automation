@@ -22,7 +22,7 @@ export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watc
   };
 
   return (
-    <div className="rounded-xl p-5 bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)] flex flex-col font-sans h-full">
+    <div id="tour-watchlist-overview" className="rounded-xl p-5 bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)] flex flex-col font-sans h-full">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-bold text-text-main flex items-center gap-2">
           <List className="w-4 h-4 text-primary" />

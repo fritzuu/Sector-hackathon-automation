@@ -15,7 +15,7 @@ interface AuthState {
   authReady: boolean;
   login: (user: UserProfile) => void;
   logout: () => void;
-  updateUser: (user: UserProfile) => void;
+  updateUser: (user: UserProfile) => Promise<void>;
   syncFromSession: () => Promise<void>;
 }
 
@@ -124,11 +124,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.warn('[AuthStore] Supabase signOut error:', err);
     });
   },
-  updateUser: (user) => {
+  updateUser: async (user) => {
     set({ currentUser: user });
-    saveUserProfileToSupabase(user).catch((err) => {
+    try {
+      await saveUserProfileToSupabase(user);
+    } catch (err) {
       console.warn('[AuthStore] Gagal sync ke Supabase:', err);
-    });
+    }
   },
   syncFromSession: async () => {
     const { data: { session } } = await supabase.auth.getSession();

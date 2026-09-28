@@ -1,5 +1,5 @@
-import { EvaluationResult, CaseStatus, RenderedTemplate } from '../types/engine.js';
-import { VolumeEvidence, RelativeMovementEvidence, NewFilingEvidence } from '../types/engine.js';
+import { EvaluationResult, CaseStatus, RenderedTemplate } from '../types/engine.ts';
+import { VolumeEvidence, RelativeMovementEvidence, NewFilingEvidence } from '../types/engine.ts';
 
 export const TEMPLATE_VERSION = 'v1.0.0';
 

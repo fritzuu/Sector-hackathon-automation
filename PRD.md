@@ -4,7 +4,7 @@
 
 | Field | Detail |
 |---|---|
-| Status | Draft v0.3 — MVP deterministik tanpa LLM untuk review tim |
+| Status | Draft v0.4 — acuan ruang lingkup MVP, deterministik tanpa LLM |
 | Track | Track 02 — Automation & Workflows, Sectors Hackathon 2026 |
 | Product owner | TBD |
 | Target submission internal | 29 September 2026 |
@@ -20,6 +20,7 @@
 | 0.1 | 12 September 2026 | Konsep awal pemantau perubahan material dan pengiriman alert |
 | 0.2 | 12 September 2026 | Fokus dipindahkan dari alert satu kali menjadi pemantauan kasus lintas hari; persona dipersempit; batas data dikoreksi; confidence score dihapus; replay dan validasi masalah ditambahkan |
 | 0.3 | 12 September 2026 | LLM dan AI generatif dikeluarkan dari MVP; seluruh penjelasan menggunakan template deterministik yang terversi dan dapat diuji |
+| 0.4 | 28 September 2026 | Menegaskan batas MVP: satu watchlist maksimal lima ticker, tiga rule, pemeriksaan pascapasar, dashboard, dan Telegram notifikasi saja; data terlambat/tidak lengkap harus ditampilkan apa adanya |
 
 ## 2. Ringkasan Produk
 
@@ -240,15 +241,17 @@ Perubahan versi atau redaksi template bukan perkembangan material.
 
 - Pengguna dapat menambah dan menghapus ticker IDX.
 - MVP mendukung satu watchlist.
+- Satu watchlist dibatasi maksimal lima ticker.
 - Sistem menolak ticker tidak valid dengan pesan yang mudah dipahami.
-- Jumlah ticker demo ditetapkan setelah pengujian biaya dan coverage API; angka demo bukan batas produk permanen.
+- Preset sektor hanya menambahkan ticker yang masih muat dalam kapasitas watchlist.
 
 #### P0-02 — Scheduler hari bursa
 
-- Workflow berjalan tanpa aplikasi dibuka pengguna.
+- Workflow terjadwal berjalan setelah pasar tutup dan setelah data harian tersedia, tanpa aplikasi/browser pengguna terbuka dan tanpa perlu pengguna menekan tombol pada setiap siklus.
 - Setiap run memiliki ID, waktu terjadwal, mulai, selesai, dan status.
 - Dashboard menampilkan last run dan next run.
 - Data kosong karena hari libur tidak dianggap sebagai sesi baru.
+- Tombol manual `Jalankan Run` memicu evaluasi sekarang untuk watchlist yang aktif; tombol ini bukan prediksi atau transaksi dan tidak menggantikan scheduler.
 
 #### P0-03 — Sectors API v2 sebagai sumber inti
 
@@ -264,6 +267,7 @@ Catatan coverage:
 - Rentang request daily maksimal 90 hari kalender dan biayanya satu kredit per request menurut dokumentasi saat PRD direvisi.
 - Endpoint filings yang diverifikasi mencakup transaksi insider dan pemegang saham utama; produk tidak boleh menyebutnya seluruh pengumuman perusahaan.
 - Corporate actions, laporan keuangan, berita umum, foreign flow, dan broker activity hanya masuk setelah endpoint serta coverage-nya diuji dalam feasibility spike.
+- Timestamp, sumber, freshness, dan status kelengkapan data ditampilkan apa adanya. Data terlambat atau tidak lengkap tidak boleh ditampilkan seolah-olah terbaru atau dianggap sebagai kondisi normal.
 
 #### P0-04 — Detection engine deterministik
 
@@ -298,7 +302,7 @@ Dashboard minimal mempunyai:
 
 #### P0-07 — Telegram notification
 
-Notifikasi hanya dikirim untuk kasus baru, perkembangan material, penutupan kasus, atau kegagalan data berulang. Pesan memuat ticker, perubahan, angka utama, timestamp, status sumber, disclaimer, dan tautan detail.
+Bot Telegram pada P0 berfungsi sebagai kanal pengiriman notifikasi satu arah. Notifikasi hanya dikirim untuk kasus baru, perkembangan material, penutupan kasus, atau kegagalan data berulang. Pesan memuat ticker, perubahan, angka utama, timestamp, status sumber, disclaimer, dan tautan detail. Perintah interaktif bot seperti `/status` dan fitur senyapkan ticker tidak termasuk P0.
 
 #### P0-08 — Audit log
 
@@ -349,6 +353,7 @@ Guardrail replay:
 - Social-media scraping.
 - Rumor atau “informasi orang dalam”.
 - Intraday real-time monitoring.
+- Perintah interaktif Telegram seperti `/status` atau pengaturan senyapkan ticker pada P0.
 - Native mobile app.
 - Multi-market di luar IDX.
 - LLM, AI generatif, atau fine-tuning model.

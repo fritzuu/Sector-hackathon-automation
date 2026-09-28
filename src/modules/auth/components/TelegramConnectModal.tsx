@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, CheckCircle, Copy, X, Shield, Loader2, AlertCircle, WifiOff } from 'lucide-react';
+import { Send, CheckCircle, Copy, X, Shield, Loader2, AlertCircle } from 'lucide-react';
 import { UserProfile } from '../../../data/userProfiles.js';
 import { generateSecurePairingToken } from '../../../utils/token.js';
 import { useAuthStore } from '../stores/auth.store';
-import {
-  registerPairingToken,
-  checkPairingStatus,
-  checkBotHealth,
-} from '../../../services/telegramService.js';
+import { fetchUserProfileFromSupabase } from '../../../services/supabaseStorage';
 
 interface TelegramConnectModalProps {
   user: UserProfile;
@@ -18,32 +14,22 @@ interface TelegramConnectModalProps {
   onUnlink: () => void;
 }
 
-type BotStatus = 'checking' | 'online' | 'offline';
 type PairingState = 'idle' | 'registering' | 'waiting' | 'linked' | 'error';
 
 export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
   user,
-  watchlist,
   isOpen,
   onClose,
   onLinkSuccess,
   onUnlink,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [token] = useState(user.pairingToken || generateSecurePairingToken());
-  const [botStatus, setBotStatus] = useState<BotStatus>('checking');
+  const [token, setToken] = useState(user.pairingToken || generateSecurePairingToken());
   const [pairingState, setPairingState] = useState<PairingState>('idle');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const botUsername = (import.meta as any).env?.VITE_TELEGRAM_BOT_USERNAME || 'SIBANotbot';
   const fullCommand = `/start ${token}`;
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setBotStatus('checking');
-    checkBotHealth().then((h) => setBotStatus(h.online ? 'online' : 'offline'));
-  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) stopPolling();
@@ -59,29 +45,35 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
     }
   }
 
+  const handleRegenerateToken = () => {
+    const newToken = generateSecurePairingToken();
+    setToken(newToken);
+    useAuthStore.getState().updateUser({ ...user, pairingToken: newToken });
+  };
+
   const handleStartPairing = async () => {
-    setErrorMsg(null);
     setPairingState('registering');
 
+    // 1. Ensure token is saved in Supabase FIRST
     if (token && token !== user.pairingToken) {
-      useAuthStore.getState().updateUser({ ...user, pairingToken: token });
-    }
-
-    const ok = await registerPairingToken(token, user.id, user.name, watchlist);
-    if (!ok) {
-      setErrorMsg('Bot server tidak dapat dijangkau. Pastikan bot sudah berjalan (cd bot && python main.py).');
-      setPairingState('error');
-      return;
+      // Use the promise to wait for it to actually save to Supabase
+      await useAuthStore.getState().updateUser({ ...user, pairingToken: token });
     }
 
     setPairingState('waiting');
+    
+    // 2. Poll Supabase directly to see if the Edge Function updated our profile!
     pollRef.current = setInterval(async () => {
-      const status = await checkPairingStatus(token);
-      if (status.linked && status.chatId) {
+      const freshProfile = await fetchUserProfileFromSupabase(user.id);
+      if (freshProfile && freshProfile.isTelegramLinked && freshProfile.telegramChatId) {
         stopPolling();
         setPairingState('linked');
+        
+        // Update local global state so UI changes everywhere
+        useAuthStore.getState().updateUser(freshProfile);
+        
         setTimeout(() => {
-          onLinkSuccess(status.chatId!, status.username || `@${botUsername}_user`);
+          onLinkSuccess(freshProfile.telegramChatId!, freshProfile.telegramUsername || `@${botUsername}_user`);
         }, 1200);
       }
     }, 3000);
@@ -92,16 +84,6 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
-
-  const BotOfflineBanner = () => (
-    <div className="flex items-start space-x-2.5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs">
-      <WifiOff className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
-      <div className="text-rose-300 space-y-1">
-        <p className="font-bold">Bot server tidak berjalan.</p>
-        <p className="text-[11px] opacity-80">Jalankan <code className="font-mono bg-black/30 px-1 rounded">npm run dev:all</code> untuk menyalakan bot.</p>
-      </div>
-    </div>
-  );
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center font-sans">
@@ -120,19 +102,9 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
             </div>
           </div>
           <div className="flex items-center">
-            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-lg border flex items-center space-x-1 ${
-              botStatus === 'online' ? 'bg-accent/10 text-accent border-accent/30' :
-              botStatus === 'checking' ? 'bg-bg text-text-muted border-border' :
-              'bg-rose-500/10 text-rose-400 border-rose-500/30'
-            }`}>
-              {botStatus === 'online' ? <CheckCircle className="w-3 h-3" /> :
-               botStatus === 'checking' ? <Loader2 className="w-3 h-3 animate-spin" /> :
-               <WifiOff className="w-3 h-3" />}
-              <span>
-                {botStatus === 'online' ? 'Bot online' :
-                 botStatus === 'checking' ? 'Mengecek bot...' :
-                                          'Bot offline'}
-              </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg border flex items-center space-x-1 bg-accent/10 text-accent border-accent/30">
+              <CheckCircle className="w-3 h-3" />
+              <span>Serverless Siap</span>
             </span>
             <button onClick={onClose} className="ml-2 p-2 rounded-xl text-text-muted hover:text-white hover:bg-bg transition-colors">
               <X className="w-4 h-4" />
@@ -166,8 +138,6 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
             </div>
           ) : (
             <>
-              {botStatus === 'offline' && <BotOfflineBanner />}
-
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-text/80">Kode Pairing Kriptografis Unik (24+ Karakter):</label>
                 <div className="flex items-center space-x-2">
@@ -179,7 +149,12 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
                     <span>{copied ? 'Tersalin!' : 'Salin'}</span>
                   </button>
                 </div>
-                <p className="text-[10px] text-text/50">Token acak dibuat dengan entropi tinggi dan hanya valid untuk akun Anda.</p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-[10px] text-text/50">Token acak dibuat dengan entropi tinggi dan hanya valid untuk akun Anda.</p>
+                  <button onClick={handleRegenerateToken} className="text-[10px] text-accent hover:underline cursor-pointer">
+                    Buat Ulang Token
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2.5 pt-1 text-xs">
@@ -197,13 +172,6 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
                 </div>
               </div>
 
-              {pairingState === 'error' && errorMsg && (
-                <div className="flex items-start space-x-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
               <div className="pt-2 border-t border-border">
                 {pairingState === 'waiting' ? (
                   <div className="w-full py-3 flex items-center justify-center space-x-2 text-xs text-text-muted bg-bg rounded-xl border border-border">
@@ -211,7 +179,7 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
                     <span>Menunggu Anda mengirim <span className="font-mono text-accent">/start</span> di Telegram…</span>
                   </div>
                 ) : (
-                  <button onClick={handleStartPairing} disabled={botStatus === 'offline' || pairingState === 'registering'} className="w-full py-3 px-4 bg-accent hover:bg-accent text-bg disabled:bg-bg disabled:text-text-muted disabled:cursor-not-allowed font-black text-xs rounded-xl transition-all flex items-center justify-center space-x-2 shadow-lg shadow-accent/20 cursor-pointer">
+                  <button onClick={handleStartPairing} disabled={pairingState === 'registering'} className="w-full py-3 px-4 bg-accent hover:bg-accent text-bg disabled:bg-bg disabled:text-text-muted disabled:cursor-not-allowed font-black text-xs rounded-xl transition-all flex items-center justify-center space-x-2 shadow-lg shadow-accent/20 cursor-pointer">
                     {pairingState === 'registering' ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Mendaftarkan token…</span></> : <><Send className="w-4 h-4 stroke-[2.5]" /><span>Mulai Pairing Otomatis</span></>}
                   </button>
                 )}

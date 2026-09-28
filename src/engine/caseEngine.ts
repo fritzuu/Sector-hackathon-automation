@@ -1,4 +1,4 @@
-import { CaseState, CaseStatus, CaseEvent, EvaluationResult, RuleId } from '../types/engine.js';
+import { CaseState, CaseStatus, CaseEvent, EvaluationResult, RuleId } from '../types/engine.ts';
 
 export interface StateTransitionResult {
   nextCaseState: CaseState | null;

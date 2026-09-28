@@ -29,9 +29,9 @@ function WatchlistPage() {
       initial={{ opacity: 0, y: 15 }} 
       animate={{ opacity: 1, y: 0 }} 
       transition={{ duration: 0.15, ease: "easeOut" }} 
-      className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"
+      className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)]"
     >
-      <div className="lg:col-span-2 space-y-6">
+      <div id="tour-watchlist-content" className="min-w-0 space-y-6">
         <WatchlistManager
           watchlist={watchlist}
           onAddTicker={addTicker}
@@ -43,7 +43,7 @@ function WatchlistPage() {
         />
       </div>
       
-      <div className="lg:col-span-1 sticky top-0">
+      <div className="min-w-0 xl:sticky xl:top-4">
         <PopularStocksWidget 
           watchlist={watchlist} 
           onAddTicker={addTicker} 

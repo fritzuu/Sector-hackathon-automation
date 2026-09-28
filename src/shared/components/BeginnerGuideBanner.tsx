@@ -37,7 +37,7 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({
   const isComplete = progress === 2;
 
   const handleScrollToWatchlist = () => {
-    document.getElementById('tour-watchlist-manager')?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('tour-watchlist-overview')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleOpenTelegram = () => {

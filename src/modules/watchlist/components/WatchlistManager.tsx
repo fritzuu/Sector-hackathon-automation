@@ -257,7 +257,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
               )}
 
               <div className="text-[10px] text-text/40 font-mono text-right">
-                Yahoo Finance · Diperbarui {metrics.lastUpdated} · Cache 5 mnt
+                Sectors API · Diperbarui {metrics.lastUpdated} · Cache 5 mnt
               </div>
             </>
           ) : null}
@@ -304,7 +304,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
 }) => {
   // ── Live company list — single source of truth, no hardcode ───────────────
   const [liveCompanies, setLiveCompanies] = useState<LiveIdxCompany[]>([]);
-  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
   const [companiesError, setCompaniesError] = useState(false);
 
   const loadCompanies = useCallback(async (force = false) => {
@@ -356,7 +356,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
       setModalMetricsError(
         err instanceof MarketDataUnavailableError
           ? err.message
-          : `Gagal memuat data ${sym} dari Yahoo Finance.`,
+          : `Gagal memuat data ${sym} dari Sectors API.`,
       );
     } finally {
       setModalMetricsLoading(false);

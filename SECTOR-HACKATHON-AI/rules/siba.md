@@ -2,7 +2,7 @@
 
 Aktifkan sebagai Always On di Antigravity. Berlaku untuk project ini saja.
 
-- Bangun follow-up saham IDX otomatis sesuai PRD.md v0.3: Sectors → rule deterministik → kasus lintas hari → dashboard/Telegram. AI untuk coding, bukan runtime produk.
+- Bangun follow-up saham IDX otomatis sesuai acuan kanonis `../../PRD.md` v0.4: Sectors → tiga rule deterministik → kasus lintas hari → dashboard/Telegram. AI untuk coding, bukan runtime produk.
 - P0 saja. Tidak menambah LLM, prediksi, saran transaksi, broker, scraping sosial, intraday, multi-market, atau layanan baru tanpa perubahan scope eksplisit. Daily digest P1, bukan wajib MVP.
 - Sebelum kode pertama, minta konfirmasi onboarding Sectors seluruh anggota. Sebelum edit, cek apakah repo/aplikasi sudah freeze. Setelah submission/deadline, hentikan perubahan dan ikuti aturan resmi; jangan menganggap bugfix otomatis diizinkan.
 - Awal sesi: baca `SECTOR-HACKATHON-AI/STATE.md`; baca PRD bagian terkait dan `SECTOR-HACKATHON-AI/DECISIONS.md` hanya sesuai tugas. Konflik/keputusan belum final: jelaskan, jangan diam-diam mengubah PRD.

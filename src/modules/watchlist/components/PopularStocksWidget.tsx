@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrendingUp, Plus, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { MAX_WATCHLIST_SIZE } from '../watchlist.rules';
 
 interface PopularStocksWidgetProps {
   watchlist: string[];
@@ -17,6 +18,7 @@ const POPULAR_STOCKS = [
 ];
 
 export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchlist, onAddTicker }) => {
+  const isWatchlistFull = watchlist.length >= MAX_WATCHLIST_SIZE;
   const container: any = {
     hidden: { opacity: 0 },
     show: {
@@ -39,6 +41,12 @@ export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchl
         </h2>
       </div>
 
+      {isWatchlistFull && (
+        <p role="status" className="mb-3 border-l-2 border-amber-400/70 bg-amber-400/5 px-3 py-2 text-xs leading-5 text-amber-200">
+          Batas {MAX_WATCHLIST_SIZE} saham tercapai.
+        </p>
+      )}
+
       <motion.div 
         variants={container}
         initial="hidden"
@@ -47,17 +55,23 @@ export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchl
       >
         {POPULAR_STOCKS.map(stock => {
           const isAdded = watchlist.includes(stock.symbol);
+          const isDisabled = isAdded || isWatchlistFull;
 
           return (
             <motion.div key={stock.symbol} variants={item}>
-              <div 
-                className={`group flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${
+              <button
+                type="button"
+                className={`group flex w-full items-center justify-between px-3 py-2.5 rounded-lg border text-left transition-all ${
                   isAdded 
                     ? 'bg-bg/30 border-white/5 opacity-70' 
-                    : 'bg-bg border-border hover:border-primary/40 hover:bg-secondary cursor-pointer'
+                    : isWatchlistFull
+                      ? 'bg-bg/50 border-border/60 cursor-not-allowed opacity-55'
+                      : 'bg-bg border-border hover:border-primary/40 hover:bg-secondary cursor-pointer'
                 }`}
+                disabled={isDisabled}
+                aria-label={isAdded ? `${stock.symbol} sudah dipantau` : isWatchlistFull ? `Batas watchlist tercapai, tidak dapat menambah ${stock.symbol}` : `Tambah ${stock.symbol} ke watchlist`}
                 onClick={() => {
-                  if (!isAdded) onAddTicker(stock.symbol);
+                  if (!isDisabled) onAddTicker(stock.symbol);
                 }}
               >
                 <div className="flex items-center gap-3">
@@ -89,7 +103,7 @@ export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchl
                     </div>
                   )}
                 </div>
-              </div>
+              </button>
             </motion.div>
           );
         })}

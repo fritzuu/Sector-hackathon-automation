@@ -1,5 +1,5 @@
-import { DailyTransaction, BenchmarkData } from '../../types/sectors.js';
-import { RuleResult, RelativeMovementEvidence } from '../../types/engine.js';
+import { DailyTransaction, BenchmarkData } from '../../types/sectors.ts';
+import { RuleResult, RelativeMovementEvidence } from '../../types/engine.ts';
 
 export function evaluateRelativeMovement(
   transactions: DailyTransaction[],
