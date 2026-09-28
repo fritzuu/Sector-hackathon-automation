@@ -93,7 +93,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
               )}
             </h2>
             <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-              Yahoo Finance · Cache 15 mnt · 0 Sectors Token
+              Sectors API · Cache 15 mnt
             </p>
           </div>
         </div>
@@ -134,7 +134,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
         <div className="py-8 text-center border border-dashed border-border rounded-lg bg-secondary/30">
           <Newspaper className="w-6 h-6 text-slate-700 mx-auto mb-2" />
           <p className="text-xs font-semibold text-text-muted">
-            Tidak ada berita terbaru dari Yahoo Finance untuk saham di watchlist Anda.
+            Tidak ada berita terbaru dari Sectors API untuk saham di watchlist Anda.
           </p>
           <p className="text-[11px] text-slate-500 mt-1 font-mono">
             Data mungkin belum tersedia. Coba refresh beberapa saat lagi.
@@ -180,7 +180,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
 
                 {/* Footer — only sectors.app/idx link */}
                 <div className="pt-2 border-t border-border flex items-center justify-between text-[10px]">
-                  <span className="text-slate-600 font-mono">Yahoo Finance</span>
+                  <span className="text-slate-600 font-mono">Sectors API</span>
                   <a
                     href={`https://sectors.app/idx/${ticker}`}
                     target="_blank"
