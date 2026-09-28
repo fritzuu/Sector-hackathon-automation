@@ -1139,41 +1139,41 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
             <div className="section-label">Kriteria Evaluasi</div>
             <h2 className="section-h2">Evaluasi objektif<br />berbasis data bursa.</h2>
             <p style={{ fontSize: 14, color: 'var(--tx-1)', lineHeight: 1.7, marginBottom: 20 }}>
-              Tidak ada model bahasa yang menganalisis berita.
-              Tidak ada sentimen sosial yang diperhitungkan.
-              SIBA hanya membandingkan angka dari data transaksi bursa dengan ambang matematis tetap.
+              SIBA tidak menggunakan model bahasa AI untuk menebak arah harga saham ataupun menganalisis opini media sosial.
+              Sistem bekerja murni dengan aturan pasti yang membandingkan angka transaksi bursa terhadap batas patokan yang telah ditentukan.
             </p>
             <p style={{ fontSize: 13, color: 'var(--tx-2)', lineHeight: 1.65 }}>
-              Aturan evaluasi bersifat publik dan deterministik — artinya Anda tahu persis
-              kondisi apa yang akan memicu laporan sebelum laporan itu dikirim.
+              Semua aturan bersifat transparan dan konsisten: Anda dapat mengetahui secara pasti
+              faktor apa yang memicu diterbitkannya suatu laporan sebelum laporan tersebut dikirimkan.
             </p>
           </div>
           <div>
             {[
               {
-                title: 'Aturan 1 — Anomali Volume Transaksi',
-                badge: active?.isVolumeAnomaly ? 'badge-anom' : 'badge-norm',
-                badgeLabel: active?.isVolumeAnomaly ? `${active.volumeMultiplier}x — Spike` : 'Normal',
-                body: `Volume transaksi hari ini dibagi median 20 sesi sebelumnya. Jika hasilnya ≥ 2.0x, SIBA mencatat anomali volume.${active ? ` ${active.symbol} saat ini: ${vol(active.todayVolume)} lot vs median ${vol(active.medianVolume20d)} lot.` : ''}`,
+                num: '01',
+                title: 'Lonjakan volume transaksi',
+                badgeLabel: 'BATAS ≥ 2,0x',
+                body: 'Volume transaksi hari ini dibandingkan dengan patokan median 20 sesi bursa sebelumnya. Bila hasilnya ≥ 2,0x dari median normal, sistem otomatis mencatat anomali lonjakan volume.',
               },
               {
-                title: 'Aturan 2 — Penyimpangan Return vs IHSG',
-                badge: active?.isSpreadAnomaly ? 'badge-anom' : 'badge-norm',
-                badgeLabel: active?.isSpreadAnomaly ? 'Divergensi' : 'Selaras',
-                body: `Selisih absolut antara persentase perubahan harga saham dan IHSG dihitung. Jika melebihi 2.0%, dicatat sebagai divergensi.${active ? ` ${active.symbol}: ${pct(active.changePercent)} vs IHSG ${pct(active.ihsgChangePercent)}.` : ''}`,
+                num: '02',
+                title: 'Pergerakan berbeda jauh dari IHSG',
+                badgeLabel: 'SELISIH > 2,0%',
+                body: 'Selisih persentase perubahan harga saham terhadap indeks acuan (IHSG) dihitung secara absolut. Bila selisihnya melebihi 2,0%, dicatat sebagai pergerakan tidak lazim terhadap pasar.',
               },
               {
-                title: 'Aturan 3 — Dokumen Keterbukaan BEI',
-                badge: 'badge-idle',
-                badgeLabel: 'Diarsipkan',
-                body: 'Nomor arsip dokumen keterbukaan resmi dari Bursa Efek Indonesia ditampilkan apa adanya — tanpa ringkasan AI, tanpa interpretasi, tanpa edisi ulang.',
+                num: '03',
+                title: 'Dokumen keterbukaan informasi BEI',
+                badgeLabel: 'ARSIP RESMI BEI',
+                body: 'Nomor arsip dan pengumuman resmi dari Bursa Efek Indonesia disajikan apa adanya sebagai konfirmasi fakta emiten, tanpa ringkasan buatan, opini, atau tafsiran tambahan.',
               },
             ].map(r => (
-              <div key={r.title} className="rule-item">
+              <div key={r.num} className="rule-item">
                 <div className="rule-hd">
-                  <span className="rule-title">{r.title}</span>
-                  <span className={`badge ${r.badge}`}>{r.badgeLabel}</span>
+                  <span className="rule-num">Aturan {r.num}</span>
+                  <span className="badge badge-rule">{r.badgeLabel}</span>
                 </div>
+                <h3 className="rule-title">{r.title}</h3>
                 <p className="rule-body">{r.body}</p>
               </div>
             ))}
