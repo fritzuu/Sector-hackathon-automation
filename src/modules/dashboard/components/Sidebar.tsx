@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
-import { LayoutDashboard, List, ShieldAlert, History, Bot } from 'lucide-react';
+import { LayoutDashboard, List, ShieldAlert, History } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -16,9 +16,7 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="w-64 flex-shrink-0 bg-secondary/30 border-r border-border flex flex-col hidden md:flex font-sans h-full">
       <div className="p-5 border-b border-white/5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold shadow-md shadow-primary/20">
-          <Bot className="w-5 h-5" />
-        </div>
+        <img src="/siba-symbol.svg" alt="" className="w-8 h-8 object-contain" />
         <div>
           <h1 className="text-sm font-black tracking-widest text-text-main">SIBA</h1>
           <p className="text-[10px] font-mono text-text-muted/60">SECTORS API V2</p>
