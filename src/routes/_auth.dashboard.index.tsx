@@ -21,11 +21,11 @@ function DashboardOverviewPage() {
   const { watchlist } = useWatchlistStore();
   const { 
     activeCases, auditRuns, 
-    lastRunTime, isRunning, runWorkflow 
+    lastRunTime, isRunning, runWorkflow,
+    telegramLogs, isFetchingLogs, fetchTelegramLogs
   } = useWorkflowStore();
 
   const [lastAutoRunDate, setLastAutoRunDate] = useState<string | null>(null);
-  const [telegramLogs, setTelegramLogs] = useState<TelegramLogEntry[]>([]);
   const [isTourOpen, setIsTourOpen] = useState(false);
 
   useEffect(() => {
@@ -33,6 +33,18 @@ function DashboardOverviewPage() {
     window.addEventListener('open-siba-tour', handleOpenTour);
     return () => window.removeEventListener('open-siba-tour', handleOpenTour);
   }, []);
+
+  useEffect(() => {
+    if (currentUser?.telegramChatId) {
+      fetchTelegramLogs(currentUser.telegramChatId);
+      
+      // Auto-refresh every 5 seconds (Hackathon shortcut for realtime feel)
+      const interval = setInterval(() => {
+        fetchTelegramLogs(currentUser.telegramChatId!);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser, fetchTelegramLogs]);
 
   // Auto-scheduler has been moved to Supabase Edge Functions (siba-workflow)
   // It is triggered automatically by pg_cron at 16:30 WIB.
@@ -56,8 +68,9 @@ function DashboardOverviewPage() {
 
         <TelegramLogViewer
           user={currentUser!}
-          logs={telegramLogs}
-          onClearLogs={() => setTelegramLogs([])}
+          logs={telegramLogs || []}
+          isLoading={isFetchingLogs && telegramLogs === null}
+          onClearLogs={() => {}} // Disabled for Hackathon: server-side outbox acts as source of truth
         />
       </div>
 
