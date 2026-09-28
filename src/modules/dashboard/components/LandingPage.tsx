@@ -1035,15 +1035,17 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
                 </div>
 
                 <div className="console-status-bar">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="badge badge-live">Live IDX</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--tx-2)' }}>
-                      Diperbarui: {active.lastUpdated}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span className="badge badge-idle">Sectors API</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-1)' }}>
+                        Data tersimpan (cache): {active.lastUpdated} WIB
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 11, color: 'var(--tx-2)' }}>
+                      Kuotasi simulasi pantauan pasar berbasis Sectors API.
                     </span>
                   </div>
-                  <button className="btn-primary btn-sm" onClick={() => onOpenAuth('register')}>
-                    Tambahkan ke watchlist saya
-                  </button>
                 </div>
               </>
             ) : (
