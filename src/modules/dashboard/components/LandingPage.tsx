@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { liveMarketService, RealTickerMetrics, MarketDataUnavailableError, IhsgUnavailableError } from '../../../services/liveMarketService.js';
 import { sectorsApi, LiveIdxCompany } from '../../../services/sectorsApi.js';
 
@@ -62,6 +63,9 @@ const GLOBAL_CSS = `
   }
 
   html, body { overflow-x: clip; }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
 
   .siba-page {
     background: var(--pp);
@@ -250,6 +254,7 @@ const GLOBAL_CSS = `
     padding: 72px 24px;
     border-top: 1px solid var(--ed);
   }
+  .siba-page [id^="landing-"], .siba-page #faq-section { scroll-margin-top: 7.5rem; }
   .section-label {
     font-family: var(--font-mono);
     font-size: clamp(14px, 1.8vw, 16px);
@@ -814,7 +819,49 @@ const GLOBAL_CSS = `
     padding-top: 16px;
   }
 
-  /* ── FOOTER removed — shared footer from App.tsx handles this ── */
+  /* ── LANDING PAGE FOOTER ──────────────────────────────── */
+  .landing-footer {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    margin-top: 48px;
+    border-top: 1px solid var(--ed);
+    background: var(--sf);
+    padding: 24px 24px 16px;
+  }
+  .landing-footer::before, .landing-footer::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: 50%;
+    width: 260px;
+    height: 148px;
+    pointer-events: none;
+  }
+  .landing-footer::before {
+    left: -130px;
+    transform: translateY(-50%) rotate(-18deg) scale(1.08, 1.12);
+    border-radius: 68% 32% 61% 39% / 42% 57% 43% 58%;
+    background: linear-gradient(145deg, #ff9b78 4%, #f4775a 66%, #e85e50 100%);
+  }
+  .landing-footer::after {
+    right: -130px;
+    transform: translateY(-50%) rotate(17deg) scale(1.08, 1.12);
+    border-radius: 36% 64% 42% 58% / 58% 39% 61% 42%;
+    background: linear-gradient(215deg, #13d6b1 0%, #00ad98 68%, #008d83 100%);
+  }
+  .landing-footer-inner { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; text-align: center; }
+  .landing-footer-brand { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .landing-footer-brand img { width: 40px; height: 40px; object-fit: contain; }
+  .landing-footer-wordmark { color: var(--tx-0); font-size: 22px; font-weight: 900; line-height: 1; }
+  .landing-footer-tagline { color: var(--tx-1); font-size: 11px; margin-top: 8px; }
+  .landing-footer-copyright { color: var(--tx-2); font-size: 10px; margin-top: 10px; }
+  @media (max-width: 640px) {
+    .landing-footer { padding: 18px 16px 14px; }
+    .landing-footer::before, .landing-footer::after { width: 180px; height: 112px; opacity: 0.8; }
+    .landing-footer::before { left: -120px; }
+    .landing-footer::after { right: -120px; }
+  }
 
   /* ── SEARCH ───────────────────────────────────────────── */
   .search-input {
@@ -893,7 +940,21 @@ const FAQ_ITEMS = [
   }
 ];
 
+const SECTION_REVEAL_VARIANTS = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.36, ease: 'easeOut' } },
+};
+const REDUCED_SECTION_REVEAL_VARIANTS = {
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
+};
+const SECTION_VIEWPORT = { once: true, amount: 0.15 };
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onAuthSuccess }) => {
+  const prefersReducedMotion = useReducedMotion();
+  const sectionRevealVariants = prefersReducedMotion
+    ? REDUCED_SECTION_REVEAL_VARIANTS
+    : SECTION_REVEAL_VARIANTS;
   const [selected, setSelected]         = useState('');
   const [openFaq, setOpenFaq]           = useState<number | null>(0);
   const [tickers, setTickers]           = useState<Record<string, RealTickerMetrics>>({});
@@ -1085,7 +1146,13 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
       )}
 
       {/* ── MARQUEE HERO ────────────────────────────────────── */}
-      <div className="siba-hero" id="siba-hero-auth">
+      <motion.div
+        className="siba-hero"
+        id="siba-hero-auth"
+        initial="hidden"
+        animate="visible"
+        variants={sectionRevealVariants}
+      >
         {/* Left column: copy + stats */}
         <div className="hero-left">
           <div className="hero-eyebrow">
@@ -1132,10 +1199,10 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── LIVE MARKET CONSOLE ─────────────────────────────── */}
-      <section className="siba-section">
+      <motion.section id="landing-market" className="siba-section" initial="hidden" whileInView="visible" viewport={SECTION_VIEWPORT} variants={sectionRevealVariants}>
         <div className="section-label">Simulasi pantauan pasar dengan Sectors API</div>
         <h2 className="section-h2">Cek indikasi saham pilihan Anda</h2>
         <p className="section-lead">
@@ -1356,10 +1423,10 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             )}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── TELEGRAM PREVIEW ──────────────────────────────── */}
-      <section className="siba-section">
+      <motion.section id="landing-telegram" className="siba-section" initial="hidden" whileInView="visible" viewport={SECTION_VIEWPORT} variants={sectionRevealVariants}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 40, alignItems: 'start' }}>
           <div>
             <div className="section-label">Contoh Laporan Telegram</div>
@@ -1412,10 +1479,10 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── HOW IT WORKS ──────────────────────────────────── */}
-      <section className="siba-section">
+      <motion.section id="landing-how-it-works" className="siba-section" initial="hidden" whileInView="visible" viewport={SECTION_VIEWPORT} variants={sectionRevealVariants}>
         <div className="section-label">Cara Kerja</div>
         <h2 className="section-h2">Mulai dalam 3 langkah mudah</h2>
         <p className="section-lead" style={{ marginBottom: 28 }}>
@@ -1435,10 +1502,10 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             </div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* ── EVALUATION RULES ──────────────────────────────── */}
-      <section className="siba-section">
+      <motion.section id="landing-rules" className="siba-section" initial="hidden" whileInView="visible" viewport={SECTION_VIEWPORT} variants={sectionRevealVariants}>
         <div className="rules-grid">
           <div>
             <div className="section-label">Kriteria Evaluasi</div>
@@ -1484,10 +1551,10 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── COVERAGE TABLE ────────────────────────────────── */}
-      <section className="siba-section">
+      <motion.section id="landing-coverage" className="siba-section" initial="hidden" whileInView="visible" viewport={SECTION_VIEWPORT} variants={sectionRevealVariants}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
           <div>
             <div className="section-label">Ringkasan Pasar</div>
@@ -1586,10 +1653,10 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             </table>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── CTA BLOCK ─────────────────────────────────────── */}
-      <section className="siba-section">
+      <motion.section className="siba-section" initial="hidden" whileInView="visible" viewport={SECTION_VIEWPORT} variants={sectionRevealVariants}>
         <div className="cta-block">
           <div className="section-label" style={{ display: 'inline-flex', margin: '0 auto 14px auto' }}>Mulai pantau saham tanpa biaya</div>
           <h2 className="cta-h2">
@@ -1599,19 +1666,11 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             Daftar gratis, susun daftar pantauan saham IDX Anda,
             sambungkan Telegram dan terima laporan otomatis setiap 16:30 WIB saat dashboard terbuka.
           </p>
-          <div className="cta-ctas">
-            <button className="btn-primary" onClick={() => onOpenAuth('register')}>
-              Daftar gratis
-            </button>
-            <button className="btn-ghost" onClick={() => onOpenAuth('login')}>
-              Masuk ke Akun
-            </button>
-          </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── FAQ SECTION ────────────────────────────────────── */}
-      <section className="siba-section" id="faq-section">
+      <motion.section className="siba-section" id="faq-section" initial="hidden" whileInView="visible" viewport={SECTION_VIEWPORT} variants={sectionRevealVariants}>
         <div className="faq-container">
           <div style={{ textAlign: 'center' }}>
             <div className="section-label" style={{ display: 'inline-flex', margin: '0 auto 14px auto' }}>Tanya Jawab (FAQ)</div>
@@ -1656,8 +1715,22 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             })}
           </div>
         </div>
-      </section>
+      </motion.section>
 
+      <footer className="landing-footer">
+        <div className="landing-footer-inner">
+          <div className="landing-footer-brand">
+            <img src="/siba-symbol.svg" alt="" />
+            <div className="landing-footer-wordmark">SIBA</div>
+          </div>
+          <p className="landing-footer-tagline">
+            Sistem Informasi Bursa dan Aset · Pemantauan saham berbasis data
+          </p>
+          <div className="landing-footer-copyright">
+            © {new Date().getFullYear()} SIBA · Track 02 Automation
+          </div>
+        </div>
+      </footer>
 
     </div>
   );

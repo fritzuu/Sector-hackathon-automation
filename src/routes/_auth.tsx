@@ -10,10 +10,10 @@ import { Sidebar } from "../modules/dashboard/components/Sidebar";
 import { TelegramConnectModal } from "../modules/auth/components/TelegramConnectModal";
 import { TelegramAlertPreview } from "../shared/components/TelegramAlertPreview";
 import { MarketCloseToast } from "../modules/dashboard/components/MarketCloseToast";
+import { DashboardTourModal, DashboardPath } from "../modules/dashboard/components/DashboardTourModal";
 import { useWatchlistStore } from "../modules/watchlist/stores/watchlist.store";
 import { useWorkflowStore } from "../modules/cases/stores/workflow.store";
-import { useState, useEffect } from "react";
-import { Bot } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { generateSecurePairingToken } from "../utils/token";
 
 export const Route = createFileRoute("/_auth")({
@@ -41,12 +41,23 @@ function AuthLayout() {
 
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [showMarketCloseToast, setShowMarketCloseToast] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
 
   useEffect(() => {
     const handleOpen = () => setIsTelegramModalOpen(true);
     window.addEventListener('open-telegram-modal', handleOpen);
     return () => window.removeEventListener('open-telegram-modal', handleOpen);
   }, []);
+
+  useEffect(() => {
+    const handleOpenTour = () => setIsTourOpen(true);
+    window.addEventListener('open-siba-tour', handleOpenTour);
+    return () => window.removeEventListener('open-siba-tour', handleOpenTour);
+  }, []);
+
+  const navigateTourStep = useCallback((path: DashboardPath) => {
+    navigate({ to: path });
+  }, [navigate]);
 
   useEffect(() => {
     if (currentUser?.defaultWatchlist && currentUser.defaultWatchlist.length > 0 && watchlist.length === 0) {
@@ -91,7 +102,12 @@ function AuthLayout() {
     <div className="h-screen w-full bg-bg text-text-main flex font-sans overflow-hidden">
       
       {/* Sidebar Navigation */}
-      <Sidebar />
+      <Sidebar
+        currentUser={currentUser}
+        isTouring={isTourOpen}
+        onLogout={handleLogout}
+        onOpenTour={() => window.dispatchEvent(new CustomEvent("open-siba-tour"))}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
@@ -148,22 +164,12 @@ function AuthLayout() {
         onClose={() => setShowMarketCloseToast(false)}
       />
 
-      {/* Floating Telegram Bot CTA Button */}
-      <div id="tour-telegram-bot-cta" className="fixed bottom-6 right-6 z-40">
-        <button
-          onClick={() => setIsTelegramModalOpen(true)}
-          className="relative flex items-center justify-center w-12 h-12 bg-accent hover:bg-accent text-bg rounded-full shadow-2xl transition-all duration-200 transform hover:scale-110 cursor-pointer border-2 border-accent"
-          title={
-            currentUser?.isTelegramLinked
-              ? "Telegram Bot Terhubung"
-              : "Hubungkan Telegram Bot SIBA"
-          }
-        >
-          <Bot className="w-6 h-6 stroke-[2.5]" />
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping" />
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full" />
-        </button>
-      </div>
+      <DashboardTourModal
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onNavigate={navigateTourStep}
+      />
+
     </div>
   );
 }

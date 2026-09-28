@@ -5,7 +5,6 @@ import { BeginnerGuideBanner } from '../shared/components/BeginnerGuideBanner';
 import { AutomationOverview } from '../modules/dashboard/components/AutomationOverview';
 import { QuickWatchlistWidget } from '../modules/dashboard/components/QuickWatchlistWidget';
 import { TelegramLogViewer, TelegramLogEntry } from '../modules/dashboard/components/TelegramLogViewer';
-import { DashboardTourModal } from '../modules/dashboard/components/DashboardTourModal';
 import { useAuthStore } from '../modules/auth/stores/auth.store';
 import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
@@ -26,14 +25,6 @@ function DashboardOverviewPage() {
   } = useWorkflowStore();
 
   const [telegramLogs, setTelegramLogs] = useState<TelegramLogEntry[]>([]);
-  const [isTourOpen, setIsTourOpen] = useState(false);
-
-  useEffect(() => {
-    const handleOpenTour = () => setIsTourOpen(true);
-    window.addEventListener('open-siba-tour', handleOpenTour);
-    return () => window.removeEventListener('open-siba-tour', handleOpenTour);
-  }, []);
-
   // Auto-scheduler
   useEffect(() => {
     if (!currentUser) return;
@@ -66,30 +57,32 @@ function DashboardOverviewPage() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="space-y-8 ">
-      <BeginnerGuideBanner userName={currentUser?.name || ''} onOpenTour={() => setIsTourOpen(true)} />
-
-      <AutomationOverview
-        lastRunTime={lastRunTime}
-        activeCasesCount={activeCasesArray.length}
-        totalWatchlistCount={watchlist.length}
-        lastRunStatus={isRunning ? 'RUNNING' : 'IDLE'}
-        totalRunsCount={auditRuns.length}
+      <BeginnerGuideBanner
+        userName={currentUser?.name || ''}
+        onOpenTour={() => window.dispatchEvent(new CustomEvent('open-siba-tour'))}
       />
+
+      <div id="tour-overview-content">
+        <AutomationOverview
+          lastRunTime={lastRunTime}
+          activeCasesCount={activeCasesArray.length}
+          totalWatchlistCount={watchlist.length}
+          lastRunStatus={isRunning ? 'RUNNING' : 'IDLE'}
+          totalRunsCount={auditRuns.length}
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <QuickWatchlistWidget watchlist={watchlist} />
 
-        <TelegramLogViewer
-          user={currentUser!}
-          logs={telegramLogs}
-          onClearLogs={() => setTelegramLogs([])}
-        />
+        <div id="tour-telegram-logs">
+          <TelegramLogViewer
+            user={currentUser!}
+            logs={telegramLogs}
+            onClearLogs={() => setTelegramLogs([])}
+          />
+        </div>
       </div>
-
-      <DashboardTourModal
-        isOpen={isTourOpen}
-        onClose={() => setIsTourOpen(false)}
-      />
     </motion.div>
   );
 }

@@ -31,7 +31,7 @@ function WatchlistPage() {
       transition={{ duration: 0.15, ease: "easeOut" }} 
       className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)]"
     >
-      <div className="min-w-0 space-y-6">
+      <div id="tour-watchlist-content" className="min-w-0 space-y-6">
         <WatchlistManager
           watchlist={watchlist}
           onAddTicker={addTicker}

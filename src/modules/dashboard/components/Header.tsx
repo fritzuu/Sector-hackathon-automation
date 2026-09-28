@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Shield, Play, RotateCcw, Activity, Send, User, LogOut, Sparkles, ChevronDown } from 'lucide-react';
+import { Play, RotateCcw, User, LogOut, Sparkles, ChevronDown } from 'lucide-react';
 import { UserProfile } from '../../../data/userProfiles.js';
 
 interface HeaderProps {
   currentUser: UserProfile | null;
+  landingSections?: Array<{ id: string; label: string }>;
   onOpenAuth: (mode: 'login' | 'register') => void;
   onLogout: () => void;
   onOpenTelegramModal: () => void;
@@ -16,6 +17,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
+  landingSections,
   onOpenAuth,
   onLogout,
   onOpenTelegramModal,
@@ -29,9 +31,9 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header id="tour-header-actions" className="border-b border-border bg-[#090d16]/95 backdrop-blur-md sticky top-0 z-40 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
         {/* Brand Logo */}
-        <div className="flex items-center space-x-3">
+        <div className="flex shrink-0 items-center space-x-3">
           <img src="/siba-symbol.svg" alt="" className="w-9 h-9 object-contain" />
           <div>
             <div className="flex items-center space-x-2">
@@ -46,12 +48,27 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
+        {!currentUser && landingSections && landingSections.length > 0 && (
+          <nav className="ml-2 hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto md:flex lg:ml-6" aria-label="Navigasi section landing page">
+            {landingSections.map((section) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className="shrink-0 rounded-md px-2 py-2 text-xs font-semibold text-white/65 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary lg:px-2.5"
+              >
+                {section.label}
+              </a>
+            ))}
+          </nav>
+        )}
+
         {/* Right Nav Navigation & Actions */}
         {currentUser ? (
           /* Authenticated Header */
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="ml-auto flex shrink-0 items-center space-x-2 sm:space-x-3">
             {/* Reset Action */}
             <button
+              id="tour-header-reset"
               onClick={onResetReplay}
               title="Reset data sesi"
               className="flex items-center space-x-1 px-2.5 py-1.5 text-xs text-text/80 hover:text-white bg-secondary border border-primary/30 rounded-xl transition-colors cursor-pointer"
@@ -62,6 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Run Unattended Workflow */}
             <button
+              id="tour-header-run"
               onClick={onRunWorkflow}
               disabled={isRunning || totalWatchlist === 0}
               className={`flex items-center space-x-2 px-3.5 py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all ${
@@ -74,10 +92,17 @@ export const Header: React.FC<HeaderProps> = ({
               <span>{isRunning ? 'Mengevaluasi...' : 'Jalankan Run'}</span>
             </button>
 
-            {/* User Profile Menu */}
-            <div className="relative">
+            <div id="tour-header-online" className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-accent/10 border border-accent/20 text-accent" title="Sistem Online">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="hidden sm:inline text-xs font-bold">Sistem Online</span>
+            </div>
+
+            {/* Compact account menu remains available when the sidebar is hidden on mobile. */}
+            <div id="tour-user-info-mobile" className="relative md:hidden">
               <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                aria-expanded={isProfileMenuOpen}
+                aria-label="Buka info pengguna"
                 className="flex items-center space-x-2 p-1.5 rounded-xl bg-secondary hover:bg-secondary/80 border border-primary/40 text-xs font-semibold text-white transition-colors cursor-pointer"
               >
                 <div className="w-6 h-6 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold text-xs border border-primary/30">
@@ -126,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         ) : (
           /* Guest Header */
-          <div className="flex items-center space-x-3">
+          <div className="ml-auto flex shrink-0 items-center space-x-3">
             <button
               onClick={() => onOpenAuth('login')}
               className="px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white/90 hover:text-white bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl transition-all duration-200 cursor-pointer shadow-sm"
