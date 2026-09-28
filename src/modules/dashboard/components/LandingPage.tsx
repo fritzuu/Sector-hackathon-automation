@@ -832,7 +832,7 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
 
       {/* ── LIVE MARKET CONSOLE ─────────────────────────────── */}
       <section className="siba-section">
-        <div className="section-label">Konsol Pasar — Data Langsung Yahoo Finance IDX</div>
+        <div className="section-label">Simulasi pantauan pasar dengan Sectors API</div>
         <h2 className="section-h2">Cek kondisi saham Anda sekarang</h2>
         <p className="section-lead">
           Pilih kode saham di bawah untuk melihat harga, volume, dan status anomali real-time.
