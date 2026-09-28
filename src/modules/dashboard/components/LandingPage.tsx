@@ -115,12 +115,17 @@ const GLOBAL_CSS = `
   .hero-right { display: flex; justify-content: flex-end; }
   .hero-eyebrow {
     font-family: var(--font-mono);
-    font-size: 11px; font-weight: 700;
+    font-size: 12.5px; font-weight: 700;
     color: var(--ac-h);
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
     display: flex; align-items: center; gap: 10px;
+    padding: 6px 14px;
+    background: rgba(157, 78, 221, 0.08);
+    border: 1px solid rgba(157, 78, 221, 0.22);
+    border-radius: 9999px;
+    width: fit-content;
   }
   .hero-eyebrow::before {
     content: '';
@@ -865,7 +870,7 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
       {/* ── LIVE MARKET CONSOLE ─────────────────────────────── */}
       <section className="siba-section">
         <div className="section-label">Simulasi pantauan pasar dengan Sectors API</div>
-        <h2 className="section-h2">Cek kondisi saham Anda sekarang</h2>
+        <h2 className="section-h2">Cek indikasi saham pilihan Anda</h2>
         <p className="section-lead">
           Pilih kode saham di bawah untuk melihat harga, volume, dan status anomali real-time.
           Ini persis data yang SIBA evaluasi setiap 16:30 WIB.
@@ -1052,8 +1057,8 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
       <section className="siba-section">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 40, alignItems: 'start' }}>
           <div>
-            <div className="section-label">Contoh Laporan</div>
-            <h2 className="section-h2">Ini yang masuk ke Telegram Anda setiap 16:30 WIB</h2>
+            <div className="section-label">Contoh Laporan Telegram</div>
+            <h2 className="section-h2">Format ringkasan yang diterima di Telegram</h2>
             <p className="section-lead">
               Laporan berbentuk teks terstruktur — bukan gambar, bukan PDF.
               Langsung bisa dibaca di notifikasi Telegram tanpa buka aplikasi lain.
@@ -1131,8 +1136,8 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
       <section className="siba-section">
         <div className="rules-grid">
           <div>
-            <div className="section-label">Logika Evaluasi</div>
-            <h2 className="section-h2">SIBA tidak menebak.<br />Hanya menghitung.</h2>
+            <div className="section-label">Kriteria Evaluasi</div>
+            <h2 className="section-h2">Evaluasi objektif<br />berbasis data bursa.</h2>
             <p style={{ fontSize: 14, color: 'var(--tx-1)', lineHeight: 1.7, marginBottom: 20 }}>
               Tidak ada model bahasa yang menganalisis berita.
               Tidak ada sentimen sosial yang diperhitungkan.
@@ -1180,8 +1185,8 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
       <section className="siba-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
           <div>
-            <div className="section-label">Data Bursa Hari Ini</div>
-            <h2 className="section-h2" style={{ marginBottom: 0 }}>Saham dalam pantauan</h2>
+            <div className="section-label">Ringkasan Pasar</div>
+            <h2 className="section-h2" style={{ marginBottom: 0 }}>Daftar saham dalam pantauan</h2>
           </div>
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
             <input
