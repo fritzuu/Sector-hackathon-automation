@@ -87,7 +87,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
           
           <div className="flex items-center gap-3 flex-wrap">
             <div className="text-[10px] font-mono text-text-muted/60">
-              Harga: Yahoo Finance · cache 5 mnt
+              Harga: Sectors API · cache 5 mnt
             </div>
             
             {companiesLoading ? (
