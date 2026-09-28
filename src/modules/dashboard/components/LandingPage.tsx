@@ -634,6 +634,29 @@ const GLOBAL_CSS = `
   }
 `;
 
+const FAQ_ITEMS = [
+  {
+    q: 'Bagaimana SIBA mendapatkan data pergerakan saham dan keterbukaan BEI?',
+    a: 'SIBA menggunakan data transaksi resmi dan keterbukaan informasi emiten dari Sectors API untuk evaluasi workflow, deteksi lonjakan volume transaksi, konfirmasi keterbukaan BEI, serta ringkasan pasar secara terpadu.',
+  },
+  {
+    q: 'Apakah SIBA memberikan rekomendasi beli atau jual saham?',
+    a: 'Tidak sama sekali. SIBA adalah sistem pemantauan dan otomasi berbasis aturan deterministik. SIBA hanya mendeteksi anomali volume, selisih persentase pergerakan harga, dan nomor arsip pengumuman resmi. Keputusan investasi sepenuhnya ada di tangan Anda.',
+  },
+  {
+    q: 'Kapan laporan evaluasi dikirimkan ke Telegram?',
+    a: 'Saat dashboard SIBA Anda dibuka menjelang 16:30 WIB pada hari bursa aktif (Senin–Jumat), sistem secara otomatis mengevaluasi saham di daftar pantauan Anda dan mengirimkan ringkasan anomali ke bot Telegram Anda. Anda juga dapat memicu evaluasi instan kapan saja lewat tombol Run.',
+  },
+  {
+    q: 'Berapa banyak saham yang bisa saya pantau?',
+    a: 'Pada rilis MVP saat ini, pengguna dapat memantau hingga 5 emiten saham IDX secara bersamaan dengan pembaruan data dan pengarsipan keterbukaan BEI yang terkurasi.',
+  },
+  {
+    q: 'Apakah akun Telegram saya aman?',
+    a: 'Privasi Anda sangat kami utamakan. Bot Telegram SIBA hanya membutuhkan ID chat unik Anda semata-mata untuk mengirimkan laporan evaluasi personal Anda. SIBA tidak pernah meminta nomor telepon, password sekuritas, atau kredensial perbankan Anda.',
+  },
+];
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onAuthSuccess }) => {
   const [selected, setSelected]         = useState('');
   const [tickers, setTickers]           = useState<Record<string, RealTickerMetrics>>({});
@@ -642,6 +665,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onAuthSucc
   const [companiesError, setCompError]   = useState<string>('');
   const [failedSyms, setFailed]         = useState<Record<string, string>>({});  // sym → error msg
   const [globalErr, setGlobalErr]       = useState<string>('');                  // IHSG / network down
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [loading, setLoading]           = useState(true);
   const [search, setSearch]             = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
@@ -1304,6 +1328,54 @@ DISCLAIMER: Otomasi SIBA — bukan rekomendasi trading.`
         </div>
       </section>
 
+
+      {/* ── FAQ SECTION ────────────────────────────────────── */}
+      <section className="siba-section" id="faq-section">
+        <div className="faq-container">
+          <div style={{ textAlign: 'center' }}>
+            <div className="section-label" style={{ display: 'inline-flex', margin: '0 auto 14px auto' }}>Tanya Jawab (FAQ)</div>
+            <h2 className="section-h2" style={{ maxWidth: 720, margin: '0 auto 14px auto' }}>Pertanyaan umum seputar SIBA</h2>
+            <p className="section-lead" style={{ margin: '0 auto 36px auto' }}>
+              Semua hal penting yang perlu Anda ketahui sebelum menggunakan layanan pemantauan saham SIBA.
+            </p>
+          </div>
+
+          <div className="faq-list" role="region" aria-label="Daftar Pertanyaan Umum">
+            {FAQ_ITEMS.map((item, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div key={idx} className={`faq-item${isOpen ? ' open' : ''}`}>
+                  <button
+                    type="button"
+                    className="faq-trigger"
+                    onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    aria-expanded={isOpen}
+                    aria-controls={`faq-answer-${idx}`}
+                    id={`faq-btn-${idx}`}
+                  >
+                    <span>{item.q}</span>
+                    <span className="faq-icon" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div
+                      id={`faq-answer-${idx}`}
+                      role="region"
+                      aria-labelledby={`faq-btn-${idx}`}
+                      className="faq-answer"
+                    >
+                      {item.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
     </div>
   );
