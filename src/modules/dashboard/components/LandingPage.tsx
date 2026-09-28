@@ -384,35 +384,73 @@ const GLOBAL_CSS = `
   /* ── HOW IT WORKS ─────────────────────────────────────── */
   .steps-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1px;
-    background: var(--ed);
-    border: 1px solid var(--ed);
-    border-radius: var(--r2);
-    overflow: hidden;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  @media (max-width: 860px) {
+    .steps-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
   }
   .step-cell {
-    padding: 32px 28px;
-    background: var(--sf);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%), var(--sf);
+    border: 1px solid var(--ed);
+    border-radius: var(--r2);
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
   }
-  .step-n {
+  .step-cell:hover {
+    border-color: rgba(157, 78, 221, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  }
+  .step-n-watermark {
+    position: absolute;
+    top: 10px;
+    right: 16px;
     font-family: var(--font-mono);
-    font-size: 36px; font-weight: 800;
-    color: var(--ed2);
+    font-size: 56px;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.04);
     line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    background: rgba(157, 78, 221, 0.12);
+    border: 1px solid rgba(157, 78, 221, 0.28);
+    color: #d8b4fe;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     margin-bottom: 16px;
-    letter-spacing: -0.02em;
   }
   .step-title {
     font-size: 16px; font-weight: 700;
     color: var(--tx-0);
     margin-bottom: 10px;
-    line-height: 1.3;
+    line-height: 1.35;
   }
   .step-body {
-    font-size: 14px;
+    font-size: 13.5px;
     color: var(--tx-1);
-    line-height: 1.65;
+    line-height: 1.6;
+    margin: 0;
   }
 
   /* ── RULES SECTION ────────────────────────────────────── */
