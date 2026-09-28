@@ -23,9 +23,10 @@ function GuestIndexPage() {
   const [oauthError] = useState(() => {
     const query = new URLSearchParams(window.location.search);
     const fragment = new URLSearchParams(window.location.hash.slice(1));
-    if (!query.has('error') && !fragment.has('error')) return false;
+    const errorDesc = query.get('error_description') || fragment.get('error_description') || query.get('error') || fragment.get('error');
+    if (!errorDesc) return null;
     window.history.replaceState({}, '', window.location.pathname);
-    return true;
+    return decodeURIComponent(errorDesc).replace(/\+/g, ' ');
   });
   const [authModalState, setAuthModalState] = useState<{
     isOpen: boolean;
@@ -61,7 +62,7 @@ function GuestIndexPage() {
       <main className="flex-1 w-full">
         {oauthError && (
           <p role="alert" className="mx-auto mt-4 max-w-lg rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            Login Google dibatalkan atau gagal. Silakan coba lagi.
+            Login Google gagal: {oauthError}
           </p>
         )}
         <LandingPage onOpenAuth={handleOpenAuth} onAuthSuccess={handleAuthSuccess} />

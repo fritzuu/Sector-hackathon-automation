@@ -1,5 +1,5 @@
-import { DailyTransaction } from '../../types/sectors.js';
-import { RuleResult, VolumeEvidence } from '../../types/engine.js';
+import { DailyTransaction } from '../../types/sectors.ts';
+import { RuleResult, VolumeEvidence } from '../../types/engine.ts';
 
 export function calculateMedian(numbers: number[]): number {
   if (numbers.length === 0) return 0;

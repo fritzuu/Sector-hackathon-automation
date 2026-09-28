@@ -34,36 +34,8 @@ function DashboardOverviewPage() {
     return () => window.removeEventListener('open-siba-tour', handleOpenTour);
   }, []);
 
-  // Auto-scheduler
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const tick = () => {
-      const nowUtc = new Date();
-      const wibMs = nowUtc.getTime() + 7 * 60 * 60 * 1000;
-      const wib = new Date(wibMs);
-      const hh = wib.getUTCHours();
-      const mm = wib.getUTCMinutes();
-      const dayOfWeek = wib.getUTCDay();
-      const dateStr = wib.toISOString().slice(0, 10);
-
-      const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
-      const is1630Window = hh === 16 && mm >= 30 && mm <= 31;
-      const notYetRun = lastAutoRunDate !== dateStr;
-
-      if (isWeekday && is1630Window && notYetRun && !isRunning) {
-        console.log('[AutoScheduler] 16:30 WIB triggered — invalidating caches.');
-        setLastAutoRunDate(dateStr);
-        liveMarketService.invalidateAll();
-        sectorsApi.invalidateAll();
-        runWorkflow();
-      }
-    };
-
-    const id = setInterval(tick, 30_000);
-    tick();
-    return () => clearInterval(id);
-  }, [currentUser?.id, lastAutoRunDate, isRunning, runWorkflow]);
+  // Auto-scheduler has been moved to Supabase Edge Functions (siba-workflow)
+  // It is triggered automatically by pg_cron at 16:30 WIB.
 
   const activeCasesArray = Array.from(activeCases.values());
 

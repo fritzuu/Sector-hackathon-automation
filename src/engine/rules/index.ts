@@ -1,12 +1,12 @@
-import { TickerDataset } from '../../types/sectors.js';
-import { EvaluationResult, RuleResult } from '../../types/engine.js';
-import { evaluateAbnormalVolume } from './abnormalVolume.js';
-import { evaluateRelativeMovement } from './relativeMovement.js';
-import { evaluateNewFiling } from './newFiling.js';
+import { TickerDataset } from '../../types/sectors.ts';
+import { EvaluationResult, RuleResult } from '../../types/engine.ts';
+import { evaluateAbnormalVolume } from './abnormalVolume.ts';
+import { evaluateRelativeMovement } from './relativeMovement.ts';
+import { evaluateNewFiling } from './newFiling.ts';
 
-export * from './abnormalVolume.js';
-export * from './relativeMovement.js';
-export * from './newFiling.js';
+export * from './abnormalVolume.ts';
+export * from './relativeMovement.ts';
+export * from './newFiling.ts';
 
 export function evaluateDataset(dataset: TickerDataset): EvaluationResult {
   const missingDataReasons: string[] = [];

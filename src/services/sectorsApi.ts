@@ -1,5 +1,5 @@
-import { DailyTransaction, BenchmarkData, CompanyFiling } from '../types/sectors.js';
-import { IDX_COMPANIES } from '../data/idxCompanies.js';
+import { DailyTransaction, BenchmarkData, CompanyFiling } from '../types/sectors.ts';
+import { IDX_COMPANIES } from '../data/idxCompanies.ts';
 
 export interface CompanyRealOverview {
   symbol: string;
@@ -14,8 +14,9 @@ export interface CompanyRealOverview {
   marketCapRank: number;
 }
 
-const getBaseUrl = () => (typeof window !== 'undefined' ? '/sectors/v2' : 'https://api.sectors.app/v2');
-const getYfBaseUrl = () => (typeof window !== 'undefined' ? '/yf/v8/finance/chart' : 'https://query1.finance.yahoo.com/v8/finance/chart');
+const isBrowser = typeof window !== 'undefined' && typeof (window as any).Deno === 'undefined';
+const getBaseUrl = () => (isBrowser ? '/sectors/v2' : 'https://api.sectors.app/v2');
+const getYfBaseUrl = () => (isBrowser ? '/yf/v8/finance/chart' : 'https://query1.finance.yahoo.com/v8/finance/chart');
 
 export class SectorsApiService {
   private apiKey: string;

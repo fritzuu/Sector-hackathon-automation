@@ -1,5 +1,5 @@
-import { CompanyFiling } from '../../types/sectors.js';
-import { RuleResult, NewFilingEvidence } from '../../types/engine.js';
+import { CompanyFiling } from '../../types/sectors.ts';
+import { RuleResult, NewFilingEvidence } from '../../types/engine.ts';
 
 export function evaluateNewFiling(
   filings: CompanyFiling[],

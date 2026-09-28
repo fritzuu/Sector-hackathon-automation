@@ -1,7 +1,7 @@
-import { supabase } from '../lib/supabaseClient.js';
-import { UserProfile } from '../data/userProfiles.js';
-import { AuditRunItem } from '../modules/cases/components/RunAuditHistory.js';
-import { CaseEvent, CaseState, RenderedTemplate } from '../types/engine.js';
+import { supabase } from '../lib/supabaseClient.ts';
+import { UserProfile } from '../data/userProfiles.ts';
+import { AuditRunItem } from '../modules/cases/components/RunAuditHistory.ts';
+import { CaseEvent, CaseState, RenderedTemplate } from '../types/engine.ts';
 
 export interface DbProfileRow {
   id: string;
