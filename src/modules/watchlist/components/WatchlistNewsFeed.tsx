@@ -1,201 +1,170 @@
 /**
- * WatchlistNewsFeed — real news headlines from Yahoo Finance (free, proxied).
- *
- * Token strategy:
- *  - Yahoo Finance /v1/finance/search → 0 API tokens (public proxy)
- *  - Sectors API tokens NOT consumed here — only during Run Workflow
- *  - News cached 15 min in liveMarketService to avoid hammering proxy
- *
- * Only renders a card if YF actually returns ≥1 headline for that ticker.
- * If no news → that ticker is skipped silently (no fake/static data).
- *
- * Links:
- *  - Real headline → links to the actual article (Yahoo Finance / media source)
- *  - "Lihat di Sectors" → sectors.app/idx/{ticker}
+ * WatchlistFilingsFeed — official company filings (Keterbukaan Informasi) from Sectors API.
+ * Replaces the unauthorized Yahoo Finance News feed.
  */
 
 import React, { useState, useEffect } from 'react';
-import { Newspaper, ExternalLink, RefreshCw, Clock } from 'lucide-react';
-import { liveMarketService, YFNewsItem } from '../../../services/liveMarketService.js';
+import { FileText, ExternalLink, RefreshCw, Clock } from 'lucide-react';
+import { sectorsApi } from '../../../services/sectorsApi.js';
+import { CompanyFiling } from '../../../types/sectors.js';
 
 interface WatchlistNewsFeedProps {
   watchlist: string[];
-  /** When this value changes the feed busts its news cache and re-fetches immediately. */
   forceRefreshAt?: number;
 }
 
-interface TickerNews {
+interface TickerFilings {
   ticker: string;
-  items: YFNewsItem[];
+  items: CompanyFiling[];
 }
 
 export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist, forceRefreshAt }) => {
-  const [newsByTicker, setNewsByTicker] = useState<TickerNews[]>([]);
+  const [filingsByTicker, setFilingsByTicker] = useState<TickerFilings[]>([]);
   const [loading, setLoading]           = useState(false);
   const [lastFetched, setLastFetched]   = useState<Date | null>(null);
 
-  const fetchAllNews = async () => {
-    if (watchlist.length === 0) { setNewsByTicker([]); return; }
+  const fetchAllFilings = async () => {
+    if (watchlist.length === 0) { setFilingsByTicker([]); return; }
     setLoading(true);
     try {
-      const results = await Promise.all(
-        watchlist.map(async ticker => {
-          const items = await liveMarketService.fetchTickerNewsYF(ticker, 3);
-          return { ticker, items };
-        }),
+      const results = await Promise.allSettled(
+        watchlist.map(async (ticker) => {
+          const items = await sectorsApi.fetchCompanyFilings(ticker);
+          return { ticker, items: items.slice(0, 3) }; // Show max 3 recent filings
+        })
       );
-      // Only keep tickers that actually have headlines
-      setNewsByTicker(results.filter(r => r.items.length > 0));
+
+      const aggregated: TickerFilings[] = [];
+      for (const res of results) {
+        if (res.status === 'fulfilled' && res.value.items.length > 0) {
+          aggregated.push(res.value);
+        }
+      }
+
+      setFilingsByTicker(aggregated);
       setLastFetched(new Date());
+    } catch (err) {
+      console.warn('[FilingsFeed] Failed to fetch:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch on mount and whenever watchlist changes
   useEffect(() => {
-    fetchAllNews();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchlist.join(',')]);
+    fetchAllFilings();
+    // eslint-disable-next-line
+  }, [watchlist, forceRefreshAt]);
 
-  // Force-refresh triggered by parent (e.g. 16:30 auto-scheduler)
-  useEffect(() => {
-    if (!forceRefreshAt) return;
-    // Bust the news cache for every ticker in the watchlist
-    watchlist.forEach(t => liveMarketService.invalidateNews(t));
-    fetchAllNews();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [forceRefreshAt]);
-
-  const totalNews = newsByTicker.reduce((sum, t) => sum + t.items.length, 0);
-
-  const handleRefresh = () => {
-    // Invalidate news cache so we get fresh data
-    watchlist.forEach(t => liveMarketService.invalidateNews(t));
-    fetchAllNews();
+  const handleManualRefresh = () => {
+    fetchAllFilings();
   };
 
-  if (watchlist.length === 0) return null;
+  const timeStr = lastFetched
+    ? lastFetched.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    : '--:--';
 
   return (
-    <div className="bg-secondary border border-border rounded-lg p-5 space-y-4 font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border">
+    <div className="bg-secondary/40 border border-border/60 rounded-xl overflow-hidden flex flex-col h-full shadow-sm max-h-[600px]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <Newspaper className="w-4 h-4 text-teal-400 flex-shrink-0" />
+          <div className="p-1.5 bg-blue-500/10 rounded-md">
+            <FileText className="w-4 h-4 text-blue-400" />
+          </div>
           <div>
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-              News &amp; Market Intelligence
-              {!loading && totalNews > 0 && (
-                <span className="ml-1.5 text-xs font-mono text-text-muted normal-case tracking-normal">
-                  ({totalNews} artikel)
-                </span>
-              )}
-            </h2>
-            <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-              Sectors API · Cache 15 mnt
-            </p>
+            <h2 className="text-sm font-semibold text-slate-200">Keterbukaan Informasi</h2>
+            <p className="text-[10px] text-text-muted mt-0.5">Sectors API • BEI (IDX)</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {lastFetched && (
-            <span className="flex items-center gap-1 text-[11px] text-slate-600 font-mono">
-              <Clock className="w-3 h-3" />
-              {lastFetched.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/50 border border-slate-700/50 rounded-full">
+            <Clock className="w-3 h-3 text-text-muted" />
+            <span className="text-[10px] font-mono text-slate-300">Update {timeStr}</span>
+          </div>
+
           <button
-            onClick={handleRefresh}
+            onClick={handleManualRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 text-xs font-semibold text-text-muted hover:text-teal-300 border border-border hover:border-teal-600 px-2.5 py-1 rounded transition-all disabled:opacity-40"
+            className={`p-1.5 rounded-md hover:bg-white/5 transition-colors group ${loading ? 'opacity-50' : ''}`}
+            title="Refresh Keterbukaan Informasi"
           >
-            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`w-3.5 h-3.5 text-text-muted group-hover:text-blue-400 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* Loading skeleton */}
-      {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="p-3.5 rounded-lg border border-border space-y-2 animate-pulse">
-              <div className="h-2.5 bg-secondary rounded w-1/3" />
-              <div className="h-3 bg-secondary rounded w-full" />
-              <div className="h-3 bg-secondary rounded w-4/5" />
-              <div className="h-2 bg-secondary rounded w-1/4 mt-3" />
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
+        {loading && filingsByTicker.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-40 space-y-3 text-center">
+            <RefreshCw className="w-5 h-5 text-text-muted animate-spin" />
+            <p className="text-xs text-text-muted font-mono">Mengambil dokumen resmi...</p>
+          </div>
+        )}
 
-      {/* No news state */}
-      {!loading && newsByTicker.length === 0 && (
-        <div className="py-8 text-center border border-dashed border-border rounded-lg bg-secondary/30">
-          <Newspaper className="w-6 h-6 text-slate-700 mx-auto mb-2" />
-          <p className="text-xs font-semibold text-text-muted">
-            Tidak ada berita terbaru dari Sectors API untuk saham di watchlist Anda.
-          </p>
-          <p className="text-[11px] text-slate-500 mt-1 font-mono">
-            Data mungkin belum tersedia. Coba refresh beberapa saat lagi.
-          </p>
-        </div>
-      )}
+        {!loading && filingsByTicker.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-40 space-y-2 text-center px-4">
+            <FileText className="w-6 h-6 text-slate-600 mb-1" />
+            <p className="text-sm text-slate-300 font-medium">Tidak Ada Pengumuman</p>
+            <p className="text-xs text-text-muted">Tidak ada dokumen Keterbukaan Informasi terbaru untuk emiten di Watchlist Anda.</p>
+          </div>
+        )}
 
-      {/* News cards */}
-      {!loading && newsByTicker.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {newsByTicker.flatMap(({ ticker, items }) =>
-            items.map((news, idx) => (
-              <div
-                key={`${ticker}-${idx}`}
-                className="p-3.5 rounded-lg bg-secondary/80 border border-border hover:border-border transition-all flex flex-col justify-between gap-2.5"
-              >
-                <div>
-                  {/* Ticker badge + publisher */}
-                  <div className="flex items-center justify-between mb-2 gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-bold text-xs text-teal-300 bg-teal-950/50 px-2 py-0.5 rounded border border-teal-800/40">
-                        {ticker}
-                      </span>
-                      <span className="text-[10px] text-slate-500 truncate max-w-[120px]">{news.publisher}</span>
-                    </div>
-                    <span className="text-[11px] text-slate-600 font-mono flex-shrink-0">
-                      {news.publishedAt > 0
-                        ? new Date(news.publishedAt * 1000).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
-                        : '—'}
+        {filingsByTicker.length > 0 && (
+          <div className="space-y-5">
+            {filingsByTicker.map((block) => (
+              <div key={block.ticker} className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 font-mono font-bold text-xs rounded border border-blue-500/20">
+                      {block.ticker}
+                    </span>
+                    <span className="text-xs text-text-muted font-medium uppercase tracking-wide">
+                      Pengumuman BEI
                     </span>
                   </div>
-
-                  {/* Headline — links to actual article */}
                   <a
-                    href={news.link}
+                    href={`https://sectors.app/idx/${block.ticker}`}
                     target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-xs font-semibold text-white hover:text-teal-300 transition-colors line-clamp-3 leading-relaxed"
+                    rel="noreferrer"
+                    className="text-[10px] text-text-muted hover:text-blue-400 transition-colors flex items-center gap-1 group"
                   >
-                    {news.title}
+                    <span>Lihat di Sectors</span>
+                    <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                   </a>
                 </div>
 
-                {/* Footer — only sectors.app/idx link */}
-                <div className="pt-2 border-t border-border flex items-center justify-between text-[10px]">
-                  <span className="text-slate-600 font-mono">Sectors API</span>
-                  <a
-                    href={`https://sectors.app/idx/${ticker}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-teal-500 hover:text-teal-300 hover:underline font-semibold transition-colors"
-                  >
-                    <span>Sectors.app/idx/{ticker}</span>
-                    <ExternalLink className="w-2.5 h-2.5" />
-                  </a>
+                <div className="space-y-2.5">
+                  {block.items.map((item, i) => (
+                    <a
+                      key={item.id || i}
+                      href={item.sourceUrl || '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex flex-col gap-1.5 p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800/80 border border-transparent hover:border-slate-700/50 transition-all"
+                    >
+                      <div className="flex gap-2">
+                        <FileText className="w-4 h-4 text-slate-500 mt-0.5 group-hover:text-blue-400 transition-colors shrink-0" />
+                        <h3 className="text-sm font-medium text-slate-200 group-hover:text-blue-300 leading-snug line-clamp-2 transition-colors">
+                          {item.title}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono ml-6">
+                        <span>{new Date(item.publishedAt).toLocaleDateString('id-ID')}</span>
+                        {item.category && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-slate-700" />
+                            <span className="truncate max-w-[120px]">{item.category}</span>
+                          </>
+                        )}
+                      </div>
+                    </a>
+                  ))}
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

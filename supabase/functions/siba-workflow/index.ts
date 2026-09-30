@@ -50,7 +50,7 @@ serve(async (req) => {
   const userIds = users.map((u) => u.id)
   const { data: workspaces } = await supabase
     .from("user_workspaces")
-    .select("user_id, active_cases, case_events, run_index")
+    .select("user_id, active_cases, case_events, run_index, market_snapshots")
     .in("user_id", userIds)
 
   // Map them for instant O(1) lookups in memory
@@ -79,6 +79,7 @@ serve(async (req) => {
 
     let activeCases = workspace?.active_cases || {}
     let caseEvents = workspace?.case_events || {}
+    let marketSnapshots = workspace?.market_snapshots || {}
     let runIndex = workspace?.run_index || 1
     let hasChanges = false
     let totalTriggersFound = 0
@@ -110,6 +111,30 @@ serve(async (req) => {
 
       const evalResult = evaluateDataset(dataset)
       totalTriggersFound += evalResult.activeTriggerCount
+
+      // Generate Market Snapshot for Dashboard rendering
+      const latestPriceData = prices[prices.length - 1] || { close: 0, volume: 0 };
+      const prevPriceData = prices[prices.length - 2] || latestPriceData;
+      const latestIHSG = benchmark[benchmark.length - 1] || { close: 0 };
+      const prevIHSG = benchmark[benchmark.length - 2] || latestIHSG;
+
+      const volRule = evalResult.ruleResults.find((r: any) => r.ruleId === 'ABNORMAL_VOLUME');
+      const medianVol = volRule?.evidence ? (volRule.evidence as any).medianVolume20Days : 0;
+      
+      const changePercent = prevPriceData.close ? ((latestPriceData.close - prevPriceData.close) / prevPriceData.close) * 100 : 0;
+      const ihsgChangePercent = prevIHSG.close ? ((latestIHSG.close - prevIHSG.close) / prevIHSG.close) * 100 : 0;
+
+      marketSnapshots[ticker] = {
+        symbol: ticker,
+        lastPrice: latestPriceData.close,
+        changeAmount: latestPriceData.close - prevPriceData.close,
+        changePercent: Number(changePercent.toFixed(2)),
+        todayVolume: latestPriceData.volume || 0,
+        medianVolume20d: medianVol,
+        ihsgPrice: latestIHSG.close,
+        ihsgChangePercent: Number(ihsgChangePercent.toFixed(2)),
+        lastUpdated: timestamp,
+      }
 
       const transition = processCaseTransition(activeCases[ticker] || null, evalResult, timestamp)
 
@@ -154,6 +179,7 @@ serve(async (req) => {
       user_id: user.id,
       active_cases: activeCases,
       case_events: caseEvents,
+      market_snapshots: marketSnapshots,
       run_index: runIndex + 1,
       last_run_time: timestamp,
       updated_at: timestamp

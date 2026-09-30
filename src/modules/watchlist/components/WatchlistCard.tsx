@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { X, TrendingUp, TrendingDown, AlertTriangle, WifiOff } from 'lucide-react';
-import { liveMarketService, RealTickerMetrics } from '../../../services/liveMarketService';
+import { RealTickerMetrics } from '../../../types/engine.js';
 import { LiveIdxCompany } from '../../../services/sectorsApi';
+import { useWorkflowStore } from '../../cases/stores/workflow.store.js';
 
 interface WatchlistCardProps {
   ticker: string;
@@ -10,22 +11,19 @@ interface WatchlistCardProps {
   onClick: () => void;
 }
 
-const fmt = (n: number) => n.toLocaleString('id-ID');
-const pct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+const fmt = (n?: number)  => n.toLocaleString('id-ID');
+const pct = (n?: number) => `${(n || 0) >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
 
 export const WatchlistCard: React.FC<WatchlistCardProps> = ({ ticker, companyInfo, onRemove, onClick }) => {
-  const [metrics, setMetrics] = useState<RealTickerMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    setLoading(true); setError(false);
-    liveMarketService.fetchTickerMetrics(ticker)
-      .then(m => { if (alive) { setMetrics(m); setLoading(false); } })
-      .catch(() => { if (alive) { setError(true); setLoading(false); } });
-    return () => { alive = false; };
-  }, [ticker]);
+  const rawMetrics = useWorkflowStore(s => s.marketSnapshots.get(ticker));
+  const metrics = rawMetrics ? {
+    ...rawMetrics,
+    volumeMultiplier: rawMetrics.volumeMultiplier ?? (rawMetrics.medianVolume20d > 0 ? Number((rawMetrics.todayVolume / rawMetrics.medianVolume20d).toFixed(2)) : 0),
+    isVolumeAnomaly: rawMetrics.isVolumeAnomaly ?? (rawMetrics.todayVolume >= (rawMetrics.medianVolume20d * 2)),
+    isSpreadAnomaly: rawMetrics.isSpreadAnomaly ?? (Math.abs(rawMetrics.changePercent - rawMetrics.ihsgChangePercent) >= 2.0)
+  } : null;
+  const loading = false;
+  const error = !metrics;
 
   const isAnom = metrics ? (metrics.isVolumeAnomaly || metrics.isSpreadAnomaly) : false;
   const isUp = (metrics?.changePercent ?? 0) >= 0;

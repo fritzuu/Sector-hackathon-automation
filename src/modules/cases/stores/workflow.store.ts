@@ -20,6 +20,7 @@ interface WorkflowState {
   activeCases: Map<string, CaseState>;
   caseEvents: Map<string, CaseEvent[]>;
   caseTemplates: Map<string, RenderedTemplate>;
+  marketSnapshots: Map<string, any>;
   auditRuns: AuditRunItem[];
   isRunning: boolean;
   lastRunTime: string | null;
@@ -40,6 +41,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   activeCases: new Map(),
   caseEvents: new Map(),
   caseTemplates: new Map(),
+  marketSnapshots: new Map(),
   auditRuns: [],
   isRunning: false,
   lastRunTime: null,
@@ -90,6 +92,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       activeCases: new Map<string, CaseState>(),
       caseEvents: new Map<string, CaseEvent[]>(),
       caseTemplates: new Map<string, RenderedTemplate>(),
+      marketSnapshots: new Map<string, any>(),
       lastRunTime: null,
       runIndex: 1,
     };

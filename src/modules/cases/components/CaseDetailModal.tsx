@@ -4,8 +4,9 @@ import {
   X, Shield, AlertTriangle, CheckCircle, Clock, ExternalLink,
   TrendingUp, TrendingDown, Activity, FileText, Database,
 } from 'lucide-react';
-import { liveMarketService, RealTickerMetrics } from '../../../services/liveMarketService.js';
+import { RealTickerMetrics } from '../../../types/engine.js';
 import { IDX_COMPANIES } from '../../../data/idxCompanies.js';
+import { useWorkflowStore } from '../stores/workflow.store.js';
 
 interface CaseDetailModalProps {
   caseItem: CaseState | null;
@@ -14,9 +15,9 @@ interface CaseDetailModalProps {
   onClose: () => void;
 }
 
-const fmt = (n: number) => n.toLocaleString('id-ID');
-const pct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
-const vol = (n: number) => `${(n / 1_000_000).toFixed(2)}M`;
+const fmt = (n?: number)  => n.toLocaleString('id-ID');
+const pct = (n?: number) => `${(n || 0) >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
+const vol = (n?: number) => `${((n || 0) / 1_000_000).toFixed(2)}M`;
 
 export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   caseItem,
@@ -24,19 +25,16 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   template,
   onClose,
 }) => {
-  const [metrics, setMetrics] = useState<RealTickerMetrics | null>(null);
-  const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const rawMetrics = useWorkflowStore(s => caseItem ? s.marketSnapshots.get(caseItem.symbol) : null);
+  const loadingMetrics = false;
 
-  useEffect(() => {
-    if (!caseItem) return;
-    let alive = true;
-    setLoadingMetrics(true);
-    liveMarketService.fetchTickerMetrics(caseItem.symbol)
-      .then(m => { if (alive) setMetrics(m); })
-      .catch(() => {})
-      .finally(() => { if (alive) setLoadingMetrics(false); });
-    return () => { alive = false; };
-  }, [caseItem?.symbol]);
+  const metrics = rawMetrics ? {
+    ...rawMetrics,
+    volumeMultiplier: rawMetrics.volumeMultiplier ?? (rawMetrics.medianVolume20d > 0 ? Number((rawMetrics.todayVolume / rawMetrics.medianVolume20d).toFixed(2)) : 0),
+    isVolumeAnomaly: rawMetrics.isVolumeAnomaly ?? (rawMetrics.todayVolume >= (rawMetrics.medianVolume20d * 2)),
+    isSpreadAnomaly: rawMetrics.isSpreadAnomaly ?? (Math.abs((rawMetrics.changePercent||0) - (rawMetrics.ihsgChangePercent||0)) >= 2.0),
+    spreadVsIhsg: rawMetrics.spreadVsIhsg ?? Math.abs((rawMetrics.changePercent||0) - (rawMetrics.ihsgChangePercent||0))
+  } : null;
 
   if (!caseItem) return null;
 

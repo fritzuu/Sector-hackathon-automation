@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { motion } from 'framer-motion';
 import { WatchlistManager } from '../modules/watchlist/components/WatchlistManager';
+import { WatchlistNewsFeed } from '../modules/watchlist/components/WatchlistNewsFeed';
 import { PopularStocksWidget } from '../modules/watchlist/components/PopularStocksWidget';
 import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { useAuthStore } from '../modules/auth/stores/auth.store';
@@ -41,6 +42,8 @@ function WatchlistPage() {
           onOpenTelegramModal={() => window.dispatchEvent(new CustomEvent('open-telegram-modal'))}
           onSendTelegramSummary={handleSendTelegramSummary}
         />
+        
+        <WatchlistNewsFeed watchlist={watchlist} />
       </div>
       
       <div className="min-w-0 xl:sticky xl:top-4">

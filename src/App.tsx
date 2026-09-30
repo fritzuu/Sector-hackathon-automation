@@ -20,7 +20,7 @@ import { processCaseTransition } from './engine/caseEngine.js';
 import { renderCaseTemplate } from './engine/templateRenderer.js';
 import { generateSecurePairingToken } from './utils/token.js';
 import { sectorsApi } from './services/sectorsApi.js';
-import { liveMarketService } from './services/liveMarketService.js';
+
 import { dispatchCaseAlert } from './services/telegramService.js';
 import {
   fetchUserProfileFromSupabase,
@@ -107,8 +107,7 @@ export function App() {
         console.log('[AutoScheduler] 16:30 WIB triggered — invalidating all caches and refreshing data.');
         setLastAutoRunDate(dateStr);
 
-        // 1. Bust ALL caches — price, IHSG, news (Yahoo Finance), historical prices (Sectors)
-        liveMarketService.invalidateAll();
+        // 1. Bust historical prices (Sectors API)
         sectorsApi.invalidateAll();
 
         // 2. Force-refresh the news feed immediately (WatchlistNewsFeed reacts to this)
