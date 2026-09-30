@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { CompanyFiling } from './sectors.ts';
 
 export type RuleId = 'ABNORMAL_VOLUME' | 'RELATIVE_MOVEMENT' | 'NEW_FILING';

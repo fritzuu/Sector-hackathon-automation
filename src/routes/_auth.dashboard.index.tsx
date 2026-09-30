@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 import { BeginnerGuideBanner } from '../shared/components/BeginnerGuideBanner';
 import { AutomationOverview } from '../modules/dashboard/components/AutomationOverview';
 import { QuickWatchlistWidget } from '../modules/dashboard/components/QuickWatchlistWidget';
@@ -22,6 +24,16 @@ function DashboardOverviewPage() {
     telegramLogs, isFetchingLogs, fetchTelegramLogs
   } = useWorkflowStore();
 
+  const [isSystemUnavailable, setIsSystemUnavailable] = useState(false);
+
+  useEffect(() => {
+    supabase.functions.invoke('siba-workflow', { method: 'GET' }).then(({ data, error }) => {
+      if (error || (data && data.isConfigured === false)) {
+        setIsSystemUnavailable(true);
+      }
+    });
+  }, []);
+
   useEffect(() => {
     if (currentUser?.telegramChatId) {
       fetchTelegramLogs(currentUser.telegramChatId);
@@ -37,10 +49,19 @@ function DashboardOverviewPage() {
   // Auto-scheduler has been moved to Supabase Edge Functions (siba-workflow)
   // It is triggered automatically by pg_cron at 16:30 WIB.
 
-  const activeCasesArray = Array.from(activeCases.values());
+  const activeCasesArray = Array.from(activeCases.values()).filter(c => watchlist.includes(c.symbol));
 
   return (
     <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="space-y-8 ">
+      {isSystemUnavailable && (
+        <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-lg flex items-center gap-3 text-amber-500/90 shadow-sm">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <p className="font-medium text-sm">
+            Automated monitoring is currently on standby. The system will resume once the Sectors API configuration is complete.
+          </p>
+        </div>
+      )}
+
       <BeginnerGuideBanner
         userName={currentUser?.name || ''}
         onOpenTour={() => window.dispatchEvent(new CustomEvent('open-siba-tour'))}

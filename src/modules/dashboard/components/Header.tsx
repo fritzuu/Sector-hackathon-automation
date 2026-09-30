@@ -8,7 +8,6 @@ interface HeaderProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
   onLogout: () => void;
   onOpenTelegramModal: () => void;
-  onRunWorkflow: () => void;
   onResetReplay: () => void;
   onOpenTour?: () => void;
   isRunning: boolean;
@@ -21,7 +20,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuth,
   onLogout,
   onOpenTelegramModal,
-  onRunWorkflow,
   onResetReplay,
   onOpenTour,
   isRunning,
@@ -77,22 +75,8 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden lg:inline">Reset</span>
             </button>
 
-            {/* Run Unattended Workflow */}
-            <button
-              id="tour-header-run"
-              onClick={onRunWorkflow}
-              disabled={isRunning || totalWatchlist === 0}
-              className={`flex items-center space-x-2 px-3.5 py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all ${
-                isRunning
-                  ? 'bg-secondary text-text/40 cursor-not-allowed border border-primary/20'
-                  : 'bg-[#7822cd] hover:bg-[#8830e0] text-white font-bold shadow-md shadow-purple-950/40 cursor-pointer border border-[#9d4edd]/40'
-              }`}
-            >
-              <Play className={`w-3.5 h-3.5 fill-current ${isRunning ? 'animate-spin' : ''}`} />
-              <span>{isRunning ? 'Mengevaluasi...' : 'Jalankan Run'}</span>
-            </button>
-
             <div id="tour-header-online" className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-accent/10 border border-accent/20 text-accent" title="Sistem Online">
+
               <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               <span className="hidden sm:inline text-xs font-bold">Sistem Online</span>
             </div>

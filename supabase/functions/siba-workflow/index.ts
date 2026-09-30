@@ -14,6 +14,30 @@ const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 if (SECTORS_API_KEY) sectorsApi.setApiKey(SECTORS_API_KEY)
 
 serve(async (req) => {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
+  if (req.method === "GET") return new Response(JSON.stringify({ isConfigured: !!SECTORS_API_KEY }), { headers: { ...corsHeaders, "Content-Type": "application/json" } })
+  
+  if (req.method === "POST") {
+    const authHeader = req.headers.get("Authorization")
+    if (!authHeader) {
+      return new Response("Unauthorized: Missing auth header", { status: 401, headers: corsHeaders })
+    }
+    try {
+      const token = authHeader.replace('Bearer ', '')
+      const payloadBase64 = token.split('.')[1]
+      const payload = JSON.parse(atob(payloadBase64))
+      if (payload.role !== 'service_role') {
+        return new Response("Unauthorized: Only Service Role can execute workflow", { status: 401, headers: corsHeaders })
+      }
+    } catch (e) {
+      return new Response("Unauthorized: Invalid token format", { status: 401, headers: corsHeaders })
+    }
+  }
+  
   // 1. Fetch Users
   const { data: users } = await supabase
     .from("profiles")

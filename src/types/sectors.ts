@@ -1,47 +1,38 @@
-import { z } from 'zod';
+// Pure TypeScript interfaces for cross-compatibility between Vite and Deno Edge Functions
+export interface DailyTransaction {
+  symbol: string;
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  value?: number;
+}
 
-export const DailyTransactionSchema = z.object({
-  symbol: z.string(),
-  date: z.string(), // YYYY-MM-DD
-  open: z.number().nonnegative(),
-  high: z.number().nonnegative(),
-  low: z.number().nonnegative(),
-  close: z.number().nonnegative(),
-  volume: z.number().nonnegative(),
-  value: z.number().nonnegative().optional(),
-});
+export interface BenchmarkData {
+  symbol: string;
+  date: string;
+  close: number;
+  previousClose?: number;
+  percentChange: number;
+}
 
-export type DailyTransaction = z.infer<typeof DailyTransactionSchema>;
+export interface CompanyFiling {
+  id: string;
+  symbol: string;
+  title: string;
+  category: string;
+  publishedAt: string;
+  sourceUrl?: string;
+  isVerified: boolean;
+}
 
-export const BenchmarkDataSchema = z.object({
-  symbol: z.string().default('^JKSE'),
-  date: z.string(), // YYYY-MM-DD
-  close: z.number().nonnegative(),
-  previousClose: z.number().nonnegative().optional(),
-  percentChange: z.number(), // e.g. 0.015 for +1.5%
-});
-
-export type BenchmarkData = z.infer<typeof BenchmarkDataSchema>;
-
-export const CompanyFilingSchema = z.object({
-  id: z.string(),
-  symbol: z.string(),
-  title: z.string(),
-  category: z.string(),
-  publishedAt: z.string(), // ISO 8601 or YYYY-MM-DDTHH:mm:ss
-  sourceUrl: z.string().url().optional(),
-  isVerified: z.boolean().default(true),
-});
-
-export type CompanyFiling = z.infer<typeof CompanyFilingSchema>;
-
-export const TickerDatasetSchema = z.object({
-  symbol: z.string(),
-  asOfDate: z.string(),
-  historicalPrices: z.array(DailyTransactionSchema),
-  benchmarkPrices: z.array(BenchmarkDataSchema),
-  filings: z.array(CompanyFilingSchema),
-  lastEvaluatedFilingId: z.string().optional().nullable(),
-});
-
-export type TickerDataset = z.infer<typeof TickerDatasetSchema>;
+export interface TickerDataset {
+  symbol: string;
+  asOfDate: string;
+  historicalPrices: DailyTransaction[];
+  benchmarkPrices: BenchmarkData[];
+  filings: CompanyFiling[];
+  lastEvaluatedFilingId?: string | null;
+}

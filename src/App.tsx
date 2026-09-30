@@ -356,7 +356,6 @@ export function App() {
         onOpenAuth={handleOpenAuth}
         onLogout={handleLogout}
         onOpenTelegramModal={() => setIsTelegramModalOpen(true)}
-        onRunWorkflow={handleRunWorkflow}
         onResetReplay={handleReset}
         isRunning={isRunning}
         totalWatchlist={watchlist.length}

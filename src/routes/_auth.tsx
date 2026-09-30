@@ -35,7 +35,6 @@ function AuthLayout() {
     isRunning,
     latestTelegramAlert,
     clearLatestAlert,
-    runWorkflow,
     resetReplay,
   } = useWorkflowStore();
 
@@ -116,7 +115,6 @@ function AuthLayout() {
           onOpenAuth={() => {}} // Not needed in auth layout
           onLogout={handleLogout}
           onOpenTelegramModal={() => setIsTelegramModalOpen(true)}
-          onRunWorkflow={runWorkflow}
           onResetReplay={resetReplay}
           onOpenTour={() => {
             window.dispatchEvent(new CustomEvent("open-siba-tour"));
