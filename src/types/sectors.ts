@@ -26,6 +26,12 @@ export interface CompanyFiling {
   publishedAt: string;
   sourceUrl?: string;
   isVerified: boolean;
+  // Rich data fields from Insider Transactions
+  holderName?: string;
+  transactionType?: 'buy' | 'sell' | string;
+  amount?: number;
+  price?: number;
+  transactionValue?: number;
 }
 
 export interface TickerDataset {

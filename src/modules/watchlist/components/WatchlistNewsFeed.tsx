@@ -1,11 +1,11 @@
 /**
- * WatchlistFilingsFeed — official company filings (Keterbukaan Informasi) from Sectors API.
- * Replaces the unauthorized Yahoo Finance News feed.
+ * WatchlistFilingsFeed — official company filings (Keterbukaan Informasi & Transaksi Insider) from Sectors API.
+ * Reads directly from the market_snapshots injected by the backend Cron Job.
  */
 
-import React, { useState, useEffect } from 'react';
-import { FileText, ExternalLink, RefreshCw, Clock } from 'lucide-react';
-import { sectorsApi } from '../../../services/sectorsApi.js';
+import React from 'react';
+import { FileText, ExternalLink, Clock } from 'lucide-react';
+import { useWorkflowStore } from '../../cases/stores/workflow.store.js';
 import { CompanyFiling } from '../../../types/sectors.js';
 
 interface WatchlistNewsFeedProps {
@@ -18,50 +18,28 @@ interface TickerFilings {
   items: CompanyFiling[];
 }
 
-export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist, forceRefreshAt }) => {
-  const [filingsByTicker, setFilingsByTicker] = useState<TickerFilings[]>([]);
-  const [loading, setLoading]           = useState(false);
-  const [lastFetched, setLastFetched]   = useState<Date | null>(null);
+export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist }) => {
+  const marketSnapshots = useWorkflowStore((s) => s.marketSnapshots);
 
-  const fetchAllFilings = async () => {
-    if (watchlist.length === 0) { setFilingsByTicker([]); return; }
-    setLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        watchlist.map(async (ticker) => {
-          const items = await sectorsApi.fetchCompanyFilings(ticker);
-          return { ticker, items: items.slice(0, 3) }; // Show max 3 recent filings
-        })
-      );
+  // Directly extract filings from the database snapshots
+  const filingsByTicker: TickerFilings[] = watchlist
+    .map((ticker) => {
+      const snap = marketSnapshots.get(ticker);
+      return { ticker, items: snap?.latestFilings || [] };
+    })
+    .filter((group) => group.items.length > 0);
 
-      const aggregated: TickerFilings[] = [];
-      for (const res of results) {
-        if (res.status === 'fulfilled' && res.value.items.length > 0) {
-          aggregated.push(res.value);
-        }
-      }
-
-      setFilingsByTicker(aggregated);
-      setLastFetched(new Date());
-    } catch (err) {
-      console.warn('[FilingsFeed] Failed to fetch:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAllFilings();
-    // eslint-disable-next-line
-  }, [watchlist, forceRefreshAt]);
-
-  const handleManualRefresh = () => {
-    fetchAllFilings();
-  };
-
-  const timeStr = lastFetched
-    ? lastFetched.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-    : '--:--';
+  // Find the most recent update time across all snapshots
+  let latestUpdate = '--:--';
+  const allDates = watchlist
+    .map(t => marketSnapshots.get(t)?.lastUpdated)
+    .filter(Boolean)
+    .map(d => new Date(d as string));
+  
+  if (allDates.length > 0) {
+    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+    latestUpdate = maxDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  }
 
   return (
     <div className="bg-secondary/40 border border-border/60 rounded-xl overflow-hidden flex flex-col h-full shadow-sm max-h-[600px]">
@@ -71,41 +49,25 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
             <FileText className="w-4 h-4 text-blue-400" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-200">Keterbukaan Informasi</h2>
-            <p className="text-[10px] text-text-muted mt-0.5">Sectors API • BEI (IDX)</p>
+            <h2 className="text-sm font-semibold text-slate-200">Keterbukaan Informasi & Transaksi Insider</h2>
+            <p className="text-[10px] text-text-muted mt-0.5">Sectors API • Dokumen Resmi IDX</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/50 border border-slate-700/50 rounded-full">
             <Clock className="w-3 h-3 text-text-muted" />
-            <span className="text-[10px] font-mono text-slate-300">Update {timeStr}</span>
+            <span className="text-[10px] font-mono text-slate-300">Update {latestUpdate}</span>
           </div>
-
-          <button
-            onClick={handleManualRefresh}
-            disabled={loading}
-            className={`p-1.5 rounded-md hover:bg-white/5 transition-colors group ${loading ? 'opacity-50' : ''}`}
-            title="Refresh Keterbukaan Informasi"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-text-muted group-hover:text-blue-400 ${loading ? 'animate-spin' : ''}`} />
-          </button>
         </div>
       </div>
 
       <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
-        {loading && filingsByTicker.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-40 space-y-3 text-center">
-            <RefreshCw className="w-5 h-5 text-text-muted animate-spin" />
-            <p className="text-xs text-text-muted font-mono">Mengambil dokumen resmi...</p>
-          </div>
-        )}
-
-        {!loading && filingsByTicker.length === 0 && (
+        {filingsByTicker.length === 0 && (
           <div className="flex flex-col items-center justify-center h-40 space-y-2 text-center px-4">
             <FileText className="w-6 h-6 text-slate-600 mb-1" />
-            <p className="text-sm text-slate-300 font-medium">Tidak Ada Pengumuman</p>
-            <p className="text-xs text-text-muted">Tidak ada dokumen Keterbukaan Informasi terbaru untuk emiten di Watchlist Anda.</p>
+            <p className="text-sm text-slate-300 font-medium">Tidak Ada Laporan Baru</p>
+            <p className="text-xs text-text-muted">Tidak ada dokumen Keterbukaan Informasi & Transaksi Insider terbaru untuk emiten di Watchlist Anda.</p>
           </div>
         )}
 
@@ -134,31 +96,91 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist,
                 </div>
 
                 <div className="space-y-2.5">
-                  {block.items.map((item, i) => (
-                    <a
-                      key={item.id || i}
-                      href={item.sourceUrl || '#'}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group flex flex-col gap-1.5 p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800/80 border border-transparent hover:border-slate-700/50 transition-all"
-                    >
-                      <div className="flex gap-2">
-                        <FileText className="w-4 h-4 text-slate-500 mt-0.5 group-hover:text-blue-400 transition-colors shrink-0" />
-                        <h3 className="text-sm font-medium text-slate-200 group-hover:text-blue-300 leading-snug line-clamp-2 transition-colors">
-                          {item.title}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono ml-6">
-                        <span>{new Date(item.publishedAt).toLocaleDateString('id-ID')}</span>
-                        {item.category && (
-                          <>
-                            <span className="w-1 h-1 rounded-full bg-slate-700" />
-                            <span className="truncate max-w-[120px]">{item.category}</span>
-                          </>
+                  {block.items.map((item, i) => {
+                    // Logic for "NEW" badge (< 14 days old)
+                    const isNew = (new Date().getTime() - new Date(item.publishedAt).getTime()) < 14 * 24 * 60 * 60 * 1000;
+                    
+                    // Format currency nicely (e.g. 2.64 Miliar)
+                    const formatIDR = (val?: number) => {
+                      if (!val) return '';
+                      if (val >= 1_000_000_000) return `Rp ${(val / 1_000_000_000).toFixed(2)} Miliar`;
+                      if (val >= 1_000_000) return `Rp ${(val / 1_000_000).toFixed(2)} Juta`;
+                      return `Rp ${val.toLocaleString('id-ID')}`;
+                    };
+
+                    const isBuy = item.transactionType?.toLowerCase() === 'buy';
+                    const isSell = item.transactionType?.toLowerCase() === 'sell';
+                    const initials = item.holderName 
+                      ? item.holderName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                      : null;
+
+                    return (
+                      <a
+                        key={item.id || i}
+                        href={item.sourceUrl || '#'}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group relative flex flex-col p-4 rounded-lg bg-slate-900/50 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700/50 transition-all overflow-hidden"
+                      >
+                        {/* Transaction Type Indicator Bar */}
+                        {(isBuy || isSell) && (
+                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${isBuy ? 'bg-emerald-500/80' : 'bg-red-500/80'}`} />
                         )}
-                      </div>
-                    </a>
-                  ))}
+
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex gap-3">
+                            {initials ? (
+                              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-300 shrink-0">
+                                {initials}
+                              </div>
+                            ) : (
+                              <FileText className="w-5 h-5 text-slate-500 mt-0.5 group-hover:text-blue-400 transition-colors shrink-0" />
+                            )}
+                            
+                            <div className="flex flex-col gap-1">
+                              <h3 className="text-sm font-medium text-slate-200 group-hover:text-blue-300 leading-snug line-clamp-2 transition-colors">
+                                {item.title}
+                              </h3>
+                              
+                              {/* Price and Volume details */}
+                              {item.amount && item.price && (
+                                <p className="text-xs text-slate-400 font-mono">
+                                  {item.amount.toLocaleString('id-ID')} lembar @ Rp {item.price.toLocaleString('id-ID')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Top Right: Money Badge + NEW */}
+                          <div className="flex flex-col items-end gap-1.5 shrink-0">
+                            {isNew && (
+                              <span className="px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-orange-200 bg-orange-500/20 border border-orange-500/30 rounded uppercase shadow-[0_0_8px_rgba(249,115,22,0.15)] animate-pulse">
+                                NEW
+                              </span>
+                            )}
+                            {item.transactionValue && (
+                              <span className={`text-xs font-bold font-mono px-2 py-1 rounded bg-slate-950/50 border ${isBuy ? 'text-emerald-400 border-emerald-500/20' : isSell ? 'text-red-400 border-red-500/20' : 'text-slate-300 border-slate-700'}`}>
+                                {isBuy ? '+' : isSell ? '-' : ''}{formatIDR(item.transactionValue)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Footer tags */}
+                        <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono mt-3 ml-11">
+                          <span>{new Date(item.publishedAt).toLocaleDateString('id-ID')}</span>
+                          {(item.category || item.transactionType) && (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-slate-700" />
+                              <span className={`px-1.5 rounded ${isBuy ? 'bg-emerald-500/10 text-emerald-400' : isSell ? 'bg-red-500/10 text-red-400' : 'bg-slate-800'}`}>
+                                {(item.transactionType || item.category || '').toUpperCase()}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             ))}

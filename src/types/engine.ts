@@ -99,4 +99,5 @@ export interface RealTickerMetrics {
   isSpreadAnomaly: boolean;
   lastUpdated: string;
   isRealLive: boolean;
+  latestFilings?: import('./sectors.ts').CompanyFiling[];
 }

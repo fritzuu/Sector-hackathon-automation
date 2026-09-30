@@ -148,9 +148,59 @@ export class SectorsApiService {
    * STRICT COMPLIANCE: No mock data allowed. Returns empty array until Sectors API fully supports this.
    */
   async fetchCompanyFilings(symbol: string): Promise<CompanyFiling[]> {
-    // We intentionally return empty data here to comply with Hackathon rules.
-    // The Telegram UI will inject a static link to IDX instead.
-    return [];
+    if (!this.apiKey) return [];
+
+    const cleanSymbol = symbol.toUpperCase().replace('.JK', '');
+    const cacheKey = `filings_${cleanSymbol}`;
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    // The official Sectors API endpoint is /filings/?symbol={ticker}
+    const url = `${getBaseUrl()}/filings/?symbol=${cleanSymbol}`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': this.apiKey,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.warn(`[SectorsApiService] Filings for ${cleanSymbol} returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      
+      // Parse response. Sectors API returns filings inside the "results" array
+      const rawFilings = Array.isArray(data) 
+        ? data 
+        : (data.results || data.reports || data.filings || data.data || []);
+      
+      const mapped: CompanyFiling[] = rawFilings.map((item: any, idx: number) => ({
+        id: item.id || `FILING-${cleanSymbol}-${item.date || idx}`,
+        symbol: cleanSymbol,
+        title: item.title || item.type || 'Laporan Keterbukaan Informasi',
+        category: item.category || item.type || item.transaction_type || 'Pengumuman Resmi',
+        publishedAt: item.timestamp || item.date || item.published_at || new Date().toISOString(),
+        sourceUrl: item.source || item.url || item.pdf_url || '',
+        // Mark as verified for PRD compliance (Insider/Shareholder transactions)
+        isVerified: true,
+        holderName: item.holder_name || undefined,
+        transactionType: item.transaction_type || undefined,
+        amount: item.amount_transaction || undefined,
+        price: item.price || undefined,
+        transactionValue: item.transaction_value || undefined,
+      }));
+
+      this.cache.set(cacheKey, mapped);
+      return mapped;
+    } catch (err) {
+      console.error(`[SectorsApiService] Filings failed for ${cleanSymbol}:`, err);
+      return [];
+    }
   }
 
   /**

@@ -69,6 +69,33 @@ serve(async (req) => {
   const workspacesToUpsert: any[] = []
   const telegramOutboxToInsert: any[] = []
 
+  // PRD Fix & Optimization: Extract unique tickers and fetch concurrently
+  const allWatchlistedTickers = new Set<string>();
+  for (const user of users) {
+    user.watchlist?.forEach((t: string) => allWatchlistedTickers.add(t));
+  }
+  const uniqueTickers = Array.from(allWatchlistedTickers);
+
+  // BOTTLENECK FIX #3: Pre-fetch global IHSG benchmark ONCE to prevent Cache Stampede
+  // When uniqueTickers run concurrently, they will now hit this pre-warmed cache!
+  await sectorsApi.fetchBenchmarkData();
+
+  // Concurrent Fetching
+  await Promise.all(uniqueTickers.map(async (ticker) => {
+    const [prices, filings] = await Promise.all([
+      sectorsApi.fetchDailyTransactions(ticker),
+      sectorsApi.fetchCompanyFilings(ticker)
+    ]);
+    pricesCache.set(ticker, prices);
+    filingsCache.set(ticker, filings);
+    
+    if (prices.length > 0) {
+      // This will instantly hit the pre-warmed cache in sectorsApi
+      const benchmark = await sectorsApi.fetchBenchmarkData(prices.map((p: any) => p.date));
+      benchmarkCache.set(ticker, benchmark);
+    }
+  }));
+
   for (const user of users) {
     if (!user.watchlist || user.watchlist.length === 0) continue
 
@@ -85,20 +112,9 @@ serve(async (req) => {
     let totalTriggersFound = 0
 
     for (const ticker of user.watchlist) {
-      if (!pricesCache.has(ticker)) {
-        pricesCache.set(ticker, await sectorsApi.fetchDailyTransactions(ticker))
-      }
-      const prices = pricesCache.get(ticker)
-
-      if (!benchmarkCache.has(ticker)) {
-        benchmarkCache.set(ticker, await sectorsApi.fetchBenchmarkData(prices.map((p: any) => p.date)))
-      }
-      const benchmark = benchmarkCache.get(ticker)
-
-      if (!filingsCache.has(ticker)) {
-        filingsCache.set(ticker, await sectorsApi.fetchCompanyFilings(ticker))
-      }
-      const filings = filingsCache.get(ticker)
+      const prices = pricesCache.get(ticker) || []
+      const benchmark = benchmarkCache.get(ticker) || []
+      const filings = filingsCache.get(ticker) || []
 
       const dataset = {
         symbol: ticker,
@@ -106,7 +122,8 @@ serve(async (req) => {
         historicalPrices: prices,
         benchmarkPrices: benchmark,
         filings,
-        lastEvaluatedFilingId: null,
+        // PRD Fix: Pass the last seen filing ID so the engine can detect NEW ones!
+        lastEvaluatedFilingId: activeCases[ticker]?.lastSeenFilingId || null,
       }
 
       const evalResult = evaluateDataset(dataset)
@@ -134,6 +151,7 @@ serve(async (req) => {
         ihsgPrice: latestIHSG.close,
         ihsgChangePercent: Number(ihsgChangePercent.toFixed(2)),
         lastUpdated: timestamp,
+        latestFilings: filings.slice(0, 3)
       }
 
       const transition = processCaseTransition(activeCases[ticker] || null, evalResult, timestamp)
