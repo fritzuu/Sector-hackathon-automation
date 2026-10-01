@@ -14,6 +14,30 @@ const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 if (SECTORS_API_KEY) sectorsApi.setApiKey(SECTORS_API_KEY)
 
 serve(async (req) => {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
+  if (req.method === "GET") return new Response(JSON.stringify({ isConfigured: !!SECTORS_API_KEY }), { headers: { ...corsHeaders, "Content-Type": "application/json" } })
+  
+  if (req.method === "POST") {
+    const authHeader = req.headers.get("Authorization")
+    if (!authHeader) {
+      return new Response("Unauthorized: Missing auth header", { status: 401, headers: corsHeaders })
+    }
+    try {
+      const token = authHeader.replace('Bearer ', '')
+      const payloadBase64 = token.split('.')[1]
+      const payload = JSON.parse(atob(payloadBase64))
+      if (payload.role !== 'service_role') {
+        return new Response("Unauthorized: Only Service Role can execute workflow", { status: 401, headers: corsHeaders })
+      }
+    } catch (e) {
+      return new Response("Unauthorized: Invalid token format", { status: 401, headers: corsHeaders })
+    }
+  }
+  
   // 1. Fetch Users
   const { data: users } = await supabase
     .from("profiles")
@@ -26,7 +50,7 @@ serve(async (req) => {
   const userIds = users.map((u) => u.id)
   const { data: workspaces } = await supabase
     .from("user_workspaces")
-    .select("user_id, active_cases, case_events, run_index")
+    .select("user_id, active_cases, case_events, run_index, market_snapshots")
     .in("user_id", userIds)
 
   // Map them for instant O(1) lookups in memory
@@ -45,6 +69,33 @@ serve(async (req) => {
   const workspacesToUpsert: any[] = []
   const telegramOutboxToInsert: any[] = []
 
+  // PRD Fix & Optimization: Extract unique tickers and fetch concurrently
+  const allWatchlistedTickers = new Set<string>();
+  for (const user of users) {
+    user.watchlist?.forEach((t: string) => allWatchlistedTickers.add(t));
+  }
+  const uniqueTickers = Array.from(allWatchlistedTickers);
+
+  // BOTTLENECK FIX #3: Pre-fetch global IHSG benchmark ONCE to prevent Cache Stampede
+  // When uniqueTickers run concurrently, they will now hit this pre-warmed cache!
+  await sectorsApi.fetchBenchmarkData();
+
+  // Concurrent Fetching
+  await Promise.all(uniqueTickers.map(async (ticker) => {
+    const [prices, filings] = await Promise.all([
+      sectorsApi.fetchDailyTransactions(ticker),
+      sectorsApi.fetchCompanyFilings(ticker)
+    ]);
+    pricesCache.set(ticker, prices);
+    filingsCache.set(ticker, filings);
+    
+    if (prices.length > 0) {
+      // This will instantly hit the pre-warmed cache in sectorsApi
+      const benchmark = await sectorsApi.fetchBenchmarkData(prices.map((p: any) => p.date));
+      benchmarkCache.set(ticker, benchmark);
+    }
+  }));
+
   for (const user of users) {
     if (!user.watchlist || user.watchlist.length === 0) continue
 
@@ -55,25 +106,15 @@ serve(async (req) => {
 
     let activeCases = workspace?.active_cases || {}
     let caseEvents = workspace?.case_events || {}
+    let marketSnapshots = workspace?.market_snapshots || {}
     let runIndex = workspace?.run_index || 1
     let hasChanges = false
     let totalTriggersFound = 0
 
     for (const ticker of user.watchlist) {
-      if (!pricesCache.has(ticker)) {
-        pricesCache.set(ticker, await sectorsApi.fetchDailyTransactions(ticker))
-      }
-      const prices = pricesCache.get(ticker)
-
-      if (!benchmarkCache.has(ticker)) {
-        benchmarkCache.set(ticker, await sectorsApi.fetchBenchmarkData(prices.map((p: any) => p.date)))
-      }
-      const benchmark = benchmarkCache.get(ticker)
-
-      if (!filingsCache.has(ticker)) {
-        filingsCache.set(ticker, await sectorsApi.fetchCompanyFilings(ticker))
-      }
-      const filings = filingsCache.get(ticker)
+      const prices = pricesCache.get(ticker) || []
+      const benchmark = benchmarkCache.get(ticker) || []
+      const filings = filingsCache.get(ticker) || []
 
       const dataset = {
         symbol: ticker,
@@ -81,11 +122,37 @@ serve(async (req) => {
         historicalPrices: prices,
         benchmarkPrices: benchmark,
         filings,
-        lastEvaluatedFilingId: null,
+        // PRD Fix: Pass the last seen filing ID so the engine can detect NEW ones!
+        lastEvaluatedFilingId: activeCases[ticker]?.lastSeenFilingId || null,
       }
 
       const evalResult = evaluateDataset(dataset)
       totalTriggersFound += evalResult.activeTriggerCount
+
+      // Generate Market Snapshot for Dashboard rendering
+      const latestPriceData = prices[prices.length - 1] || { close: 0, volume: 0 };
+      const prevPriceData = prices[prices.length - 2] || latestPriceData;
+      const latestIHSG = benchmark[benchmark.length - 1] || { close: 0 };
+      const prevIHSG = benchmark[benchmark.length - 2] || latestIHSG;
+
+      const volRule = evalResult.ruleResults.find((r: any) => r.ruleId === 'ABNORMAL_VOLUME');
+      const medianVol = volRule?.evidence ? (volRule.evidence as any).medianVolume20Days : 0;
+      
+      const changePercent = prevPriceData.close ? ((latestPriceData.close - prevPriceData.close) / prevPriceData.close) * 100 : 0;
+      const ihsgChangePercent = prevIHSG.close ? ((latestIHSG.close - prevIHSG.close) / prevIHSG.close) * 100 : 0;
+
+      marketSnapshots[ticker] = {
+        symbol: ticker,
+        lastPrice: latestPriceData.close,
+        changeAmount: latestPriceData.close - prevPriceData.close,
+        changePercent: Number(changePercent.toFixed(2)),
+        todayVolume: latestPriceData.volume || 0,
+        medianVolume20d: medianVol,
+        ihsgPrice: latestIHSG.close,
+        ihsgChangePercent: Number(ihsgChangePercent.toFixed(2)),
+        lastUpdated: timestamp,
+        latestFilings: filings.slice(0, 3)
+      }
 
       const transition = processCaseTransition(activeCases[ticker] || null, evalResult, timestamp)
 
@@ -130,6 +197,7 @@ serve(async (req) => {
       user_id: user.id,
       active_cases: activeCases,
       case_events: caseEvents,
+      market_snapshots: marketSnapshots,
       run_index: runIndex + 1,
       last_run_time: timestamp,
       updated_at: timestamp

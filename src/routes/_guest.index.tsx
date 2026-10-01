@@ -64,7 +64,6 @@ function GuestIndexPage() {
         onOpenAuth={handleOpenAuth}
         onLogout={() => {}}
         onOpenTelegramModal={() => {}}
-        onRunWorkflow={() => {}}
         onResetReplay={() => {}}
         isRunning={false}
         totalWatchlist={0}

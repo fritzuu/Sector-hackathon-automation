@@ -22,6 +22,7 @@ export interface UserWorkspace {
   activeCases: Map<string, CaseState>;
   caseEvents: Map<string, CaseEvent[]>;
   caseTemplates: Map<string, RenderedTemplate>;
+  marketSnapshots: Map<string, any>;
   lastRunTime: string | null;
   runIndex: number;
 }
@@ -146,6 +147,7 @@ function workspaceFromRecord(value: CachedWorkspace['workspace']): UserWorkspace
     activeCases: objectToMap<CaseState>(value.activeCases),
     caseEvents: objectToMap<CaseEvent[]>(value.caseEvents),
     caseTemplates: objectToMap<RenderedTemplate>(value.caseTemplates),
+    marketSnapshots: objectToMap<any>((value as any).marketSnapshots || {}),
     lastRunTime: value.lastRunTime || null,
     runIndex: typeof value.runIndex === 'number' ? value.runIndex : 1,
   };
@@ -384,6 +386,7 @@ export async function fetchUserWorkspaceFromSupabase(
       activeCases: objectToMap<CaseState>(data.active_cases),
       caseEvents: objectToMap<CaseEvent[]>(data.case_events),
       caseTemplates: objectToMap<RenderedTemplate>(data.case_templates),
+      marketSnapshots: objectToMap<any>(data.market_snapshots),
       lastRunTime: data.last_run_time || null,
       runIndex: typeof data.run_index === 'number' ? data.run_index : 1,
     };
@@ -410,6 +413,7 @@ export async function saveUserWorkspaceToSupabase(
         active_cases: Object.fromEntries(workspace.activeCases),
         case_events: Object.fromEntries(workspace.caseEvents),
         case_templates: Object.fromEntries(workspace.caseTemplates),
+        market_snapshots: Object.fromEntries(workspace.marketSnapshots || new Map()),
         last_run_time: workspace.lastRunTime,
         run_index: workspace.runIndex,
         updated_at: updatedAt,

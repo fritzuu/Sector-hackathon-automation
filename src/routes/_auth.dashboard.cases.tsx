@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ActiveCasesList } from '../modules/cases/components/ActiveCasesList';
 import { CaseDetailModal } from '../modules/cases/components/CaseDetailModal';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
+import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { CaseState } from '../types/engine';
 
 export const Route = createFileRoute('/_auth/dashboard/cases')({
@@ -12,9 +13,10 @@ export const Route = createFileRoute('/_auth/dashboard/cases')({
 
 function CasesPage() {
   const { activeCases, caseEvents, caseTemplates } = useWorkflowStore();
+  const watchlist = useWatchlistStore((state) => state.watchlist);
   const [selectedCase, setSelectedCase] = useState<CaseState | null>(null);
 
-  const activeCasesArray = Array.from(activeCases.values());
+  const activeCasesArray = Array.from(activeCases.values()).filter((c) => watchlist.includes(c.symbol));
 
   return (
     <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="">

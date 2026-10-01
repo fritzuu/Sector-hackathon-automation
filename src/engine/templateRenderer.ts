@@ -1,5 +1,5 @@
 import { EvaluationResult, CaseStatus, RenderedTemplate } from '../types/engine.ts';
-import { VolumeEvidence, RelativeMovementEvidence, NewFilingEvidence } from '../types/engine.ts';
+import { VolumeEvidence, RelativeMovementEvidence } from '../types/engine.ts';
 
 export const TEMPLATE_VERSION = 'v1.0.0';
 
@@ -49,23 +49,11 @@ export function renderCaseTemplate(
             `Pergerakan harga saham menyimpang tajam dari tren indeks acuan bursa (selisih ≥ ${ev.thresholdPercentagePoints}%).`
           );
         }
-      } else if (result.ruleId === 'NEW_FILING') {
-        const ev = result.evidence as NewFilingEvidence;
-        if (result.isTriggered && ev.newFilings.length > 0) {
-          for (const f of ev.newFilings) {
-            facts.push(
-              `Keterbukaan Informasi Resmi BEI: "${f.title}" (${f.category}) dirilis pada ${f.publishedAt}.`
-            );
-          }
-          limitedInterpretations.push(
-            'Terdapat rilis pengumuman / keterbukaan informasi resmi terbaru dari emiten pada kanal Bursa Efek Indonesia.'
-          );
-        }
       }
     }
 
     if (facts.length === 0) {
-      facts.push(`Tidak ada anomali atau filing baru yang terdeteksi pada sesi ${evaluationDate}.`);
+      facts.push(`Tidak ada anomali yang terdeteksi pada sesi ${evaluationDate}.`);
       limitedInterpretations.push('Seluruh indikator volume dan harga berada dalam rentang normal.');
     }
 
@@ -74,6 +62,11 @@ export function renderCaseTemplate(
     );
     unknowns.push(
       'Dampak fundamental jangka panjang terhadap kinerja keuangan emiten memerlukan riset laporan keuangan mandiri.'
+    );
+    
+    // Inject the static link for Keterbukaan Informasi to replace the mock filings
+    unknowns.push(
+      `🔗 Cek Keterbukaan Informasi BEI untuk mengetahui apakah ada aksi korporasi terbaru: https://www.idx.co.id/id/perusahaan-tercatat/keterbukaan-informasi/`
     );
   }
 

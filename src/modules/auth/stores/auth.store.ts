@@ -67,6 +67,7 @@ async function hydrateUserData(profile: UserProfile) {
       activeCases: workspace?.activeCases ?? new Map(),
       caseEvents: workspace?.caseEvents ?? new Map(),
       caseTemplates: workspace?.caseTemplates ?? new Map(),
+      marketSnapshots: workspace?.marketSnapshots ?? new Map(),
       lastRunTime: workspace?.lastRunTime ?? null,
       runIndex: workspace?.runIndex ?? 1,
       latestTelegramAlert: null,

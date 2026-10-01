@@ -14,12 +14,10 @@ import {
   Activity,
   RefreshCw,
 } from "lucide-react";
-import {
-  liveMarketService,
-  RealTickerMetrics,
-  MarketDataUnavailableError,
-} from "../../../services/liveMarketService.js";
+import { RealTickerMetrics } from "../../../types/engine.js";
 import { sectorsApi, LiveIdxCompany } from "../../../services/sectorsApi.js";
+import { IDX_COMPANIES } from "../../../data/idxCompanies.js";
+import { useWorkflowStore } from "../../cases/stores/workflow.store.js";
 import { SectorPresetsGrid } from "./SectorPresetsGrid.js";
 import { WatchlistSearchPanel } from "./WatchlistSearchPanel.js";
 
@@ -350,11 +348,42 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
     setModalMetricsError("");
     setModalMetricsLoading(true);
     try {
-      const m = await liveMarketService.fetchTickerMetrics(sym);
-      setModalMetrics(m);
+      const snap = useWorkflowStore.getState().marketSnapshots.get(sym);
+      if (snap) {
+        setModalMetrics({
+          ...snap,
+          volumeMultiplier: snap.volumeMultiplier ?? (snap.medianVolume20d > 0 ? Number((snap.todayVolume / snap.medianVolume20d).toFixed(2)) : 0),
+          isVolumeAnomaly: snap.isVolumeAnomaly ?? (snap.todayVolume >= (snap.medianVolume20d * 2)),
+          isSpreadAnomaly: snap.isSpreadAnomaly ?? (Math.abs((snap.changePercent||0) - (snap.ihsgChangePercent||0)) >= 2.0),
+          spreadVsIhsg: snap.spreadVsIhsg ?? Math.abs((snap.changePercent||0) - (snap.ihsgChangePercent||0))
+        });
+      } else {
+        const companyData = IDX_COMPANIES.find(c => c.symbol === sym);
+        if (!companyData) throw new Error(`Simbol ${sym} tidak ditemukan di bursa.`);
+        const data: RealTickerMetrics = {
+          symbol: sym,
+          name: companyData.name,
+          sector: companyData.sector,
+          currency: 'IDR',
+          lastPrice: companyData.lastPrice,
+          changeAmount: 0,
+          changePercent: 0,
+          todayVolume: 0,
+          medianVolume20d: 0,
+          volumeMultiplier: 0,
+          ihsgPrice: 0,
+          ihsgChangePercent: 0,
+          spreadVsIhsg: 0,
+          isVolumeAnomaly: false,
+          isSpreadAnomaly: false,
+          lastUpdated: new Date().toLocaleTimeString('id-ID'),
+          isRealLive: false
+        };
+        setModalMetrics(data);
+      }
     } catch (err) {
       setModalMetricsError(
-        err instanceof MarketDataUnavailableError
+        err instanceof Error
           ? err.message
           : `Gagal memuat data ${sym} dari Sectors API.`,
       );

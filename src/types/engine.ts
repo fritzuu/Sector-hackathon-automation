@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { CompanyFiling } from './sectors.ts';
 
 export type RuleId = 'ABNORMAL_VOLUME' | 'RELATIVE_MOVEMENT' | 'NEW_FILING';
@@ -80,4 +79,25 @@ export interface RenderedTemplate {
   unknowns: string[];
   disclaimer: string;
   plainText: string;
+}
+
+export interface RealTickerMetrics {
+  symbol: string;
+  name: string;
+  sector: string;
+  currency: string;
+  lastPrice: number;
+  changeAmount: number;
+  changePercent: number;
+  todayVolume: number;
+  medianVolume20d: number;
+  volumeMultiplier: number;
+  ihsgPrice: number;
+  ihsgChangePercent: number;
+  spreadVsIhsg: number;
+  isVolumeAnomaly: boolean;
+  isSpreadAnomaly: boolean;
+  lastUpdated: string;
+  isRealLive: boolean;
+  latestFilings?: import('./sectors.ts').CompanyFiling[];
 }
