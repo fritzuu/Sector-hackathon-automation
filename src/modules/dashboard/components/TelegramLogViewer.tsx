@@ -148,12 +148,12 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary border border-primary/30 flex items-center justify-center flex-shrink-0">
             <Send className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-col-reverse md:flex-row items-start md:items-center space-x-2">
               <h3 className="text-lg font-extrabold text-white tracking-tight">
                 Log Entri Telegram Sent
               </h3>
@@ -162,7 +162,8 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
               </span>
             </div>
             <p className="text-xs text-text-muted mt-0.5">
-              Riwayat pesan &amp; alert anomali bursa yang telah dikirim ke bot Telegram Anda.
+              Riwayat pesan &amp; alert anomali bursa yang telah dikirim ke bot
+              Telegram Anda.
             </p>
           </div>
         </div>
@@ -249,10 +250,18 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
                     {log.ticker}
                   </span>
                 )}
-                
+
                 <span className="flex items-center space-x-1.5 text-[10px] text-text/50 font-mono">
                   <Clock className="w-3 h-3" />
-                  <span>{new Date(log.timestamp).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: 'short' })}</span>
+                  <span>
+                    {new Date(log.timestamp).toLocaleString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </span>
                 </span>
               </div>
 

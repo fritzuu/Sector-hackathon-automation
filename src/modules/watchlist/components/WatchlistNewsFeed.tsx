@@ -1,7 +1,7 @@
-import React from 'react';
-import { FileText, ExternalLink, Clock } from 'lucide-react';
-import { useWorkflowStore } from '../../cases/stores/workflow.store.js';
-import { CompanyFiling } from '../../../types/sectors.js';
+import React from "react";
+import { FileText, ExternalLink, Clock } from "lucide-react";
+import { useWorkflowStore } from "../../cases/stores/workflow.store.js";
+import { CompanyFiling } from "../../../types/sectors.js";
 
 interface WatchlistNewsFeedProps {
   watchlist: string[];
@@ -13,7 +13,9 @@ interface TickerFilings {
   items: CompanyFiling[];
 }
 
-export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist }) => {
+export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({
+  watchlist,
+}) => {
   const marketSnapshots = useWorkflowStore((s) => s.marketSnapshots);
 
   // Directly extract filings from the database snapshots
@@ -25,15 +27,18 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist 
     .filter((group) => group.items.length > 0);
 
   // Find the most recent update time across all snapshots
-  let latestUpdate = '--:--';
+  let latestUpdate = "--:--";
   const allDates = watchlist
-    .map(t => marketSnapshots.get(t)?.lastUpdated)
+    .map((t) => marketSnapshots.get(t)?.lastUpdated)
     .filter(Boolean)
-    .map(d => new Date(d as string));
-  
+    .map((d) => new Date(d as string));
+
   if (allDates.length > 0) {
-    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
-    latestUpdate = maxDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const maxDate = new Date(Math.max(...allDates.map((d) => d.getTime())));
+    latestUpdate = maxDate.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   return (
@@ -48,14 +53,18 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist 
             <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
               Keterbukaan Informasi &amp; Transaksi Insider
             </h2>
-            <p className="text-xs text-text-muted mt-0.5">Sectors API • Dokumen Resmi IDX</p>
+            <p className="text-xs text-text-muted mt-0.5">
+              Sectors API • Dokumen Resmi IDX
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 px-3 py-1 bg-bg/70 border border-border rounded-full">
             <Clock className="w-3.5 h-3.5 text-text-muted" />
-            <span className="text-xs font-mono text-text-muted">Update {latestUpdate}</span>
+            <span className="text-xs font-mono text-text-muted">
+              Update {latestUpdate}
+            </span>
           </div>
         </div>
       </div>
@@ -66,9 +75,12 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist 
             <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center text-text-muted mb-1">
               <FileText className="w-6 h-6" />
             </div>
-            <p className="text-sm text-white font-bold">Tidak Ada Laporan Baru</p>
+            <p className="text-sm text-white font-bold">
+              Tidak Ada Laporan Baru
+            </p>
             <p className="text-xs text-text-muted max-w-sm">
-              Tidak ada dokumen Keterbukaan Informasi &amp; Transaksi Insider terbaru untuk emiten di Watchlist Anda.
+              Tidak ada dokumen Keterbukaan Informasi &amp; Transaksi Insider
+              terbaru untuk emiten di Watchlist Anda.
             </p>
           </div>
         )}
@@ -99,83 +111,128 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({ watchlist 
 
                 <div className="space-y-3">
                   {block.items.map((item, i) => {
-                    const isNew = (new Date().getTime() - new Date(item.publishedAt).getTime()) < 14 * 24 * 60 * 60 * 1000;
-                    
+                    const isNew =
+                      new Date().getTime() -
+                        new Date(item.publishedAt).getTime() <
+                      14 * 24 * 60 * 60 * 1000;
+
                     const formatIDR = (val?: number) => {
-                      if (!val) return '';
-                      if (val >= 1_000_000_000) return `Rp ${(val / 1_000_000_000).toFixed(2)} Miliar`;
-                      if (val >= 1_000_000) return `Rp ${(val / 1_000_000).toFixed(2)} Juta`;
-                      return `Rp ${val.toLocaleString('id-ID')}`;
+                      if (!val) return "";
+                      if (val >= 1_000_000_000)
+                        return `Rp ${(val / 1_000_000_000).toFixed(2)} Miliar`;
+                      if (val >= 1_000_000)
+                        return `Rp ${(val / 1_000_000).toFixed(2)} Juta`;
+                      return `Rp ${val.toLocaleString("id-ID")}`;
                     };
 
-                    const isBuy = item.transactionType?.toLowerCase() === 'buy';
-                    const isSell = item.transactionType?.toLowerCase() === 'sell';
-                    const initials = item.holderName 
-                      ? item.holderName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                    const isBuy = item.transactionType?.toLowerCase() === "buy";
+                    const isSell =
+                      item.transactionType?.toLowerCase() === "sell";
+                    const initials = item.holderName
+                      ? item.holderName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .substring(0, 2)
+                          .toUpperCase()
                       : null;
 
                     return (
                       <a
                         key={item.id || i}
-                        href={item.sourceUrl || '#'}
+                        href={item.sourceUrl || "#"}
                         target="_blank"
                         rel="noreferrer"
                         className="group relative flex flex-col p-4 rounded-xl bg-bg/60 hover:bg-secondary/60 border border-border hover:border-primary/40 transition-all overflow-hidden"
                       >
                         {/* Transaction Type Indicator Bar */}
                         {(isBuy || isSell) && (
-                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${isBuy ? 'bg-accent' : 'bg-rose-500'}`} />
+                          <div
+                            className={`absolute left-0 top-0 bottom-0 w-1 ${isBuy ? "bg-accent" : "bg-rose-500"}`}
+                          />
                         )}
 
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex gap-3.5">
-                            {initials ? (
-                              <div className="w-9 h-9 rounded-xl bg-secondary border border-border flex items-center justify-center text-xs font-bold text-text-muted shrink-0">
-                                {initials}
+                        <div className="flex flex-col-reverse md:flex-row justify-between items-start gap-4">
+                          <div className="flex flex-col w-full md:flex-row gap-3.5">
+                            <div className="flex flex-row justify-between">
+                              {initials ? (
+                                <div className="w-9 h-9 rounded-xl bg-secondary border border-border flex items-center justify-center text-xs font-bold text-text-muted shrink-0">
+                                  {initials}
+                                </div>
+                              ) : (
+                                <div className="w-9 h-9 rounded-xl bg-secondary border border-border flex items-center justify-center text-text-muted group-hover:text-primary transition-colors shrink-0">
+                                  <FileText className="w-4 h-4" />
+                                </div>
+                              )}
+                              {/* Top Right: Money Badge + NEW */}
+                              <div className="flex md:hidden flex-row items-center gap-1.5 shrink-0">
+                                {isNew && (
+                                  <span className="px-2 py-1 text-[10px] font-bold tracking-wider text-primary bg-primary/20 border border-primary/30 rounded-md uppercase animate-pulse">
+                                    NEW
+                                  </span>
+                                )}
+                                {item.transactionValue && (
+                                  <span
+                                    className={`text-xs font-bold font-mono px-2.5 py-1 rounded-lg bg-bg border ${isBuy ? "text-accent border-accent/30" : isSell ? "text-rose-400 border-rose-500/30" : "text-text-muted border-border"}`}
+                                  >
+                                    {isBuy ? "+" : isSell ? "-" : ""}
+                                    {formatIDR(item.transactionValue)}
+                                  </span>
+                                )}
                               </div>
-                            ) : (
-                              <div className="w-9 h-9 rounded-xl bg-secondary border border-border flex items-center justify-center text-text-muted group-hover:text-primary transition-colors shrink-0">
-                                <FileText className="w-4 h-4" />
-                              </div>
-                            )}
-                            
+                            </div>
+
                             <div className="flex flex-col gap-1">
                               <h3 className="text-sm font-semibold text-white group-hover:text-primary leading-snug transition-colors">
                                 {item.title}
                               </h3>
-                              
+
                               {/* Price and Volume details */}
                               {item.amount && item.price && (
                                 <p className="text-xs text-text-muted font-mono">
-                                  {item.amount.toLocaleString('id-ID')} lembar @ Rp {item.price.toLocaleString('id-ID')}
+                                  {item.amount.toLocaleString("id-ID")} lembar @
+                                  Rp {item.price.toLocaleString("id-ID")}
                                 </p>
                               )}
                             </div>
                           </div>
 
                           {/* Top Right: Money Badge + NEW */}
-                          <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          <div className="hidden md:flex flex-row items-center gap-1.5 shrink-0">
                             {isNew && (
                               <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider text-primary bg-primary/20 border border-primary/30 rounded-md uppercase animate-pulse">
                                 NEW
                               </span>
                             )}
                             {item.transactionValue && (
-                              <span className={`text-xs font-bold font-mono px-2.5 py-1 rounded-lg bg-bg border ${isBuy ? 'text-accent border-accent/30' : isSell ? 'text-rose-400 border-rose-500/30' : 'text-text-muted border-border'}`}>
-                                {isBuy ? '+' : isSell ? '-' : ''}{formatIDR(item.transactionValue)}
+                              <span
+                                className={`text-xs font-bold font-mono px-2.5 py-1 rounded-lg bg-bg border ${isBuy ? "text-accent border-accent/30" : isSell ? "text-rose-400 border-rose-500/30" : "text-text-muted border-border"}`}
+                              >
+                                {isBuy ? "+" : isSell ? "-" : ""}
+                                {formatIDR(item.transactionValue)}
                               </span>
                             )}
                           </div>
                         </div>
 
                         {/* Footer tags */}
-                        <div className="flex items-center gap-3 text-xs text-text-muted font-mono mt-3 ml-12">
-                          <span>{new Date(item.publishedAt).toLocaleDateString('id-ID')}</span>
+                        <div className="flex items-center gap-3 text-xs text-text-muted font-mono mt-3 ml-0 md:ml-12">
+                          <span>
+                            {new Date(item.publishedAt).toLocaleDateString(
+                              "id-ID",
+                            )}
+                          </span>
                           {(item.category || item.transactionType) && (
                             <>
                               <span className="w-1 h-1 rounded-full bg-border" />
-                              <span className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${isBuy ? 'bg-accent/10 text-accent border border-accent/20' : isSell ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-secondary text-primary border border-primary/20'}`}>
-                                {(item.transactionType || item.category || '').toUpperCase()}
+                              <span
+                                className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${isBuy ? "bg-accent/10 text-accent border border-accent/20" : isSell ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" : "bg-secondary text-primary border border-primary/20"}`}
+                              >
+                                {(
+                                  item.transactionType ||
+                                  item.category ||
+                                  ""
+                                ).toUpperCase()}
                               </span>
                             </>
                           )}
