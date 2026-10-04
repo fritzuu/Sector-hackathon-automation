@@ -74,30 +74,16 @@ const TOUR_STEPS: TourStep[] = [
     actionHint: 'Konten Audit Trail · Tabel riwayat run',
   },
   {
-    targetId: 'tour-header-reset',
-    path: '/dashboard',
-    title: '9. Reset Sesi',
-    description: 'Reset menghapus data replay sementara agar workflow dapat diuji kembali dari kondisi awal.',
-    actionHint: 'Header dashboard · Reset',
-  },
-  {
-    targetId: 'tour-header-run',
-    path: '/dashboard',
-    title: '10. Jalankan Run',
-    description: 'Jalankan evaluasi watchlist secara langsung. Tombol nonaktif bila tidak ada saham yang dipantau atau proses sedang berjalan.',
-    actionHint: 'Header dashboard · Jalankan Run',
-  },
-  {
     targetId: 'tour-header-online',
     path: '/dashboard',
-    title: '11. Sistem Online',
-    description: 'Indikator ini menunjukkan status sistem pada dashboard.',
+    title: '9. Status Sistem Online',
+    description: 'Indikator ini menunjukkan status sistem dan scheduler aktif pada dashboard SIBA.',
     actionHint: 'Header dashboard · Sistem Online',
   },
   {
     targetId: 'tour-user-info',
     path: '/dashboard',
-    title: '12. Info Pengguna',
+    title: '10. Profil & Akun',
     description: 'Dari bagian ini Anda dapat melihat identitas dan peran akun, mengulangi tur, atau keluar.',
     actionHint: 'Overview · Info Pengguna di bagian bawah sidebar',
   },
@@ -144,7 +130,7 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
         return;
       }
 
-      target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
       frameId = window.requestAnimationFrame(() => {
         const rect = target.getBoundingClientRect();
         setTargetRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
@@ -159,11 +145,13 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
       setTargetRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
     };
     window.addEventListener('resize', updateTargetRect);
+    window.addEventListener('scroll', updateTargetRect, true);
 
     return () => {
       document.body.style.overflow = '';
       window.cancelAnimationFrame(frameId);
       window.removeEventListener('resize', updateTargetRect);
+      window.removeEventListener('scroll', updateTargetRect, true);
     };
   }, [isOpen, currentStep, onNavigate]);
 
@@ -187,11 +175,16 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
     }
   };
 
-  const pad = 10;
+  const pad = 6;
+  const spotlightTop = targetRect ? Math.max(6, targetRect.top - pad) : 0;
+  const spotlightLeft = targetRect ? Math.max(6, targetRect.left - pad) : 0;
+  const spotlightWidth = targetRect ? Math.min(window.innerWidth - spotlightLeft - 6, targetRect.width + (pad * 2)) : 0;
+  const spotlightHeight = targetRect ? targetRect.height + (pad * 2) : 0;
 
-  // Determine smart tooltip card placement (avoid overlapping target)
-  // If target is in lower half of screen, place tooltip near top, vice versa
-  const isTargetInBottomHalf = targetRect ? targetRect.top > window.innerHeight / 2 : false;
+  // Determine smart tooltip card placement based on center of targeted element
+  const isTargetInBottomHalf = targetRect 
+    ? (targetRect.top + targetRect.height / 2) > (window.innerHeight * 0.5) 
+    : false;
 
   return (
     <div
@@ -207,21 +200,21 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
         <div
           className="fixed rounded-2xl pointer-events-none transition-all duration-300 ease-out z-40 border-2 border-accent"
           style={{
-            top: targetRect.top - pad,
-            left: targetRect.left - pad,
-            width: targetRect.width + (pad * 2),
-            height: targetRect.height + (pad * 2),
-            boxShadow: `0 0 0 9999px rgba(4, 2, 8, 0.82), 0 0 30px 6px rgba(0, 255, 136, 0.5)`,
+            top: spotlightTop,
+            left: spotlightLeft,
+            width: spotlightWidth,
+            height: spotlightHeight,
+            boxShadow: `0 0 0 9999px rgba(3, 1, 6, 0.85), 0 0 25px 4px rgba(0, 255, 136, 0.45)`,
           }}
         />
       ) : (
-        <div className="fixed inset-0 bg-[#040208]/85 backdrop-blur-sm transition-opacity duration-300 z-40" />
+        <div className="fixed inset-0 bg-[#030106]/85 backdrop-blur-sm transition-opacity duration-300 z-40" />
       )}
 
       {/* Floating Compact Tooltip Card - Non-overlapping Smart Position */}
       <div
         className={`fixed inset-x-0 z-50 flex justify-center p-4 pointer-events-none transition-all duration-300 ${
-          isTargetInBottomHalf ? 'top-8 items-start' : 'bottom-8 items-end'
+          isTargetInBottomHalf ? 'top-6 items-start' : 'bottom-6 items-end'
         }`}
       >
         <div className="w-full max-w-sm bg-[#130720] border-2 border-border rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.95)] p-4 space-y-3.5 pointer-events-auto animate-in fade-in zoom-in-95 duration-200">

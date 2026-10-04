@@ -37,7 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentUser, isTouring = false
   ];
 
   return (
-    <aside className={`w-64 flex-shrink-0 bg-secondary/30 border-r border-border flex-col font-sans h-full ${isTouring ? 'flex fixed inset-y-0 left-0 z-40 shadow-2xl' : 'hidden md:flex'}`}>
+    <aside className={`w-64 flex-shrink-0 bg-secondary/30 border-r border-border flex-col font-sans h-full ${isTouring ? 'flex fixed md:relative inset-y-0 left-0 z-40 md:z-auto shadow-2xl md:shadow-none' : 'hidden md:flex'}`}>
       <div className="p-5 border-b border-white/5 flex items-center gap-3">
         <img src="/siba-symbol.svg" alt="" className="w-8 h-8 object-contain" />
         <div>
