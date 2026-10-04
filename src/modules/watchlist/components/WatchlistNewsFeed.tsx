@@ -46,9 +46,6 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({
       {/* Header bar */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-secondary/80 backdrop-blur-md sticky top-0 z-10 flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 border border-primary/20 rounded-xl text-primary">
-            <FileText className="w-5 h-5" />
-          </div>
           <div>
             <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
               Keterbukaan Informasi &amp; Transaksi Insider

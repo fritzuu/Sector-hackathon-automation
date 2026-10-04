@@ -65,13 +65,10 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({ cases, onSelec
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
         <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
           <div>
             <h2 className="text-lg font-extrabold text-white tracking-tight flex items-center gap-2">
               <span>Kasus Pemantauan Terbuka</span>
-              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-secondary text-primary border border-primary/30">
+              <span className="whitespace-nowrap inline-flex item-center text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-secondary text-primary border border-primary/30">
                 {cases.length} Kasus
               </span>
             </h2>

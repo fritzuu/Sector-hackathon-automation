@@ -149,9 +149,6 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary border border-primary/30 flex items-center justify-center flex-shrink-0">
-            <Send className="w-4 h-4" />
-          </div>
           <div>
             <div className="flex flex-col-reverse md:flex-row items-start md:items-center space-x-2">
               <h3 className="text-lg font-extrabold text-white tracking-tight">
@@ -172,10 +169,8 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
           {logs.length > 0 && !isLoading && (
             <button
               onClick={onClearLogs}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Bersihkan Log</span>
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-colors cursor-pointer">
+              <span>Clear</span>
             </button>
           )}
         </div>

@@ -135,17 +135,6 @@ function AuthLayout() {
             <Outlet />
           </div>
         </main>
-
-        <footer className="border-t border-border/50 bg-bg/50 py-3 text-xs font-sans mt-auto">
-          <div className="px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span className="text-text-muted/40">
-              SIBA • Sistem Informasi Bursa dan Aset (Track 02 Automation)
-            </span>
-            <span className="font-mono text-primary/50 text-[11px]">
-              Sectors API v2 • 100% Deterministik
-            </span>
-          </div>
-        </footer>
       </div>
 
       <TelegramConnectModal

@@ -27,13 +27,10 @@ export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watc
       <div className="flex items-start sm:items-center justify-between mb-5 flex-wrap gap-3 pb-4 border-b border-border/60">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center border border-primary/30">
-              <List className="w-4.5 h-4.5" />
-            </div>
             <h2 className="text-xl font-black text-white tracking-tight">
               Watchlist Saham
             </h2>
-            <span className="text-xs font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-secondary text-primary border border-primary/30">
+            <span className="whitespace-nowrap inline-flex items-center text-xs font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-secondary text-primary border border-primary/30">
               {watchlist.length} Emiten
             </span>
           </div>
@@ -64,8 +61,7 @@ export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watc
         >
           {watchlist.slice(0, 4).map(ticker => (
             <motion.div key={ticker} variants={item}>
-              <Link 
-                to="/dashboard/watchlist"
+              <div
                 className="group flex items-center justify-between p-3.5 sm:px-4 sm:py-3.5 rounded-xl bg-bg/70 border border-border hover:border-primary/50 hover:bg-secondary/70 transition-all shadow-sm"
               >
                 <div className="flex items-center gap-3.5">
@@ -79,11 +75,7 @@ export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watc
                     <div className="text-xs text-text-muted font-medium">Emiten Terdaftar Bursa Efek Indonesia</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-text-muted hidden sm:inline">Lihat Detail</span>
-                  <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-primary transform group-hover:translate-x-1 transition-all" />
-                </div>
-              </Link>
+              </div>
             </motion.div>
           ))}
           
