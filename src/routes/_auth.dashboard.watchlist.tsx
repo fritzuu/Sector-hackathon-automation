@@ -32,16 +32,18 @@ function WatchlistPage() {
       transition={{ duration: 0.15, ease: "easeOut" }} 
       className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)]"
     >
-      <div id="tour-watchlist-content" className="min-w-0 space-y-6">
-        <WatchlistManager
-          watchlist={watchlist}
-          onAddTicker={addTicker}
-          onRemoveTicker={removeTicker}
-          onAddPreset={addPresets}
-          isTelegramLinked={currentUser?.isTelegramLinked || false}
-          onOpenTelegramModal={() => window.dispatchEvent(new CustomEvent('open-telegram-modal'))}
-          onSendTelegramSummary={handleSendTelegramSummary}
-        />
+      <div className="min-w-0 space-y-6">
+        <div id="tour-watchlist-content">
+          <WatchlistManager
+            watchlist={watchlist}
+            onAddTicker={addTicker}
+            onRemoveTicker={removeTicker}
+            onAddPreset={addPresets}
+            isTelegramLinked={currentUser?.isTelegramLinked || false}
+            onOpenTelegramModal={() => window.dispatchEvent(new CustomEvent('open-telegram-modal'))}
+            onSendTelegramSummary={handleSendTelegramSummary}
+          />
+        </div>
         
         <WatchlistNewsFeed watchlist={watchlist} />
       </div>
