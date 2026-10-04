@@ -52,7 +52,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
 
       {/* Hero Metric Number */}
       <div className="my-2">
-        <div className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white transition-colors duration-300 group-hover:text-primary">
+        <div className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight text-white transition-colors duration-300 group-hover:text-primary">
           {value}
         </div>
         <p className="text-xs text-text-muted mt-2 leading-relaxed">
@@ -131,15 +131,15 @@ export const AutomationOverview: React.FC<OverviewProps> = ({
     <div id="tour-automation-kpis" className="space-y-4 font-sans">
       <div className="flex items-start sm:items-center justify-between px-1 flex-wrap gap-3 pb-2 border-b border-border/40">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+          <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
             Ringkasan Otomatisasi
           </h2>
           <p className="text-xs text-text-muted mt-1 font-medium">Status evaluasi bursa &amp; metrik eksekusi harian</p>
         </div>
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent/10 border border-accent/20 shadow-sm">
-          <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-amber-400 animate-pulse' : 'bg-accent shadow-[0_0_8px_rgba(0,255,85,0.8)]'}`} />
-          <span className={`text-xs font-mono font-extrabold ${isRunning ? 'text-amber-400' : 'text-accent'}`}>
-            {isRunning ? 'PIPELINE MENGEVALUASI...' : 'SCHEDULER AKTIF · 16:30 WIB'}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 shadow-sm shrink-0">
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isRunning ? 'bg-amber-400 animate-pulse' : 'bg-accent shadow-[0_0_8px_rgba(0,255,85,0.8)]'}`} />
+          <span className={`text-[11px] font-mono font-extrabold ${isRunning ? 'text-amber-400' : 'text-accent'}`}>
+            {isRunning ? 'MENGEVALUASI...' : 'AKTIF · 16:30 WIB'}
           </span>
         </div>
       </div>

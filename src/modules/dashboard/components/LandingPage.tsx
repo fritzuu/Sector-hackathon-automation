@@ -279,7 +279,7 @@ const GLOBAL_CSS = `
     padding: 72px 24px;
     border-top: 1px solid var(--ed);
   }
-  .siba-page [id^="landing-"], .siba-page #faq-section { scroll-margin-top: 7.5rem; }
+  .siba-page [id^="landing-"], .siba-page #faq-section { scroll-margin-top: 4.5rem; }
   .section-label {
     font-family: var(--font-mono);
     font-size: clamp(14px, 1.8vw, 16px);

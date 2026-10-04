@@ -44,11 +44,11 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/85 backdrop-blur-md overflow-y-auto font-sans"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-bg/85 backdrop-blur-md font-sans"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden my-6 max-h-[90vh] flex flex-col"
+        className="relative w-full sm:max-w-3xl bg-surface border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -253,7 +253,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-border bg-secondary/70 flex items-center justify-between">
+        <div className="p-4 border-t border-border bg-secondary/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <span className="text-xs font-mono text-text-muted">
             SIBA Engine · Evaluasi Penutupan 16:30 WIB
           </span>

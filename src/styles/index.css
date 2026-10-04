@@ -2,10 +2,12 @@
 
 :root {
   --color-text: hsl(276, 30%, 95%);
+  --color-text-main: hsl(276, 30%, 95%);
   --color-text-muted: hsl(276, 20%, 65%);
   --color-bg: hsl(279, 100%, 3%);
   /* A true, darker purple for cards/secondary instead of the bright magenta */
   --color-secondary: hsl(270, 70%, 12%); 
+  --color-surface: hsl(270, 70%, 9%);
   --color-border: hsl(270, 60%, 25%);
   --color-primary: hsl(280, 80%, 65%);
   --color-accent: hsl(141, 100%, 50%);
@@ -13,9 +15,11 @@
 
 @theme {
   --color-text: var(--color-text);
+  --color-text-main: var(--color-text-main);
   --color-text-muted: var(--color-text-muted);
   --color-bg: var(--color-bg);
   --color-secondary: var(--color-secondary);
+  --color-surface: var(--color-surface);
   --color-border: var(--color-border);
   --color-primary: var(--color-primary);
   --color-accent: var(--color-accent);
@@ -25,6 +29,7 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
+    overflow-x: hidden;
   }
 
   body {
@@ -35,6 +40,8 @@
       system-ui,
       -apple-system,
       sans-serif;
+    overflow-x: hidden;
+    min-height: 100dvh;
   }
 
   /* Every clickable element & button gets pointer cursor globally */

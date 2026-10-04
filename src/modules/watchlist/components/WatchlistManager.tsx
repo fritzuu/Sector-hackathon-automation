@@ -81,11 +81,11 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-secondary/50"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-secondary/50"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg rounded-2xl border border-border bg-secondary shadow-2xl overflow-hidden"
+        className="relative w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl border border-border bg-secondary shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Accent Line */}
@@ -139,7 +139,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto">
           {metricsLoading ? (
             <div className="space-y-2">
               {[100, 75, 60].map((w, i) => (
@@ -184,7 +184,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
               </div>
 
               {/* Metrics grid */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   {
                     label: "Volume Hari Ini",

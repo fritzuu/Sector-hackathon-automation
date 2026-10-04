@@ -41,6 +41,8 @@ function AuthLayout() {
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [showMarketCloseToast, setShowMarketCloseToast] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
+  const [tourTargetId, setTourTargetId] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleOpen = () => setIsTelegramModalOpen(true);
@@ -104,6 +106,9 @@ function AuthLayout() {
       <Sidebar
         currentUser={currentUser}
         isTouring={isTourOpen}
+        tourTargetId={tourTargetId}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onCloseMobileMenu={() => setIsMobileMenuOpen(false)}
         onLogout={handleLogout}
         onOpenTour={() => window.dispatchEvent(new CustomEvent("open-siba-tour"))}
       />
@@ -121,10 +126,12 @@ function AuthLayout() {
           }}
           isRunning={isRunning}
           totalWatchlist={watchlist.length}
+          isMobileMenuOpen={isMobileMenuOpen}
+          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
 
         <main className="flex-1 overflow-y-auto w-full">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto h-full">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto pb-20 md:pb-8">
             <Outlet />
           </div>
         </main>
@@ -164,8 +171,17 @@ function AuthLayout() {
 
       <DashboardTourModal
         isOpen={isTourOpen}
-        onClose={() => setIsTourOpen(false)}
+        onClose={() => {
+          setIsTourOpen(false);
+          setTourTargetId(null);
+        }}
         onNavigate={navigateTourStep}
+      onStepChange={(targetId) => {
+          setTourTargetId(targetId);
+          // Close mobile menu when tour targets content (non-sidebar) steps
+          const isSidebarTarget = targetId.startsWith('tour-sidebar') || targetId === 'tour-user-info';
+          if (!isSidebarTarget) setIsMobileMenuOpen(false);
+        }}
       />
 
     </div>

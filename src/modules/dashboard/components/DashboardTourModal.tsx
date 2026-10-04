@@ -74,16 +74,9 @@ const TOUR_STEPS: TourStep[] = [
     actionHint: 'Konten Audit Trail · Tabel riwayat run',
   },
   {
-    targetId: 'tour-header-online',
-    path: '/dashboard',
-    title: '9. Status Sistem Online',
-    description: 'Indikator ini menunjukkan status sistem dan scheduler aktif pada dashboard SIBA.',
-    actionHint: 'Header dashboard · Sistem Online',
-  },
-  {
     targetId: 'tour-user-info',
     path: '/dashboard',
-    title: '10. Profil & Akun',
+    title: '9. Profil & Akun',
     description: 'Dari bagian ini Anda dapat melihat identitas dan peran akun, mengulangi tur, atau keluar.',
     actionHint: 'Overview · Info Pengguna di bagian bawah sidebar',
   },
@@ -93,6 +86,7 @@ interface DashboardTourModalProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigate: (path: DashboardPath) => void;
+  onStepChange?: (targetId: string) => void;
 }
 
 interface TargetRect {
@@ -102,13 +96,23 @@ interface TargetRect {
   height: number;
 }
 
-export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, onClose, onNavigate }) => {
+export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, onClose, onNavigate, onStepChange }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
 
   const currentStep = TOUR_STEPS[currentStepIndex];
   const isFirst = currentStepIndex === 0;
   const isLast = currentStepIndex === TOUR_STEPS.length - 1;
+
+  const getTargetElement = (targetId: string) => {
+    // Query ALL elements with this ID and return the first that is visible.
+    // Desktop sidebar and mobile drawer share IDs; only one is visible at a time.
+    const candidates = Array.from(document.querySelectorAll(`[id="${targetId}"]`));
+    const visible = candidates.find(
+      (el) => (el as HTMLElement).offsetParent !== null
+    );
+    return (visible as HTMLElement | undefined) ?? null;
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -119,11 +123,12 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
     document.body.style.overflow = 'hidden';
     setTargetRect(null);
     onNavigate(currentStep.path);
+    onStepChange?.(currentStep.targetId);
 
     let frameId = 0;
     let attempts = 0;
     const measureTarget = () => {
-      const target = document.getElementById(currentStep.targetId);
+      const target = getTargetElement(currentStep.targetId);
       if (!target) {
         attempts += 1;
         if (attempts < 90) frameId = window.requestAnimationFrame(measureTarget);
@@ -139,7 +144,7 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
 
     frameId = window.requestAnimationFrame(measureTarget);
     const updateTargetRect = () => {
-      const target = document.getElementById(currentStep.targetId);
+      const target = getTargetElement(currentStep.targetId);
       if (!target) return;
       const rect = target.getBoundingClientRect();
       setTargetRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
@@ -153,7 +158,7 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
       window.removeEventListener('resize', updateTargetRect);
       window.removeEventListener('scroll', updateTargetRect, true);
     };
-  }, [isOpen, currentStep, onNavigate]);
+  }, [isOpen, currentStep, onNavigate, onStepChange]);
 
   useEffect(() => {
     if (!isOpen) setCurrentStepIndex(0);
