@@ -135,7 +135,13 @@ serve(async (req) => {
 
       if (r.shouldNotify && r.event && r.evalResult) {
         const template = renderCaseTemplate(r.evalResult, r.event.newStatus)
-        const messageHtml = formatTelegramHtml(ticker, r.event.newStatus, template)
+        const messageHtml = formatTelegramHtml(ticker, r.event.newStatus, template, {
+          prices,
+          benchmark,
+          filings,
+          evalResult: r.evalResult,
+          event: r.event,
+        })
         telegramOutboxToInsert.push({
           chat_id: user.telegram_chat_id,
           message: messageHtml,
