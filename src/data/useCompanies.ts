@@ -14,7 +14,9 @@ export function useCompanies() {
         .from('companies')
         .select('*, global_market_snapshots(*)');
       if (error) throw error;
-      const companies: Array<LiveIdxCompany & DbCompany> = (data ?? []).map(d => ({
+      const companies: Array<LiveIdxCompany & DbCompany> = (data ?? [])
+        .filter(d => d.symbol !== 'IHSG')
+        .map(d => ({
         symbol: d.symbol,
         name: d.name,
         sector: d.sector,
