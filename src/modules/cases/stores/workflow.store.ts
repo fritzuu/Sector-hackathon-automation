@@ -23,6 +23,7 @@ interface WorkflowState {
   telegramLogs: TelegramLogEntry[] | null;
   isFetchingLogs: boolean;
   
+  clearAccountState: () => void;
   resetReplay: () => void;
   clearLatestAlert: () => void;
   setLatestTelegramAlert: (msg: string) => void;
@@ -79,6 +80,21 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     }
   },
 
+  // Session cleanup must never persist an empty workspace.
+  clearAccountState: () => set({
+    activeCases: new Map(),
+    caseEvents: new Map(),
+    caseTemplates: new Map(),
+    marketSnapshots: new Map(),
+    auditRuns: [],
+    isRunning: false,
+    lastRunTime: null,
+    runIndex: 1,
+    latestTelegramAlert: null,
+    telegramLogs: null,
+    isFetchingLogs: false,
+  }),
+
   resetReplay: () => {
     const emptyWorkspace = {
       activeCases: new Map<string, CaseState>(),
@@ -97,4 +113,3 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     if (userId) void saveUserWorkspaceToSupabase(userId, emptyWorkspace);
   }
 }));
-
