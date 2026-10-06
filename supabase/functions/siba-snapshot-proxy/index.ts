@@ -1,3 +1,4 @@
+import { precedingVolumeMedian } from '../../../src/engine/volumeBaseline.ts'
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7"
 
@@ -33,10 +34,10 @@ serve(async (req) => {
   const { symbol } = body
   if (!symbol) return new Response("Missing symbol", { status: 400, headers: corsHeaders })
 
-  // Calculate date 30 days ago for ?start= parameter
+  // Calculate date 60 days ago for ?start= parameter
   const timestamp = new Date().toISOString();
   const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 60);
   const startParam = thirtyDaysAgo.toISOString().split('T')[0];
 
   // 1. Fetch from Sectors API v2
@@ -105,15 +106,7 @@ serve(async (req) => {
   const changePercent = prevPrice ? ((latestPrice - prevPrice) / prevPrice) * 100 : 0
   const ihsgChangePercent = prevIhsgPrice ? ((latestIhsgPrice - prevIhsgPrice) / prevIhsgPrice) * 100 : 0
 
-  // Calculate 20-day median volume
-  const sortedByDate = [...pricesArr].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const last20Days = sortedByDate.slice(0, 20);
-  const volumes = last20Days.map(p => p.volume ?? 0).filter(v => v > 0).sort((a, b) => a - b);
-  let medianVolume = 0;
-  if (volumes.length > 0) {
-    const mid = Math.floor(volumes.length / 2);
-    medianVolume = volumes.length % 2 !== 0 ? volumes[mid] : (volumes[mid - 1] + volumes[mid]) / 2;
-  }
+  const medianVolume = precedingVolumeMedian(pricesArr);
 
   const snapshot = {
     symbol,
@@ -124,7 +117,8 @@ serve(async (req) => {
     median_volume_20d: Math.round(medianVolume),
     ihsg_price: latestIhsgPrice || 0, // Fallback to 0 to strictly avoid null
     ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
-    updated_at: timestamp
+    updated_at: timestamp,
+    data_date: latestPriceData.date
   }
 
   // 2. Upsert to global table

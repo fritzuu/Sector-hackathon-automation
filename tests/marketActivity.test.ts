@@ -10,7 +10,7 @@ describe('market activity with database companies', () => {
 
   it('uses database metadata and excludes missing snapshots', () => {
     const rows = buildMarketActivityRows(['BBCA', 'BBRI'], new Map([
-      ['BBCA', { lastPrice: 9000, todayVolume: 100, changePercent: 2, lastUpdated: '2026-10-06T09:30:00Z' }],
+      ['BBCA', { lastPrice: 9000, todayVolume: 100, changePercent: 2, lastUpdated: '2026-10-07T09:30:00Z', dataDate: '2026-10-06' }],
     ]), [company]);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ name: company.name, subsector: 'Banks', estimatedValue: 900000, date: '2026-10-06' });
@@ -18,7 +18,7 @@ describe('market activity with database companies', () => {
 
   it('keeps real snapshot rows usable while metadata is unavailable', () => {
     const rows = buildMarketActivityRows(['BBCA'], new Map([
-      ['BBCA', { lastPrice: 9000, todayVolume: 100, changePercent: 2, lastUpdated: '2026-10-06T09:30:00Z' }],
+      ['BBCA', { lastPrice: 9000, todayVolume: 100, changePercent: 2, lastUpdated: '2026-10-07T09:30:00Z', dataDate: '2026-10-06' }],
     ]), []);
     expect(rows[0]).toMatchObject({ name: 'BBCA', subsector: 'Lainnya' });
   });

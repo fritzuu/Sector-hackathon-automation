@@ -31,6 +31,7 @@ export const MarketActivityWidget: React.FC<MarketActivityWidgetProps> = ({ watc
     changePercent: number;
     todayVolume: number;
     lastUpdated: string;
+    dataDate?: string | null;
   }>;
   const companies = useCompanyStore(state => state.companies);
   const [activeTab, setActiveTab] = useState<MarketActivityTab>('active');
@@ -39,7 +40,9 @@ export const MarketActivityWidget: React.FC<MarketActivityWidgetProps> = ({ watc
   const rows = buildMarketActivityRows(watchlist, marketSnapshots, companies);
   const visibleRows = filterMarketActivityRows(rows, activeTab, selectedSubsector).slice(0, 5);
   const subsectors = Array.from(new Set(rows.map(row => row.subsector))).sort((a, b) => a.localeCompare(b));
-  const dataDate = rows.map(row => row.date).sort().at(-1);
+  const dataDates = Array.from(new Set(rows.map(row => row.date)));
+  const dataDate = dataDates.length === 1 ? dataDates[0] : '';
+  const dataDateLabel = dataDates.length > 1 ? 'Tanggal perdagangan berbeda / belum lengkap' : 'Tanggal perdagangan belum tersedia';
 
   return (
     <section aria-labelledby="market-activity-title" className="flex min-w-0 flex-col rounded-xl border border-border bg-secondary/40 p-4 font-sans sm:p-5">
@@ -77,7 +80,7 @@ export const MarketActivityWidget: React.FC<MarketActivityWidgetProps> = ({ watc
       <div className="mt-4 flex items-center justify-between gap-2">
         <div>
           <div className="text-[11px] font-semibold text-text-main">
-            {dataDate ? `Data perdagangan: ${new Date(`${dataDate}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'Data perdagangan'}
+            {dataDate ? `Data perdagangan: ${new Date(`${dataDate}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : dataDateLabel}
           </div>
           <p className="mt-0.5 text-[9px] leading-relaxed text-text-muted">Aktivitas diperkirakan dari volume × harga penutupan.</p>
         </div>

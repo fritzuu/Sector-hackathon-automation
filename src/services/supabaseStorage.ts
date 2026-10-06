@@ -1,3 +1,4 @@
+import { mapSnapshotRow } from '../data/snapshotMapping';
 import { supabase } from '../lib/supabaseClient.ts';
 import { UserProfile } from '../data/userProfiles.ts';
 import { AuditRunItem } from '../modules/cases/components/RunAuditHistory.ts';
@@ -282,18 +283,7 @@ export async function fetchGlobalMarketSnapshots(
       .in('symbol', symbols);
     if (error || !data) return [];
     
-    // Map to legacy format
-    return data.map(d => ({
-      symbol: d.symbol,
-      lastPrice: d.last_price,
-      changeAmount: d.change_amount,
-      changePercent: d.change_percent,
-      todayVolume: d.today_volume,
-      medianVolume20d: d.median_volume_20d,
-      ihsgPrice: d.ihsg_price,
-      ihsgChangePercent: d.ihsg_change_percent,
-      lastUpdated: d.updated_at
-    }));
+    return data.map(mapSnapshotRow);
   } catch {
     return [];
   }
