@@ -40,5 +40,5 @@ export interface TickerDataset {
   historicalPrices: DailyTransaction[];
   benchmarkPrices: BenchmarkData[];
   filings: CompanyFiling[];
-  lastEvaluatedFilingId?: string | null;
+  seenFilingIds?: string[] | null;
 }

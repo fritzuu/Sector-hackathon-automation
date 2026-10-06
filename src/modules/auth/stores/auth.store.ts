@@ -6,6 +6,7 @@ import {
   fetchUserProfileFromSupabase,
   fetchAuditRunsFromSupabase,
   fetchUserWorkspaceFromSupabase,
+  fetchGlobalMarketSnapshots,
 } from '../../../services/supabaseStorage';
 import { supabase } from '../../../lib/supabaseClient';
 import { generateSecurePairingToken } from '../../../utils/token';
@@ -51,9 +52,10 @@ function profileFromAuthUser(authUser: User, existing?: UserProfile | null): Use
 
 async function hydrateUserData(profile: UserProfile) {
   try {
-    const [history, workspace, workflowMod, watchlistMod] = await Promise.all([
+    const [history, workspace, globalSnapshots, workflowMod, watchlistMod] = await Promise.all([
       fetchAuditRunsFromSupabase(profile.id),
       fetchUserWorkspaceFromSupabase(profile.id),
+      fetchGlobalMarketSnapshots(profile.defaultWatchlist || []),
       import('../../../modules/cases/stores/workflow.store'),
       import('../../../modules/watchlist/stores/watchlist.store'),
     ]);
@@ -62,12 +64,15 @@ async function hydrateUserData(profile: UserProfile) {
 
     watchlistMod.useWatchlistStore.getState().setWatchlist(profile.defaultWatchlist || []);
 
+    const snapshotMap = new Map<string, any>();
+    globalSnapshots.forEach(s => snapshotMap.set(s.symbol, s));
+
     workflowMod.useWorkflowStore.setState({
       auditRuns: history,
       activeCases: workspace?.activeCases ?? new Map(),
       caseEvents: workspace?.caseEvents ?? new Map(),
       caseTemplates: workspace?.caseTemplates ?? new Map(),
-      marketSnapshots: workspace?.marketSnapshots ?? new Map(),
+      marketSnapshots: snapshotMap,
       lastRunTime: workspace?.lastRunTime ?? null,
       runIndex: workspace?.runIndex ?? 1,
       latestTelegramAlert: null,

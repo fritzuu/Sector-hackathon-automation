@@ -14,9 +14,6 @@ export function processCaseTransition(
   const triggeredRules = ruleResults.filter((r) => r.isTriggered);
   const activeRuleIds = triggeredRules.map((r) => r.ruleId);
 
-  // Extract latest filing ID if filing rule triggered
-  const filingRule = ruleResults.find((r) => r.ruleId === 'NEW_FILING');
-  const latestSeenFilingId = (filingRule?.evidence as any)?.latestFilingId || currentCase?.lastSeenFilingId || null;
 
   // Handle incomplete data
   if (hasIncompleteData) {
@@ -56,7 +53,7 @@ export function processCaseTransition(
         lastUpdatedAt: runTimestamp,
         consecutiveInactiveRuns: 0,
         activeRuleIds,
-        lastSeenFilingId: latestSeenFilingId,
+  
         eventsCount: 1,
       };
 
@@ -91,29 +88,57 @@ export function processCaseTransition(
 
   // Case 2: Existing active case
   if (activeTriggerCount > 0) {
-    // There are active triggers -> status is UPDATED
-    const nextCaseState: CaseState = {
-      ...currentCase,
-      status: 'UPDATED',
-      lastUpdatedAt: runTimestamp,
-      consecutiveInactiveRuns: 0,
-      activeRuleIds,
-      lastSeenFilingId: latestSeenFilingId,
-      eventsCount: currentCase.eventsCount + 1,
-    };
+    const prev = new Set(currentCase.activeRuleIds);
+    const ruleSetChanged = activeRuleIds.length !== prev.size || activeRuleIds.some(id => !prev.has(id));
+    const hasNewFiling = activeRuleIds.includes('NEW_FILING');
+    
+    if (ruleSetChanged || hasNewFiling) {
+      // There are active triggers and the set changed -> status is UPDATED
+      const nextCaseState: CaseState = {
+        ...currentCase,
+        status: 'UPDATED',
+        lastUpdatedAt: runTimestamp,
+        consecutiveInactiveRuns: 0,
+        activeRuleIds,
+        eventsCount: currentCase.eventsCount + 1,
+      };
 
-    const event: CaseEvent = {
-      eventId: `EVT-${symbol}-${Date.now()}`,
-      caseId: currentCase.caseId,
-      symbol,
-      timestamp: runTimestamp,
-      previousStatus: currentCase.status,
-      newStatus: 'UPDATED',
-      triggeredRules,
-      renderedSummary: `Perkembangan baru pada kasus ${symbol}: ${activeTriggerCount} aturan terpenuhi.`,
-    };
+      const event: CaseEvent = {
+        eventId: `EVT-${symbol}-${Date.now()}`,
+        caseId: currentCase.caseId,
+        symbol,
+        timestamp: runTimestamp,
+        previousStatus: currentCase.status,
+        newStatus: 'UPDATED',
+        triggeredRules,
+        renderedSummary: `Perkembangan baru pada kasus ${symbol}: ${activeTriggerCount} aturan terpenuhi.`,
+      };
 
-    return { nextCaseState, event };
+      return { nextCaseState, event };
+    } else {
+      // Same triggers as before -> stay silent (MONITORING)
+      const nextCaseState: CaseState = {
+        ...currentCase,
+        status: 'MONITORING',
+        lastUpdatedAt: runTimestamp,
+        consecutiveInactiveRuns: 0,
+        activeRuleIds,
+        eventsCount: currentCase.eventsCount, // Silent
+      };
+
+      const event: CaseEvent = {
+        eventId: `EVT-${symbol}-${Date.now()}`,
+        caseId: currentCase.caseId,
+        symbol,
+        timestamp: runTimestamp,
+        previousStatus: currentCase.status,
+        newStatus: 'MONITORING',
+        triggeredRules,
+        renderedSummary: `Kasus ${symbol} tetap dalam status MONITORING (aturan tidak berubah).`,
+      };
+
+      return { nextCaseState, event };
+    }
   }
 
   // Case 3: Existing active case, but 0 triggers active in this run
@@ -127,7 +152,7 @@ export function processCaseTransition(
       lastUpdatedAt: runTimestamp,
       consecutiveInactiveRuns: newInactiveCount,
       activeRuleIds: [],
-      lastSeenFilingId: latestSeenFilingId,
+
       eventsCount: currentCase.eventsCount + 1,
     };
 
@@ -152,7 +177,6 @@ export function processCaseTransition(
     lastUpdatedAt: runTimestamp,
     consecutiveInactiveRuns: newInactiveCount,
     activeRuleIds: [],
-    lastSeenFilingId: latestSeenFilingId,
     eventsCount: currentCase.eventsCount + 1,
   };
 

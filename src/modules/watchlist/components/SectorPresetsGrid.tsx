@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { Check, Info, ShieldCheck, LayoutGrid, Plus } from 'lucide-react';
-import { POPULAR_PRESETS } from '../../../data/idxCompanies.js';
+import { POPULAR_PRESETS } from '../../../data/companyStore';
 import { MAX_WATCHLIST_SIZE } from '../watchlist.rules';
 
 interface SectorPresetsGridProps {
@@ -97,10 +97,10 @@ export const SectorPresetsGrid: React.FC<SectorPresetsGridProps> = ({ watchlist,
 
       {/* Preset grid — 3 cols on lg, 2 on sm */}
       <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {POPULAR_PRESETS.map((preset, idx) => {
-          const addedCount = preset.tickers.filter(t => watchlist.includes(t)).length;
+        {POPULAR_PRESETS.map((preset: any, idx: number) => {
+          const addedCount = preset.tickers.filter((t: string) => watchlist.includes(t)).length;
           const allAdded = addedCount === preset.tickers.length;
-          const newTickerCount = preset.tickers.filter(t => !watchlist.includes(t)).length;
+          const newTickerCount = preset.tickers.filter((t: string) => !watchlist.includes(t)).length;
           const remainingSlots = MAX_WATCHLIST_SIZE - watchlist.length;
           const canAddPreset = newTickerCount > 0 && remainingSlots > 0;
           const addCount = Math.min(newTickerCount, remainingSlots);

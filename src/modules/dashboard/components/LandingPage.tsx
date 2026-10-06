@@ -11,7 +11,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { RealTickerMetrics } from '../../../types/engine.js';
 import { sectorsApi, LiveIdxCompany } from '../../../services/sectorsApi.js';
-import { IDX_COMPANIES } from '../../../data/idxCompanies.js';
+import { useCompanyStore } from "../../../data/companyStore";
 
 interface LandingPageProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
@@ -1033,15 +1033,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onAuthSucc
       if (!alive) return;
 
       targetSymbols.forEach((sym) => {
-        const companyData = IDX_COMPANIES.find(c => c.symbol === sym);
+        const companyData = useCompanyStore.getState().getCompany(sym);
         if (companyData) {
           acc[sym] = {
             symbol: sym,
             name: companyData.name,
             sector: companyData.sector,
             currency: 'IDR',
-            lastPrice: companyData.lastPrice,
-            ...generateDeterministicMetrics(sym, companyData.lastPrice),
+            lastPrice: (companyData.lastPrice || 0),
+            ...generateDeterministicMetrics(sym, (companyData.lastPrice || 0)),
             lastUpdated: new Date().toLocaleTimeString('id-ID'),
             isRealLive: false
           };
@@ -1095,7 +1095,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
     setSearchErr('');
     setSearchLoading(true);
     try {
-      const companyData = IDX_COMPANIES.find(c => c.symbol === sym);
+      const companyData = useCompanyStore.getState().getCompany(sym);
       if (!companyData) throw new Error(`Simbol ${sym} tidak ditemukan di database publik.`);
       
       const data: RealTickerMetrics = {
@@ -1103,8 +1103,8 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
         name: companyData.name,
         sector: companyData.sector,
         currency: 'IDR',
-        lastPrice: companyData.lastPrice,
-        ...generateDeterministicMetrics(sym, companyData.lastPrice),
+        lastPrice: (companyData.lastPrice || 0),
+        ...generateDeterministicMetrics(sym, (companyData.lastPrice || 0)),
         lastUpdated: new Date().toLocaleTimeString('id-ID'),
         isRealLive: false
       };
@@ -1327,15 +1327,15 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
                   onClick={async () => {
                     setLoading(true);
                     try {
-                      const companyData = IDX_COMPANIES.find(c => c.symbol === selected);
+                      const companyData = useCompanyStore.getState().getCompany(selected);
                       if (!companyData) throw new Error(`Simbol ${selected} tidak ditemukan.`);
                       const data: RealTickerMetrics = {
                         symbol: selected,
                         name: companyData.name,
                         sector: companyData.sector,
                         currency: 'IDR',
-                        lastPrice: companyData.lastPrice,
-                        ...generateDeterministicMetrics(selected, companyData.lastPrice),
+                        lastPrice: (companyData.lastPrice || 0),
+                        ...generateDeterministicMetrics(selected, (companyData.lastPrice || 0)),
                         lastUpdated: new Date().toLocaleTimeString('id-ID'),
                         isRealLive: false
                       };

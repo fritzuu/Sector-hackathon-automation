@@ -68,7 +68,7 @@ export const normalDataset: TickerDataset = (() => {
     historicalPrices: prices,
     benchmarkPrices: benchmark,
     filings: [],
-    lastEvaluatedFilingId: null,
+    seenFilingIds: [],
   };
 })();
 
@@ -83,7 +83,7 @@ export const abnormalVolumeDataset: TickerDataset = (() => {
     historicalPrices: prices,
     benchmarkPrices: benchmark,
     filings: [],
-    lastEvaluatedFilingId: null,
+    seenFilingIds: [],
   };
 })();
 
@@ -98,7 +98,7 @@ export const relativeMovementDataset: TickerDataset = (() => {
     historicalPrices: prices,
     benchmarkPrices: benchmark,
     filings: [],
-    lastEvaluatedFilingId: null,
+    seenFilingIds: [],
   };
 })();
 
@@ -123,7 +123,7 @@ export const newFilingDataset: TickerDataset = (() => {
     historicalPrices: prices,
     benchmarkPrices: benchmark,
     filings: [mockFiling],
-    lastEvaluatedFilingId: null, // Previous seen is null -> triggered
+    seenFilingIds: [], // Previous seen is null -> triggered
   };
 })();
 
@@ -138,6 +138,6 @@ export const incompleteDataDataset: TickerDataset = (() => {
     historicalPrices: prices,
     benchmarkPrices: benchmark,
     filings: [],
-    lastEvaluatedFilingId: null,
+    seenFilingIds: [],
   };
 })();
