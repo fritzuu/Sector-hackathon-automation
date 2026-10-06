@@ -62,7 +62,7 @@ async function hydrateUserData(profile: UserProfile) {
 
     if (useAuthStore.getState().currentUser?.id !== profile.id) return;
 
-    watchlistMod.useWatchlistStore.getState().setWatchlist(profile.defaultWatchlist || []);
+    watchlistMod.useWatchlistStore.setState({ watchlist: profile.defaultWatchlist || [] });
 
     const snapshotMap = new Map<string, any>();
     globalSnapshots.forEach(s => snapshotMap.set(s.symbol, s));
@@ -100,12 +100,19 @@ async function syncAuthUser(authUser: User) {
     profile = await saveUserProfileToSupabase(profileFromAuthUser(authUser));
   } else {
     const fresh = profileFromAuthUser(authUser, profile);
-    profile = await saveUserProfileToSupabase({
-      ...profile,
-      name: fresh.name || profile.name,
-      avatar: fresh.avatar || profile.avatar,
-      email: authUser.email || profile.email,
-    });
+    const hasChanges = 
+      profile.name !== (fresh.name || profile.name) || 
+      profile.avatar !== (fresh.avatar || profile.avatar) || 
+      profile.email !== (authUser.email || profile.email);
+
+    if (hasChanges) {
+      profile = await saveUserProfileToSupabase({
+        ...profile,
+        name: fresh.name || profile.name,
+        avatar: fresh.avatar || profile.avatar,
+        email: authUser.email || profile.email,
+      });
+    }
   }
 
   // Set auth state immediately so route guards don't kick user out

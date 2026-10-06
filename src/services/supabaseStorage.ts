@@ -231,26 +231,6 @@ export async function syncWatchlistToSupabase(
   userId: string,
   watchlist: string[]
 ): Promise<{ ok: boolean, error?: string }> {
-  const updatedAt = new Date().toISOString();
-  try {
-    localStorage.setItem(
-      `siba_watchlist_${userId}`,
-      JSON.stringify({ watchlist, updatedAt }),
-    );
-  } catch (err) {
-    console.warn('[SupabaseStorage] Gagal menyimpan cache watchlist lokal:', err);
-  }
-
-  try {
-    const raw = localStorage.getItem(`siba_profile_${userId}`);
-    if (raw) {
-      const p = JSON.parse(raw) as UserProfile;
-      p.defaultWatchlist = watchlist;
-      localStorage.setItem(`siba_profile_${userId}`, JSON.stringify(p));
-      if (p.email) localStorage.setItem(`siba_profile_${p.email}`, JSON.stringify(p));
-    }
-  } catch {}
-
   try {
     const { error } = await supabase
       .from('profiles')
@@ -264,6 +244,26 @@ export async function syncWatchlistToSupabase(
       console.warn('[SupabaseStorage] Gagal memperbarui watchlist di Supabase:', error.message);
       return { ok: false, error: error.message };
     }
+
+    // Success: Update local caches
+    const updatedAt = new Date().toISOString();
+    try {
+      localStorage.setItem(
+        `siba_watchlist_${userId}`,
+        JSON.stringify({ watchlist, updatedAt }),
+      );
+
+      const raw = localStorage.getItem(`siba_profile_${userId}`);
+      if (raw) {
+        const p = JSON.parse(raw) as UserProfile;
+        p.defaultWatchlist = watchlist;
+        localStorage.setItem(`siba_profile_${userId}`, JSON.stringify(p));
+        if (p.email) localStorage.setItem(`siba_profile_${p.email}`, JSON.stringify(p));
+      }
+    } catch (err) {
+      console.warn('[SupabaseStorage] Gagal menyimpan cache watchlist lokal:', err);
+    }
+
     return { ok: true };
   } catch (err: any) {
     console.warn('[SupabaseStorage] Error saat memperbarui watchlist:', err);
