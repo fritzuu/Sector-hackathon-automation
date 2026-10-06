@@ -230,27 +230,7 @@ export async function saveUserProfileToSupabase(
 export async function syncWatchlistToSupabase(
   userId: string,
   watchlist: string[]
-): Promise<boolean> {
-  const updatedAt = new Date().toISOString();
-  try {
-    localStorage.setItem(
-      `siba_watchlist_${userId}`,
-      JSON.stringify({ watchlist, updatedAt }),
-    );
-  } catch (err) {
-    console.warn('[SupabaseStorage] Gagal menyimpan cache watchlist lokal:', err);
-  }
-
-  try {
-    const raw = localStorage.getItem(`siba_profile_${userId}`);
-    if (raw) {
-      const p = JSON.parse(raw) as UserProfile;
-      p.defaultWatchlist = watchlist;
-      localStorage.setItem(`siba_profile_${userId}`, JSON.stringify(p));
-      if (p.email) localStorage.setItem(`siba_profile_${p.email}`, JSON.stringify(p));
-    }
-  } catch {}
-
+): Promise<{ ok: boolean, error?: string }> {
   try {
     const { error } = await supabase
       .from('profiles')
@@ -262,12 +242,60 @@ export async function syncWatchlistToSupabase(
 
     if (error) {
       console.warn('[SupabaseStorage] Gagal memperbarui watchlist di Supabase:', error.message);
-      return false;
+      return { ok: false, error: error.message };
     }
-    return true;
-  } catch (err) {
+
+    // Success: Update local caches
+    const updatedAt = new Date().toISOString();
+    try {
+      localStorage.setItem(
+        `siba_watchlist_${userId}`,
+        JSON.stringify({ watchlist, updatedAt }),
+      );
+
+      const raw = localStorage.getItem(`siba_profile_${userId}`);
+      if (raw) {
+        const p = JSON.parse(raw) as UserProfile;
+        p.defaultWatchlist = watchlist;
+        localStorage.setItem(`siba_profile_${userId}`, JSON.stringify(p));
+        if (p.email) localStorage.setItem(`siba_profile_${p.email}`, JSON.stringify(p));
+      }
+    } catch (err) {
+      console.warn('[SupabaseStorage] Gagal menyimpan cache watchlist lokal:', err);
+    }
+
+    return { ok: true };
+  } catch (err: any) {
     console.warn('[SupabaseStorage] Error saat memperbarui watchlist:', err);
-    return false;
+    return { ok: false, error: err.message };
+  }
+}
+
+export async function fetchGlobalMarketSnapshots(
+  symbols: string[]
+): Promise<any[]> {
+  if (!symbols || symbols.length === 0) return [];
+  try {
+    const { data, error } = await supabase
+      .from('global_market_snapshots')
+      .select('*')
+      .in('symbol', symbols);
+    if (error || !data) return [];
+    
+    // Map to legacy format
+    return data.map(d => ({
+      symbol: d.symbol,
+      lastPrice: d.last_price,
+      changeAmount: d.change_amount,
+      changePercent: d.change_percent,
+      todayVolume: d.today_volume,
+      medianVolume20d: d.median_volume_20d,
+      ihsgPrice: d.ihsg_price,
+      ihsgChangePercent: d.ihsg_change_percent,
+      lastUpdated: d.updated_at
+    }));
+  } catch {
+    return [];
   }
 }
 
@@ -299,35 +327,6 @@ export async function syncTelegramLinkToSupabase(
   }
 }
 
-export async function saveAuditRunToSupabase(
-  run: AuditRunItem,
-  userId: string
-): Promise<boolean> {
-  if (!userId) return false;
-  try {
-    const { error } = await supabase.from('audit_runs').upsert(
-      {
-        user_id: userId,
-        run_id: run.runId,
-        timestamp: run.timestamp,
-        tickers_count: run.tickersCount,
-        active_triggers_count: run.activeTriggersCount,
-        status: run.status,
-        duration_ms: run.durationMs,
-      },
-      { onConflict: 'user_id,run_id' }
-    );
-
-    if (error) {
-      console.warn('[SupabaseStorage] Gagal menyimpan audit run ke Supabase:', error.message);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.warn('[SupabaseStorage] Error saat menyimpan audit run:', err);
-    return false;
-  }
-}
 
 export async function fetchAuditRunsFromSupabase(
   userId: string

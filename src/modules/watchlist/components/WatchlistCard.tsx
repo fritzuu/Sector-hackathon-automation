@@ -27,7 +27,7 @@ export const WatchlistCard: React.FC<WatchlistCardProps> = ({ ticker, companyInf
     <div
       onClick={onClick}
       className={`group relative rounded-xl cursor-pointer select-none transition-all duration-300 p-4 pr-8 border hover:-translate-y-[2px] ${
-        isVolumeAnomaly 
+        isVolumeAnomaly
           ? 'bg-amber-900/10 border-amber-500/30 shadow-[0_4px_20px_rgba(245,158,11,0.1)] hover:border-amber-500/50 hover:shadow-[0_4px_20px_rgba(245,158,11,0.2)]'
           : 'bg-secondary/50 border-border shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:border-primary hover:shadow-[0_4px_20px_rgba(168,85,247,0.15)]'
       }`}

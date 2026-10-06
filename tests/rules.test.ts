@@ -80,14 +80,21 @@ describe('Deterministic Rules Engine', () => {
   });
 
   describe('Rule: New Filing', () => {
-    it('should trigger when new verified filing is present', () => {
+    it('should silently establish baseline on first sight (null)', () => {
       const result = evaluateNewFiling([mockFiling], null);
+      expect(result.isTriggered).toBe(false);
+      expect((result.evidence as any).count).toBe(0);
+      expect((result.evidence as any).knownFilingIds).toContain(mockFiling.id);
+    });
+
+    it('should trigger when new verified filing is present (not in seen array)', () => {
+      const result = evaluateNewFiling([mockFiling], []);
       expect(result.isTriggered).toBe(true);
       expect((result.evidence as any).count).toBe(1);
     });
 
     it('should not trigger when latest filing is already seen', () => {
-      const result = evaluateNewFiling([mockFiling], mockFiling.id);
+      const result = evaluateNewFiling([mockFiling], [mockFiling.id]);
       expect(result.isTriggered).toBe(false);
       expect((result.evidence as any).count).toBe(0);
     });

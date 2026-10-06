@@ -60,6 +60,7 @@ create table public.user_workspaces (
   active_cases jsonb not null default '{}'::jsonb,
   case_events jsonb not null default '{}'::jsonb,
   case_templates jsonb not null default '{}'::jsonb,
+  ticker_states jsonb not null default '{}'::jsonb,
   last_run_time text,
   run_index integer not null default 1,
   updated_at timestamptz not null default timezone('utc'::text, now())

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Activity, TrendingDown, TrendingUp } from 'lucide-react';
-import { IDX_COMPANIES } from '../../../data/idxCompanies';
+import { useCompanyStore } from '../../../data/companyStore';
 import { useWorkflowStore } from '../../cases/stores/workflow.store';
 import {
   buildMarketActivityRows,
@@ -32,10 +32,11 @@ export const MarketActivityWidget: React.FC<MarketActivityWidgetProps> = ({ watc
     todayVolume: number;
     lastUpdated: string;
   }>;
+  const companies = useCompanyStore(state => state.companies);
   const [activeTab, setActiveTab] = useState<MarketActivityTab>('active');
   const [selectedSubsector, setSelectedSubsector] = useState('');
 
-  const rows = buildMarketActivityRows(watchlist, marketSnapshots, IDX_COMPANIES);
+  const rows = buildMarketActivityRows(watchlist, marketSnapshots, companies);
   const visibleRows = filterMarketActivityRows(rows, activeTab, selectedSubsector).slice(0, 5);
   const subsectors = Array.from(new Set(rows.map(row => row.subsector))).sort((a, b) => a.localeCompare(b));
   const dataDate = rows.map(row => row.date).sort().at(-1);

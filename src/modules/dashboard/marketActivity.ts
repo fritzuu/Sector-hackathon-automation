@@ -1,4 +1,4 @@
-import type { IdxCompany } from '../../data/idxCompanies.js';
+import type { DbCompany } from '../../data/companyStore.js';
 
 export interface MarketSnapshot {
   lastPrice: number;
@@ -23,7 +23,7 @@ export type MarketActivityTab = 'active' | 'up' | 'down';
 export const buildMarketActivityRows = (
   watchlist: string[],
   snapshotsByTicker: Map<string, MarketSnapshot>,
-  companies: IdxCompany[],
+  companies: DbCompany[],
 ): MarketActivityRow[] => watchlist.flatMap(symbol => {
   const snapshot = snapshotsByTicker.get(symbol);
   if (!snapshot || snapshot.lastPrice <= 0) return [];
@@ -58,4 +58,6 @@ export const filterMarketActivityRows = (
       : row.changePercent !== null && row.changePercent < 0)
   .sort((a, b) => tab === 'active'
     ? b.estimatedValue - a.estimatedValue
-    : (b.changePercent ?? 0) - (a.changePercent ?? 0));
+    : tab === 'up'
+      ? (b.changePercent ?? 0) - (a.changePercent ?? 0)
+      : (a.changePercent ?? 0) - (b.changePercent ?? 0));

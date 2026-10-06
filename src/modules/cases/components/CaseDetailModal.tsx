@@ -4,7 +4,7 @@ import {
   X, Shield, AlertTriangle, CheckCircle, Clock, ExternalLink,
   TrendingUp, TrendingDown,
 } from 'lucide-react';
-import { IDX_COMPANIES } from '../../../data/idxCompanies.js';
+import { useCompanyStore } from "../../../data/companyStore";
 import { useWorkflowStore } from '../stores/workflow.store.js';
 
 interface CaseDetailModalProps {
@@ -36,7 +36,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
   if (!caseItem) return null;
 
-  const companyData = IDX_COMPANIES.find(c => c.symbol === caseItem.symbol);
+  const companyData = useCompanyStore.getState().getCompany(caseItem.symbol);
   const companyName = companyData?.name ?? metrics?.name ?? `PT ${caseItem.symbol} Tbk`;
   const companySector = companyData?.sector ?? metrics?.sector ?? 'Emiten Terdaftar IDX';
   const companySubSector = companyData?.subSector ?? '';

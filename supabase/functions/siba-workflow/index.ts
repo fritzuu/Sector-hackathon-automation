@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
-import { evaluateDataset } from "../../../src/engine/rules/index.ts"
-import { processCaseTransition } from "../../../src/engine/caseEngine.ts"
+import { runTickerStep, TickerStepResult } from "../../../src/engine/tickerStep.ts"
 import { renderCaseTemplate } from "../../../src/engine/templateRenderer.ts"
 import { sectorsApi } from "../../../src/services/sectorsApi.ts"
 import { formatTelegramHtml } from "./formatter.ts"
@@ -38,7 +37,9 @@ serve(async (req) => {
     }
   }
   
-  // 1. Fetch Users
+  // CLEAR CACHE: Ensure Deno isolate doesn't reuse stale memory across cron runs
+  sectorsApi.invalidateAll();
+  
   const { data: users } = await supabase
     .from("profiles")
     .select("id, name, watchlist, telegram_chat_id")
@@ -46,41 +47,33 @@ serve(async (req) => {
 
   if (!users || users.length === 0) return new Response("No users found", { status: 200 })
 
-  // BOTTLENECK FIX #1: Fetch all workspaces in ONE massive database query (No N+1!)
   const userIds = users.map((u) => u.id)
   const { data: workspaces } = await supabase
     .from("user_workspaces")
-    .select("user_id, active_cases, case_events, run_index, market_snapshots")
+    .select("user_id, active_cases, case_events, run_index, market_snapshots, ticker_states")
     .in("user_id", userIds)
 
-  // Map them for instant O(1) lookups in memory
   const workspaceMap = new Map(workspaces?.map((w) => [w.user_id, w]) || [])
 
   const timestamp = new Date().toISOString()
   const dateStr = timestamp.slice(0, 10).replace(/-/g, '')
 
-  // Cache to prevent duplicate API calls for the same ticker across different users
   const pricesCache = new Map<string, any>()
   const benchmarkCache = new Map<string, any>()
   const filingsCache = new Map<string, any>()
 
-  // BOTTLENECK FIX #2: Prepare buckets for Batch Inserts instead of sequential DB writes
   const auditRunsToInsert: any[] = []
   const workspacesToUpsert: any[] = []
   const telegramOutboxToInsert: any[] = []
 
-  // PRD Fix & Optimization: Extract unique tickers and fetch concurrently
   const allWatchlistedTickers = new Set<string>();
   for (const user of users) {
     user.watchlist?.forEach((t: string) => allWatchlistedTickers.add(t));
   }
   const uniqueTickers = Array.from(allWatchlistedTickers);
 
-  // BOTTLENECK FIX #3: Pre-fetch global IHSG benchmark ONCE to prevent Cache Stampede
-  // When uniqueTickers run concurrently, they will now hit this pre-warmed cache!
   await sectorsApi.fetchBenchmarkData();
 
-  // Concurrent Fetching
   await Promise.all(uniqueTickers.map(async (ticker) => {
     const [prices, filings] = await Promise.all([
       sectorsApi.fetchDailyTransactions(ticker),
@@ -90,90 +83,98 @@ serve(async (req) => {
     filingsCache.set(ticker, filings);
     
     if (prices.length > 0) {
-      // This will instantly hit the pre-warmed cache in sectorsApi
       const benchmark = await sectorsApi.fetchBenchmarkData(prices.map((p: any) => p.date));
       benchmarkCache.set(ticker, benchmark);
     }
   }));
+
+  const globalSnapshotsToUpsert = new Map<string, any>()
 
   for (const user of users) {
     if (!user.watchlist || user.watchlist.length === 0) continue
 
     const startTime = Date.now()
 
-    // O(1) Memory Lookup instead of an HTTP Database request!
     const workspace = workspaceMap.get(user.id)
 
     let activeCases = workspace?.active_cases || {}
     let caseEvents = workspace?.case_events || {}
-    let marketSnapshots = workspace?.market_snapshots || {}
+    let tickerStates = workspace?.ticker_states || {}
     let runIndex = workspace?.run_index || 1
-    let hasChanges = false
+    
     let totalTriggersFound = 0
+    let incompleteCount = 0
+    let evaluatedCount = 0
 
     for (const ticker of user.watchlist) {
       const prices = pricesCache.get(ticker) || []
       const benchmark = benchmarkCache.get(ticker) || []
       const filings = filingsCache.get(ticker) || []
 
-      const dataset = {
+      const r = runTickerStep({
         symbol: ticker,
-        asOfDate: prices.length > 0 ? prices[prices.length - 1].date : timestamp.split('T')[0],
-        historicalPrices: prices,
-        benchmarkPrices: benchmark,
+        prices,
+        benchmark,
         filings,
-        // PRD Fix: Pass the last seen filing ID so the engine can detect NEW ones!
-        lastEvaluatedFilingId: activeCases[ticker]?.lastSeenFilingId || null,
-      }
+        currentCase: activeCases[ticker] || null,
+        tickerState: tickerStates[ticker] || null,
+        runTimestamp: timestamp
+      })
 
-      const evalResult = evaluateDataset(dataset)
-      totalTriggersFound += evalResult.activeTriggerCount
-
-      // Generate Market Snapshot for Dashboard rendering
-      const latestPriceData = prices[prices.length - 1] || { close: 0, volume: 0 };
-      const prevPriceData = prices[prices.length - 2] || latestPriceData;
-      const latestIHSG = benchmark[benchmark.length - 1] || { close: 0 };
-      const prevIHSG = benchmark[benchmark.length - 2] || latestIHSG;
-
-      const volRule = evalResult.ruleResults.find((r: any) => r.ruleId === 'ABNORMAL_VOLUME');
-      const medianVol = volRule?.evidence ? (volRule.evidence as any).medianVolume20Days : 0;
+      tickerStates[ticker] = r.nextTickerState
       
-      const changePercent = prevPriceData.close ? ((latestPriceData.close - prevPriceData.close) / prevPriceData.close) * 100 : 0;
-      const ihsgChangePercent = prevIHSG.close ? ((latestIHSG.close - prevIHSG.close) / prevIHSG.close) * 100 : 0;
-
-      marketSnapshots[ticker] = {
-        symbol: ticker,
-        lastPrice: latestPriceData.close,
-        changeAmount: latestPriceData.close - prevPriceData.close,
-        changePercent: Number(changePercent.toFixed(2)),
-        todayVolume: latestPriceData.volume || 0,
-        medianVolume20d: medianVol,
-        ihsgPrice: latestIHSG.close,
-        ihsgChangePercent: Number(ihsgChangePercent.toFixed(2)),
-        lastUpdated: timestamp,
-        latestFilings: filings.slice(0, 3)
+      if (r.nextCase) {
+        activeCases[ticker] = r.nextCase
+      } else {
+        delete activeCases[ticker]
+      }
+      
+      if (r.event) {
+        caseEvents[ticker] = [r.event, ...(caseEvents[ticker] || [])]
       }
 
-      const transition = processCaseTransition(activeCases[ticker] || null, evalResult, timestamp)
-
-      if (transition.event.newStatus !== "MONITORING") {
-        hasChanges = true
-        
-        if (transition.nextCaseState) {
-          activeCases[ticker] = transition.nextCaseState
-        } else if (transition.event.newStatus === 'CLOSED') {
-          delete activeCases[ticker]
-        }
-        
-        caseEvents[ticker] = [transition.event, ...(caseEvents[ticker] || [])]
-        const template = renderCaseTemplate(evalResult, transition.event.newStatus)
-
-        // Queue message instead of sending immediately!
-        const messageHtml = formatTelegramHtml(ticker, transition.event.newStatus, template)
+      if (r.shouldNotify && r.event && r.evalResult) {
+        const template = renderCaseTemplate(r.evalResult, r.event.newStatus)
+        const messageHtml = formatTelegramHtml(ticker, r.event.newStatus, template)
         telegramOutboxToInsert.push({
           chat_id: user.telegram_chat_id,
           message: messageHtml,
           status: 'pending'
+        })
+      }
+
+      if (r.evalResult) {
+        totalTriggersFound += r.evalResult.activeTriggerCount
+      }
+      
+      if (r.outcome === 'DATA_INCOMPLETE') {
+        incompleteCount++
+      } else if (r.outcome === 'EVALUATED') {
+        evaluatedCount++
+      }
+
+      if (r.outcome !== 'SKIPPED_STALE' && prices.length > 0) {
+        const latestPriceData = prices[prices.length - 1]
+        const prevPriceData = prices[prices.length - 2] || latestPriceData
+        const latestIHSG = benchmark[benchmark.length - 1] || { close: 0 }
+        const prevIHSG = benchmark[benchmark.length - 2] || latestIHSG
+
+        const volRule = r.evalResult?.ruleResults.find((r: any) => r.ruleId === 'ABNORMAL_VOLUME')
+        const medianVol = volRule?.evidence ? (volRule.evidence as any).medianVolume20Days : 0
+        
+        const changePercent = prevPriceData.close ? ((latestPriceData.close - prevPriceData.close) / prevPriceData.close) * 100 : 0
+        const ihsgChangePercent = prevIHSG.close ? ((latestIHSG.close - prevIHSG.close) / prevIHSG.close) * 100 : 0
+
+        globalSnapshotsToUpsert.set(ticker, {
+          symbol: ticker,
+          last_price: latestPriceData.close,
+          change_amount: latestPriceData.close - prevPriceData.close,
+          change_percent: Number(changePercent.toFixed(2)),
+          today_volume: latestPriceData.volume || 0,
+          median_volume_20d: medianVol,
+          ihsg_price: latestIHSG.close,
+          ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
+          updated_at: timestamp
         })
       }
     }
@@ -181,30 +182,37 @@ serve(async (req) => {
     const durationMs = Date.now() - startTime
     const uniqueRunId = `RUN-${dateStr}-${Math.floor(Date.now() / 1000).toString().slice(-5)}-${user.id.slice(0, 4)}`
 
-    // Push to memory array instead of hitting the database!
+    let auditStatus = 'SUCCESS'
+    if (incompleteCount > 0) {
+      auditStatus = evaluatedCount === 0 ? 'INCOMPLETE' : 'PARTIAL'
+    }
+
     auditRunsToInsert.push({
       user_id: user.id,
       run_id: uniqueRunId,
       timestamp,
       tickers_count: user.watchlist.length,
       active_triggers_count: totalTriggersFound,
-      status: 'SUCCESS',
+      status: auditStatus,
       duration_ms: durationMs
     })
 
-    // Push to memory array instead of hitting the database!
     workspacesToUpsert.push({
       user_id: user.id,
       active_cases: activeCases,
       case_events: caseEvents,
-      market_snapshots: marketSnapshots,
+      market_snapshots: {}, // No longer stored per-user
+      ticker_states: tickerStates,
       run_index: runIndex + 1,
       last_run_time: timestamp,
       updated_at: timestamp
     })
   }
 
-  // BOTTLENECK FIX #2 Execution: Execute all DB operations in bulk!
+  if (globalSnapshotsToUpsert.size > 0) {
+    await supabase.from("global_market_snapshots").upsert(Array.from(globalSnapshotsToUpsert.values()))
+  }
+
   if (auditRunsToInsert.length > 0) {
     await supabase.from("audit_runs").insert(auditRunsToInsert)
   }
@@ -219,3 +227,4 @@ serve(async (req) => {
 
   return new Response("Workflow completed successfully", { status: 200 })
 })
+

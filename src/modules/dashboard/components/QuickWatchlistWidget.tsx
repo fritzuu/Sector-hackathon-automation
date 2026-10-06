@@ -2,13 +2,14 @@ import React from 'react';
 import { Link } from '@tanstack/react-router';
 import { List, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { IDX_COMPANIES } from '../../../data/idxCompanies';
+import { useCompanyStore } from '../../../data/companyStore';
 
 interface QuickWatchlistWidgetProps {
   watchlist: string[];
 }
 
 export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watchlist }) => {
+  const companies = useCompanyStore(state => state.companies);
   const container: any = {
     hidden: { opacity: 0 },
     show: {
@@ -61,7 +62,7 @@ export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watc
           className="flex flex-col gap-3"
         >
           {watchlist.slice(0, 5).map(ticker => {
-            const company = IDX_COMPANIES.find(item => item.symbol === ticker);
+            const company = companies.find(item => item.symbol === ticker);
             return (
             <motion.div key={ticker} variants={item}>
               <div className="group flex min-w-0 items-center justify-between gap-2 border-b border-border/60 py-3 last:border-0">
@@ -78,21 +79,21 @@ export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watc
                     </div>
                   </div>
                 </div>
-                {company && company.marketCapTrillion > 0 && (
-                  <span className="shrink-0 text-right font-mono text-[9px] text-text-muted">Rp {company.marketCapTrillion.toLocaleString('id-ID')} T</span>
+                {company && (company.market_cap ?? 0) > 0 && (
+                  <span className="shrink-0 text-right font-mono text-[9px] text-text-muted">Rp {((company.market_cap ?? 0) / 1_000_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} T</span>
                 )}
               </div>
             </motion.div>
             );
           })}
           
-          {watchlist.length > 4 && (
+          {watchlist.length > 5 && (
             <motion.div variants={item}>
               <Link 
                 to="/dashboard/watchlist"
                 className="mt-1 block text-center py-3 text-xs font-extrabold text-text-muted hover:text-primary transition-colors bg-bg/40 rounded-xl border border-border/50 hover:border-primary/30"
               >
-                + {watchlist.length - 4} saham lainnya di Watchlist Anda
+                + {watchlist.length - 5} saham lainnya di Watchlist Anda
               </Link>
             </motion.div>
           )}

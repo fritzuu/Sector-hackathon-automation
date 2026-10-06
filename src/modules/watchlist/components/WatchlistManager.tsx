@@ -1,10 +1,11 @@
+import { useCompanies } from "../../../data/useCompanies";
 /**
  * WatchlistManager — Orchestrator.
- * Live company data fetched ONCE from Sectors API and passed down to children.
+ * Company data is cached from Supabase and passed down to children.
  * No hardcoded stock lists anywhere.
  */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   X,
   ExternalLink,
@@ -15,7 +16,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { RealTickerMetrics } from "../../../types/engine.js";
-import { sectorsApi, LiveIdxCompany } from "../../../services/sectorsApi.js";
+import { LiveIdxCompany } from "../../../services/sectorsApi.js";
 import { useWorkflowStore } from "../../cases/stores/workflow.store.js";
 import { SectorPresetsGrid } from "./SectorPresetsGrid.js";
 import { WatchlistSearchPanel } from "./WatchlistSearchPanel.js";
@@ -301,9 +302,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
   onSendTelegramSummary,
 }) => {
   // ── Live company list — single source of truth, no hardcode ───────────────
-  const [liveCompanies, setLiveCompanies] = useState<LiveIdxCompany[]>([]);
-  const [companiesLoading, setCompaniesLoading] = useState(true);
-  const [companiesError, setCompaniesError] = useState(false);
+  const { data: liveCompanies = [], isPending: companiesLoading, isError: companiesError, refetch } = useCompanies();
   const marketSnapshots = useWorkflowStore((state) => state.marketSnapshots);
   const watchlistMarketData = new Map(
     watchlist.map((symbol) => [
@@ -311,29 +310,6 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
       toWatchlistMarketData(marketSnapshots.get(symbol)),
     ] as const),
   );
-
-  const loadCompanies = useCallback(async (force = false) => {
-    setCompaniesLoading(true);
-    setCompaniesError(false);
-    try {
-      if (force) sectorsApi.invalidateAll(); // bust cache on manual retry
-      const companies = await sectorsApi.fetchTopCompanies();
-      if (companies.length > 0) {
-        setLiveCompanies(companies);
-      } else {
-        setCompaniesError(true);
-      }
-    } catch {
-      setCompaniesError(true);
-    } finally {
-      setCompaniesLoading(false);
-    }
-  }, []);
-
-  // Kick off on mount
-  useEffect(() => {
-    loadCompanies();
-  }, [loadCompanies]);
 
   // ── Modal state ────────────────────────────────────────────────────────────
   const [modalSymbol, setModalSymbol] = useState<string | null>(null);
@@ -393,7 +369,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
         marketDataByTicker={watchlistMarketData}
         companiesLoading={companiesLoading}
         companiesError={companiesError}
-        onRetryCompanies={() => loadCompanies(true)}
+        onRetryCompanies={() => { void refetch(); }}
       />
 
       {/* Detail Modal */}

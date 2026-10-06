@@ -60,11 +60,7 @@ function AuthLayout() {
     navigate({ to: path });
   }, [navigate]);
 
-  useEffect(() => {
-    if (currentUser?.defaultWatchlist && currentUser.defaultWatchlist.length > 0 && watchlist.length === 0) {
-      useWatchlistStore.getState().setWatchlist(currentUser.defaultWatchlist);
-    }
-  }, [currentUser, watchlist.length]);
+
 
   if (!currentUser) {
     return (
