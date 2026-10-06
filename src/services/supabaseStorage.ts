@@ -292,6 +292,7 @@ export async function fetchGlobalMarketSnapshots(
       medianVolume20d: d.median_volume_20d,
       ihsgPrice: d.ihsg_price,
       ihsgChangePercent: d.ihsg_change_percent,
+      latestFilings: d.latest_filings || [],
       lastUpdated: d.updated_at
     }));
   } catch {

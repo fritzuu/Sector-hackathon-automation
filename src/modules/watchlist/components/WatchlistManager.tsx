@@ -1,11 +1,11 @@
-import { useCompanyStore } from "../../../data/companyStore";
+import { useCompanies } from "../../../data/useCompanies";
 /**
  * WatchlistManager — Orchestrator.
- * Live company data fetched ONCE from Sectors API and passed down to children.
+ * Company data is cached from Supabase and passed down to children.
  * No hardcoded stock lists anywhere.
  */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   X,
   ExternalLink,
@@ -16,11 +16,13 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { RealTickerMetrics } from "../../../types/engine.js";
-import { sectorsApi, LiveIdxCompany } from "../../../services/sectorsApi.js";
-import { supabase } from "../../../lib/supabaseClient";
+import { LiveIdxCompany } from "../../../services/sectorsApi.js";
 import { useWorkflowStore } from "../../cases/stores/workflow.store.js";
+import { useWatchlistStore } from "../stores/watchlist.store.js";
 import { SectorPresetsGrid } from "./SectorPresetsGrid.js";
 import { WatchlistSearchPanel } from "./WatchlistSearchPanel.js";
+import { toWatchlistMarketData } from "../watchlist.marketData.js";
+import { WatchlistLimitModal } from "./WatchlistLimitModal.js";
 
 interface WatchlistManagerProps {
   watchlist: string[];
@@ -302,51 +304,14 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
   onSendTelegramSummary,
 }) => {
   // ── Live company list — single source of truth, no hardcode ───────────────
-  const [liveCompanies, setLiveCompanies] = useState<LiveIdxCompany[]>([]);
-  const [companiesLoading, setCompaniesLoading] = useState(true);
-  const [companiesError, setCompaniesError] = useState(false);
-
-  const loadCompanies = useCallback(async (force = false) => {
-    setCompaniesLoading(true);
-    setCompaniesError(false);
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .select('*, global_market_snapshots(*)');
-        
-      if (error) {
-        console.error('Failed to load companies:', error);
-        setCompaniesError(true);
-      } else if (data && data.length > 0) {
-        const mapped = data.map(d => ({
-          symbol: d.symbol,
-          name: d.name,
-          sector: d.sector,
-          subSector: d.sub_sector,
-          marketCapTier: d.market_cap_tier, market_cap: d.market_cap,
-          marketCapTrillion: d.market_cap ? Number((d.market_cap / 1_000_000_000_000).toFixed(2)) : 0,
-          lastPrice: Array.isArray(d.global_market_snapshots) 
-            ? (d.global_market_snapshots[0]?.last_price || 0) 
-            : (d.global_market_snapshots?.last_price || 0),
-          indexMembership: [],
-          description: '', rank: 0
-        }));
-        setLiveCompanies(mapped);
-        useCompanyStore.getState().setCompanies(mapped);
-      } else {
-        setCompaniesError(true);
-      }
-    } catch {
-      setCompaniesError(true);
-    } finally {
-      setCompaniesLoading(false);
-    }
-  }, []);
-
-  // Kick off on mount
-  useEffect(() => {
-    loadCompanies();
-  }, [loadCompanies]);
+  const { data: liveCompanies = [], isPending: companiesLoading, isError: companiesError, refetch } = useCompanies();
+  const marketSnapshots = useWorkflowStore((state) => state.marketSnapshots);
+  const watchlistMarketData = new Map(
+    watchlist.map((symbol) => [
+      symbol,
+      toWatchlistMarketData(marketSnapshots.get(symbol)),
+    ] as const),
+  );
 
   // ── Modal state ────────────────────────────────────────────────────────────
   const [modalSymbol, setModalSymbol] = useState<string | null>(null);
@@ -378,28 +343,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
           spreadVsIhsg: snap.spreadVsIhsg ?? Math.abs((snap.changePercent||0) - (snap.ihsgChangePercent||0))
         });
       } else {
-        const companyData = useCompanyStore.getState().getCompany(sym);
-        if (!companyData) throw new Error(`Simbol ${sym} tidak ditemukan di bursa.`);
-        const data: RealTickerMetrics = {
-          symbol: sym,
-          name: companyData.name,
-          sector: companyData.sector,
-          currency: 'IDR',
-          lastPrice: (companyData.lastPrice || 0),
-          changeAmount: 0,
-          changePercent: 0,
-          todayVolume: 0,
-          medianVolume20d: 0,
-          volumeMultiplier: 0,
-          ihsgPrice: 0,
-          ihsgChangePercent: 0,
-          spreadVsIhsg: 0,
-          isVolumeAnomaly: false,
-          isSpreadAnomaly: false,
-          lastUpdated: new Date().toLocaleTimeString('id-ID'),
-          isRealLive: false
-        };
-        setModalMetrics(data);
+        throw new Error(`Snapshot ${sym} belum tersedia di Supabase. Data akan muncul setelah workflow berjalan.`);
       }
     } catch (err) {
       setModalMetricsError(
@@ -411,6 +355,8 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
       setModalMetricsLoading(false);
     }
   }, []);
+
+  const { mutationCount, isLimitModalOpen, setLimitModalOpen } = useWatchlistStore();
 
   return (
     <div className="space-y-4 font-sans">
@@ -424,9 +370,12 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
         onSendTelegramSummary={onSendTelegramSummary}
         onOpenStockModal={openModal}
         liveCompanies={liveCompanies}
+        marketDataByTicker={watchlistMarketData}
         companiesLoading={companiesLoading}
         companiesError={companiesError}
-        onRetryCompanies={() => loadCompanies(true)}
+        onRetryCompanies={() => { void refetch(); }}
+        mutationCount={mutationCount}
+        onOpenLimitModal={() => setLimitModalOpen(true)}
       />
 
       {/* Detail Modal */}
@@ -441,6 +390,14 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
           onRemove={() => onRemoveTicker(modalSymbol)}
         />
       )}
+
+      {/* Limit & Violation Warning Modal */}
+      <WatchlistLimitModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        mutationCount={mutationCount}
+        currentWatchlist={watchlist}
+      />
     </div>
   );
 };

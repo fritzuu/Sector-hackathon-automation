@@ -1,7 +1,8 @@
 import React from 'react';
-import { TrendingUp, Plus, Check } from 'lucide-react';
+import { TrendingUp, Plus, Check, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { MAX_WATCHLIST_SIZE } from '../watchlist.rules';
+import { MAX_WATCHLIST_SIZE, MAX_WATCHLIST_MUTATIONS_PER_DAY } from '../watchlist.rules';
+import { useWatchlistStore } from '../stores/watchlist.store';
 
 interface PopularStocksWidgetProps {
   watchlist: string[];
@@ -19,6 +20,9 @@ const POPULAR_STOCKS = [
 
 export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchlist, onAddTicker }) => {
   const isWatchlistFull = watchlist.length >= MAX_WATCHLIST_SIZE;
+  const { mutationCount, setLimitModalOpen } = useWatchlistStore();
+  const isLimitReached = mutationCount >= MAX_WATCHLIST_MUTATIONS_PER_DAY;
+
   const container: any = {
     hidden: { opacity: 0 },
     show: {
@@ -41,11 +45,23 @@ export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchl
         </h2>
       </div>
 
-      {isWatchlistFull && (
+      {isLimitReached ? (
+        <div
+          onClick={() => setLimitModalOpen(true)}
+          className="mb-3 border-l-2 border-rose-500 bg-rose-500/10 px-3 py-2 text-xs leading-5 text-rose-200 cursor-pointer hover:bg-rose-500/15 transition-colors rounded-r"
+        >
+          <div className="font-bold flex items-center gap-1.5 text-rose-300">
+            <Lock className="w-3.5 h-3.5" /> Kuota 20x Penambahan Habis
+          </div>
+          <p className="text-[11px] text-rose-200/80 mt-0.5">
+            Penambahan saham dikunci hingga 00:00 WIB. Klik untuk detail.
+          </p>
+        </div>
+      ) : isWatchlistFull ? (
         <p role="status" className="mb-3 border-l-2 border-amber-400/70 bg-amber-400/5 px-3 py-2 text-xs leading-5 text-amber-200">
           Batas {MAX_WATCHLIST_SIZE} saham tercapai.
         </p>
-      )}
+      ) : null}
 
       <motion.div 
         variants={container}
@@ -55,7 +71,7 @@ export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchl
       >
         {POPULAR_STOCKS.map(stock => {
           const isAdded = watchlist.includes(stock.symbol);
-          const isDisabled = isAdded || isWatchlistFull;
+          const isDisabled = isAdded || isWatchlistFull || isLimitReached;
 
           return (
             <motion.div key={stock.symbol} variants={item}>
@@ -64,14 +80,18 @@ export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchl
                 className={`group flex w-full items-center justify-between px-3 py-2.5 rounded-lg border text-left transition-all ${
                   isAdded 
                     ? 'bg-bg/30 border-white/5 opacity-70' 
-                    : isWatchlistFull
+                    : isDisabled
                       ? 'bg-bg/50 border-border/60 cursor-not-allowed opacity-55'
                       : 'bg-bg border-border hover:border-primary/40 hover:bg-secondary cursor-pointer'
                 }`}
-                disabled={isDisabled}
-                aria-label={isAdded ? `${stock.symbol} sudah dipantau` : isWatchlistFull ? `Batas watchlist tercapai, tidak dapat menambah ${stock.symbol}` : `Tambah ${stock.symbol} ke watchlist`}
+                disabled={isAdded || (!isLimitReached && isWatchlistFull)}
+                aria-label={isAdded ? `${stock.symbol} sudah dipantau` : isLimitReached ? `Batas 20x pergantian tercapai` : isWatchlistFull ? `Batas watchlist tercapai, tidak dapat menambah ${stock.symbol}` : `Tambah ${stock.symbol} ke watchlist`}
                 onClick={() => {
-                  if (!isDisabled) onAddTicker(stock.symbol);
+                  if (isLimitReached) {
+                    setLimitModalOpen(true);
+                  } else if (!isDisabled) {
+                    onAddTicker(stock.symbol);
+                  }
                 }}
               >
                 <div className="flex items-center gap-3">

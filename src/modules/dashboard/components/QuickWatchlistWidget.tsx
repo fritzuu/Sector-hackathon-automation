@@ -2,12 +2,14 @@ import React from 'react';
 import { Link } from '@tanstack/react-router';
 import { List, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useCompanyStore } from '../../../data/companyStore';
 
 interface QuickWatchlistWidgetProps {
   watchlist: string[];
 }
 
 export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watchlist }) => {
+  const companies = useCompanyStore(state => state.companies);
   const container: any = {
     hidden: { opacity: 0 },
     show: {
@@ -59,33 +61,39 @@ export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watc
           animate="show"
           className="flex flex-col gap-3"
         >
-          {watchlist.slice(0, 4).map(ticker => (
+          {watchlist.slice(0, 5).map(ticker => {
+            const company = companies.find(item => item.symbol === ticker);
+            return (
             <motion.div key={ticker} variants={item}>
-              <div
-                className="group flex items-center justify-between p-3.5 sm:px-4 sm:py-3.5 rounded-xl bg-bg/70 border border-border hover:border-primary/50 hover:bg-secondary/70 transition-all shadow-sm"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-accent/10 border border-accent/25 flex items-center justify-center text-accent font-black font-mono text-sm shadow-inner">
+              <div className="group flex min-w-0 items-center justify-between gap-2 border-b border-border/60 py-3 last:border-0">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent/10 font-mono text-[10px] font-bold text-accent">
                     {ticker.slice(0, 2)}
                   </div>
-                  <div>
-                    <div className="text-lg font-black text-white font-mono tracking-wide group-hover:text-primary transition-colors">
+                  <div className="min-w-0">
+                    <div className="font-mono text-xs font-bold text-text-main group-hover:text-primary transition-colors">
                       {ticker}
                     </div>
-                    <div className="text-xs text-text-muted font-medium">Emiten Terdaftar Bursa Efek Indonesia</div>
+                    <div className="truncate text-[10px] text-text-muted" title={company?.name ?? ticker}>
+                      {company?.name ?? 'Emiten terdaftar IDX'}
+                    </div>
                   </div>
                 </div>
+                {company && (company.market_cap ?? 0) > 0 && (
+                  <span className="shrink-0 text-right font-mono text-[9px] text-text-muted">Rp {((company.market_cap ?? 0) / 1_000_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} T</span>
+                )}
               </div>
             </motion.div>
-          ))}
+            );
+          })}
           
-          {watchlist.length > 4 && (
+          {watchlist.length > 5 && (
             <motion.div variants={item}>
               <Link 
                 to="/dashboard/watchlist"
                 className="mt-1 block text-center py-3 text-xs font-extrabold text-text-muted hover:text-primary transition-colors bg-bg/40 rounded-xl border border-border/50 hover:border-primary/30"
               >
-                + {watchlist.length - 4} saham lainnya di Watchlist Anda
+                + {watchlist.length - 5} saham lainnya di Watchlist Anda
               </Link>
             </motion.div>
           )}

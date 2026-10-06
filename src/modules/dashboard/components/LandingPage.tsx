@@ -111,7 +111,7 @@ const GLOBAL_CSS = `
   }
   .tape-inner {
     display: flex; gap: 0;
-    animation: tape-scroll 90s linear infinite;
+    animation: tape-scroll 2000s linear infinite;
     white-space: nowrap;
     will-change: transform;
   }

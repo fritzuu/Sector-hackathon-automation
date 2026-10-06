@@ -26,7 +26,7 @@ async function clearAccountStores() {
       import('../../../modules/cases/stores/workflow.store'),
       import('../../../modules/watchlist/stores/watchlist.store'),
     ]);
-    workflowMod.useWorkflowStore.getState().resetReplay();
+    workflowMod.useWorkflowStore.getState().clearAccountState();
     watchlistMod.useWatchlistStore.getState().reset();
   } catch (err) {
     console.warn('[AuthStore] Gagal mereset store akun:', err);

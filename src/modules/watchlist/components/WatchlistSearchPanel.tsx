@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Search, Globe, RefreshCw, ServerCrash, Wifi
+  Search, Globe, RefreshCw, ServerCrash, Wifi, LayoutGrid, ShieldAlert, AlertTriangle, Lock
 } from 'lucide-react';
 import { LiveIdxCompany } from '../../../services/sectorsApi';
 import { WatchlistCard } from './WatchlistCard';
-import { MAX_WATCHLIST_SIZE } from '../watchlist.rules';
+import { WatchlistMarketData } from '../watchlist.marketData';
+import { MAX_WATCHLIST_SIZE, MAX_WATCHLIST_MUTATIONS_PER_DAY } from '../watchlist.rules';
+import { SectorExplorerModal } from './SectorExplorerModal';
+import { normalizeSubsectorSearchValue } from '../subsectorTaxonomy';
 
 interface WatchlistSearchPanelProps {
   watchlist: string[];
@@ -16,32 +19,46 @@ interface WatchlistSearchPanelProps {
   onSendTelegramSummary: () => void;
   onOpenStockModal: (symbol: string) => void;
   liveCompanies: LiveIdxCompany[];
+  marketDataByTicker: Map<string, WatchlistMarketData | null>;
   companiesLoading: boolean;
   companiesError: boolean;
   onRetryCompanies: () => void;
+  mutationCount?: number;
+  onOpenLimitModal?: () => void;
 }
 
 export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
   watchlist,
   onAddTicker, onRemoveTicker,
   onOpenStockModal,
-  liveCompanies, companiesLoading, companiesError, onRetryCompanies,
+  liveCompanies, marketDataByTicker,
+  companiesLoading, companiesError, onRetryCompanies,
+  mutationCount = 0,
+  onOpenLimitModal,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isExplorerOpen, setIsExplorerOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isWatchlistFull = watchlist.length >= MAX_WATCHLIST_SIZE;
 
+  const query = searchQuery.toLowerCase().trim();
+  const normalizedSubsectorQuery = normalizeSubsectorSearchValue(query);
+  const isSubsectorQuery = query.length > 0 && liveCompanies.some(company =>
+    normalizeSubsectorSearchValue(company.subSector) === normalizedSubsectorQuery,
+  );
   const filteredCompanies = liveCompanies.filter(c => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
+    if (!query) return true;
+    if (isSubsectorQuery) {
+      return normalizeSubsectorSearchValue(c.subSector) === normalizedSubsectorQuery;
+    }
     return (
-      c.symbol.toLowerCase().includes(q) ||
-      c.name.toLowerCase().includes(q) ||
-      c.sector.toLowerCase().includes(q) ||
-      (c.subSector && c.subSector.toLowerCase().includes(q))
+      c.symbol.toLowerCase().includes(query) ||
+      c.name.toLowerCase().includes(query) ||
+      c.sector.toLowerCase().includes(query) ||
+      c.subSector.toLowerCase().includes(query)
     );
-  }).slice(0, 8);
+  }).slice(0, MAX_WATCHLIST_SIZE);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -53,8 +70,19 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const isLimitReached = mutationCount >= MAX_WATCHLIST_MUTATIONS_PER_DAY;
+  const remainingMutations = Math.max(0, MAX_WATCHLIST_MUTATIONS_PER_DAY - mutationCount);
+
   const handleSelect = (symbol: string) => {
-    if (!watchlist.includes(symbol) && !isWatchlistFull) onAddTicker(symbol);
+    const registeredCompany = liveCompanies.find(company => company.symbol === symbol);
+    if (!registeredCompany) return;
+    if (isLimitReached) {
+      if (onOpenLimitModal) onOpenLimitModal();
+      return;
+    }
+    if (!watchlist.includes(registeredCompany.symbol) && !isWatchlistFull) {
+      onAddTicker(registeredCompany.symbol);
+    }
     setSearchQuery(''); setIsDropdownOpen(false);
   };
 
@@ -75,14 +103,38 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
       {/* Header Info */}
       <div className="rounded-t-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 bg-secondary/30">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <Wifi className="w-3.5 h-3.5 text-accent" />
             <span className="text-xs font-bold text-text-main tracking-wide">
-              Watchlist Dipantau
+              Tambah saham
             </span>
             <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-accent border border-accent text-bg font-bold ml-1">
               {watchlist.length}/{MAX_WATCHLIST_SIZE}
             </span>
+
+            {/* Addition Quota Meter */}
+            <button
+              type="button"
+              onClick={onOpenLimitModal}
+              title="Klik untuk melihat aturan kuota penambahan saham"
+              className={`flex items-center gap-1.5 font-mono text-[10px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ml-2 ${
+                isLimitReached
+                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 font-bold shadow-[0_0_10px_rgba(244,63,94,0.2)]'
+                  : mutationCount >= 15
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-semibold'
+                  : 'bg-white/5 border-white/10 text-text-muted hover:border-white/20 hover:text-white'
+              }`}
+            >
+              {isLimitReached ? (
+                <Lock className="w-3 h-3 text-rose-400" />
+              ) : (
+                <ShieldAlert className="w-3 h-3 text-primary" />
+              )}
+              <span>Tambah Saham:</span>
+              <span className={isLimitReached ? 'text-rose-400 font-bold' : 'text-white'}>
+                {mutationCount}/{MAX_WATCHLIST_MUTATIONS_PER_DAY}
+              </span>
+            </button>
           </div>
           
           <div className="flex items-center gap-3 flex-wrap">
@@ -119,24 +171,79 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
         </div>
       </div>
 
-      <div className="space-y-5 p-4 sm:p-5">
+      <div className="space-y-4 p-4 sm:p-5">
+        {/* Warning Banner when Quota Reached or Near Limit */}
+        {isLimitReached ? (
+          <div
+            onClick={onOpenLimitModal}
+            className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between gap-3 cursor-pointer hover:bg-rose-500/15 transition-all shadow-sm"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 flex-shrink-0">
+                <ShieldAlert className="w-4 h-4 animate-pulse" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-rose-300">
+                  Batas Maksimal 20x Penambahan Saham Tercapai
+                </div>
+                <div className="text-[11px] text-rose-200/70">
+                  Penambahan saham baru dikunci sementara (20/20). Anda tetap dapat menghapus saham yang dipantau.
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="px-3 py-1 text-[11px] font-bold rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 transition-colors flex-shrink-0 cursor-pointer"
+            >
+              Lihat Peringatan
+            </button>
+          </div>
+        ) : mutationCount >= 15 ? (
+          <div className="px-3.5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span>
+                Peringatan: Sisa kuota penambahan saham hari ini tinggal{' '}
+                <strong>{remainingMutations} kali</strong>.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenLimitModal}
+              className="text-[11px] font-mono underline hover:text-amber-200 cursor-pointer"
+            >
+              Aturan 20x
+            </button>
+          </div>
+        ) : null}
+
         {/* Search Bar */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+        <div className="relative min-w-0 flex-1" ref={dropdownRef}>
           <div className="relative group">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted/50 group-focus-within:text-primary transition-colors" />
             <input
               type="text"
               value={searchQuery}
-              disabled={companiesError && liveCompanies.length === 0}
+              disabled={(companiesError && liveCompanies.length === 0) || isLimitReached}
               onChange={e => { setSearchQuery(e.target.value); setIsDropdownOpen(true); }}
               onKeyDown={e => {
                 if (e.key === 'Enter' && searchQuery.trim()) {
                   e.preventDefault();
-                  handleSelect(searchQuery.trim().toUpperCase());
+                  const exactTicker = liveCompanies.find(
+                    company => company.symbol.toUpperCase() === searchQuery.trim().toUpperCase(),
+                  );
+                  if (exactTicker) handleSelect(exactTicker.symbol);
                 }
               }}
-              onFocus={() => setIsDropdownOpen(true)}
-              placeholder={inputPlaceholder}
+              onFocus={() => {
+                if (isLimitReached) {
+                  if (onOpenLimitModal) onOpenLimitModal();
+                } else {
+                  setIsDropdownOpen(true);
+                }
+              }}
+              placeholder={isLimitReached ? 'Penambahan saham terkunci (batas 20x per hari)' : inputPlaceholder}
               className="w-full pl-10 pr-10 py-3 text-sm text-text-main placeholder-text-muted/40 rounded-xl bg-bg border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all disabled:opacity-50 shadow-inner"
             />
             {companiesLoading && (
@@ -144,7 +251,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
             )}
           </div>
 
-          {isWatchlistFull && (
+          {isWatchlistFull && !isLimitReached && (
             <p
               role="status"
               className="mt-2 border-l-2 border-amber-400/70 bg-amber-400/5 px-3 py-2 text-xs leading-5 text-amber-200"
@@ -161,27 +268,8 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                   <Globe className="w-3 h-3 text-primary" />
                   {searchQuery.trim() ? `${filteredCompanies.length} Hasil Pencarian` : 'Top 3 Saham Pilihan'}
                 </div>
-                <span>Tekan Enter ⏎</span>
+                <span>Pilih emiten terdaftar</span>
               </div>
-
-              {searchQuery.trim().length > 0 && !watchlist.includes(searchQuery.trim().toUpperCase()) && !isWatchlistFull && (
-                <div
-                  onClick={() => handleSelect(searchQuery.trim().toUpperCase())}
-                  className="px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-bg/50 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-xs px-2 py-1 rounded bg-accent text-bg shadow-sm">
-                      {searchQuery.trim().toUpperCase()}
-                    </span>
-                    <span className="text-xs text-text-muted group-hover:text-text-main transition-colors">
-                      Tambah & fetch data real-time
-                    </span>
-                  </div>
-                  <button type="button" className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-bg hover:opacity-90 transition-all shadow-md shadow-primary/20">
-                    + Tambah
-                  </button>
-                </div>
-              )}
 
               {companiesLoading && liveCompanies.length === 0 && (
                 <div aria-label="Memuat daftar emiten" aria-busy="true" className="space-y-2 p-4">
@@ -191,7 +279,13 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                 </div>
               )}
 
-              {isWatchlistFull && searchQuery.trim().length > 0 && !watchlist.includes(searchQuery.trim().toUpperCase()) && (
+              {searchQuery.trim().length > 0 && !companiesLoading && filteredCompanies.length === 0 && (
+                <div role="status" className="px-4 py-5 text-center text-xs text-text-muted">
+                  Tidak ditemukan emiten pada daftar yang tersedia.
+                </div>
+              )}
+
+              {isWatchlistFull && searchQuery.trim().length > 0 && (
                 <div className="px-4 py-3 text-xs text-amber-200" role="status">
                   Watchlist sudah mencapai batas 5 saham.
                 </div>
@@ -263,6 +357,15 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
             </div>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => setIsExplorerOpen(true)}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-border px-3.5 py-3 text-xs font-semibold text-text-main transition-colors hover:border-primary/50 hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <LayoutGrid className="h-4 w-4 text-primary" />
+          Jelajahi sektor
+        </button>
+        </div>
 
         {/* Watchlist Cards Grid */}
         {watchlist.length === 0 ? (
@@ -298,6 +401,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                 <WatchlistCard
                   ticker={ticker}
                   companyInfo={getLiveInfo(ticker)}
+                  marketData={marketDataByTicker.get(ticker) ?? null}
                   onRemove={() => onRemoveTicker(ticker)}
                   onClick={() => onOpenStockModal(ticker)}
                 />
@@ -306,6 +410,17 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
           </motion.div>
         )}
       </div>
+
+      <SectorExplorerModal
+        isOpen={isExplorerOpen}
+        companies={liveCompanies}
+        companiesLoading={companiesLoading}
+        companiesError={companiesError}
+        watchlist={watchlist}
+        onAddTicker={onAddTicker}
+        onRetryCompanies={onRetryCompanies}
+        onClose={() => setIsExplorerOpen(false)}
+      />
     </div>
   );
 };

@@ -90,6 +90,27 @@ serve(async (req) => {
 
   const globalSnapshotsToUpsert = new Map<string, any>()
 
+  // Cache unfiltered IHSG globally for the proxy
+  const rawBenchmark = await sectorsApi.fetchBenchmarkData();
+  if (rawBenchmark && rawBenchmark.length > 0) {
+    const latestIHSG = rawBenchmark[rawBenchmark.length - 1];
+    const prevIHSG = rawBenchmark[rawBenchmark.length - 2] || latestIHSG;
+    const ihsgChangePercent = prevIHSG.close ? ((latestIHSG.close - prevIHSG.close) / prevIHSG.close) * 100 : 0;
+    
+    globalSnapshotsToUpsert.set('IHSG', {
+      symbol: 'IHSG',
+      last_price: Math.round(latestIHSG.close),
+      change_amount: Math.round(latestIHSG.close - prevIHSG.close),
+      change_percent: Number(ihsgChangePercent.toFixed(2)),
+      today_volume: 0,
+      median_volume_20d: 0,
+      ihsg_price: Math.round(latestIHSG.close),
+      ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
+      latest_filings: [],
+      updated_at: timestamp
+    });
+  }
+
   for (const user of users) {
     if (!user.watchlist || user.watchlist.length === 0) continue
 
@@ -135,7 +156,13 @@ serve(async (req) => {
 
       if (r.shouldNotify && r.event && r.evalResult) {
         const template = renderCaseTemplate(r.evalResult, r.event.newStatus)
-        const messageHtml = formatTelegramHtml(ticker, r.event.newStatus, template)
+        const messageHtml = formatTelegramHtml(ticker, r.event.newStatus, template, {
+          prices,
+          benchmark,
+          filings,
+          evalResult: r.evalResult,
+          event: r.event,
+        })
         telegramOutboxToInsert.push({
           chat_id: user.telegram_chat_id,
           message: messageHtml,
@@ -172,12 +199,14 @@ serve(async (req) => {
           change_percent: Number(changePercent.toFixed(2)),
           today_volume: latestPriceData.volume || 0,
           median_volume_20d: medianVol,
-          ihsg_price: latestIHSG.close,
+          ihsg_price: Math.round(latestIHSG.close),
           ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
+          latest_filings: filings,
           updated_at: timestamp
         })
       }
     }
+
 
     const durationMs = Date.now() - startTime
     const uniqueRunId = `RUN-${dateStr}-${Math.floor(Date.now() / 1000).toString().slice(-5)}-${user.id.slice(0, 4)}`
