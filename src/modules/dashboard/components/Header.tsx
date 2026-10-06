@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
 
     if (Math.abs(distance) < 2) return;
 
-    const duration = 650;
+    const duration = 420;
     let startTime: number | null = null;
 
     const animateScroll = (currentTime: number) => {
@@ -57,9 +57,8 @@ export const Header: React.FC<HeaderProps> = ({
       const timeElapsed = currentTime - startTime;
       const progress = Math.min(timeElapsed / duration, 1);
 
-      const ease = progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      // easeOutQuart: starts fast, decelerates smoothly — no jarring lead-in
+      const ease = 1 - Math.pow(1 - progress, 4);
 
       window.scrollTo(0, startPosition + distance * ease);
 

@@ -29,6 +29,19 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// Safety net: Cegah seluruh alert default browser dan alihkan ke sistem notifikasi custom SIBA
+if (typeof window !== "undefined") {
+  window.alert = (message?: any) => {
+    import("./shared/stores/alert.store.js").then(({ showCustomAlert }) => {
+      showCustomAlert({
+        type: "warning",
+        title: "Pemberitahuan Sistem",
+        message: String(message || ""),
+      });
+    });
+  };
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

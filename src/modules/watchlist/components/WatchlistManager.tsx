@@ -18,9 +18,11 @@ import {
 import { RealTickerMetrics } from "../../../types/engine.js";
 import { LiveIdxCompany } from "../../../services/sectorsApi.js";
 import { useWorkflowStore } from "../../cases/stores/workflow.store.js";
+import { useWatchlistStore } from "../stores/watchlist.store.js";
 import { SectorPresetsGrid } from "./SectorPresetsGrid.js";
 import { WatchlistSearchPanel } from "./WatchlistSearchPanel.js";
 import { toWatchlistMarketData } from "../watchlist.marketData.js";
+import { WatchlistLimitModal } from "./WatchlistLimitModal.js";
 
 interface WatchlistManagerProps {
   watchlist: string[];
@@ -354,6 +356,8 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
     }
   }, []);
 
+  const { mutationCount, isLimitModalOpen, setLimitModalOpen } = useWatchlistStore();
+
   return (
     <div className="space-y-4 font-sans">
       {/* Search + Watchlist Cards */}
@@ -370,6 +374,8 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
         companiesLoading={companiesLoading}
         companiesError={companiesError}
         onRetryCompanies={() => { void refetch(); }}
+        mutationCount={mutationCount}
+        onOpenLimitModal={() => setLimitModalOpen(true)}
       />
 
       {/* Detail Modal */}
@@ -384,6 +390,14 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
           onRemove={() => onRemoveTicker(modalSymbol)}
         />
       )}
+
+      {/* Limit & Violation Warning Modal */}
+      <WatchlistLimitModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        mutationCount={mutationCount}
+        currentWatchlist={watchlist}
+      />
     </div>
   );
 };
