@@ -279,7 +279,7 @@ const GLOBAL_CSS = `
     padding: 72px 24px;
     border-top: 1px solid var(--ed);
   }
-  .siba-page [id^="landing-"], .siba-page #faq-section { scroll-margin-top: 7.5rem; }
+  .siba-page [id^="landing-"], .siba-page #faq-section { scroll-margin-top: 4.5rem; }
   .section-label {
     font-family: var(--font-mono);
     font-size: clamp(14px, 1.8vw, 16px);
@@ -1678,7 +1678,15 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
                   return displayedList.map(item => (
                     <tr
                       key={item.symbol}
-                      onClick={() => { setSelected(item.symbol); window.scrollTo({ top: 500, behavior: 'smooth' }); }}
+                      onClick={() => {
+                        setSelected(item.symbol);
+                        const el = document.getElementById('landing-market');
+                        if (el) {
+                          const offset = 72;
+                          const pos = el.getBoundingClientRect().top + window.pageYOffset - offset;
+                          window.scrollTo({ top: pos, behavior: 'smooth' });
+                        }
+                      }}
                       style={{ background: selected === item.symbol ? 'rgba(157, 78, 221, 0.12)' : undefined }}
                     >
                       <td className="td-sym">{item.symbol}</td>

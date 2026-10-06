@@ -11,7 +11,7 @@ interface WatchlistCardProps {
   onClick: () => void;
 }
 
-const fmt = (n?: number)  => n.toLocaleString('id-ID');
+const fmt = (n?: number)  => (n ?? 0).toLocaleString('id-ID');
 const pct = (n?: number) => `${(n || 0) >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
 
 export const WatchlistCard: React.FC<WatchlistCardProps> = ({ ticker, companyInfo, onRemove, onClick }) => {

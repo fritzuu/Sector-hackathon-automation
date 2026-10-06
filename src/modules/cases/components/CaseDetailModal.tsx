@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { CaseState, CaseEvent, RenderedTemplate } from '../../../types/engine.js';
 import {
   X, Shield, AlertTriangle, CheckCircle, Clock, ExternalLink,
-  TrendingUp, TrendingDown, Activity, FileText, Database,
+  TrendingUp, TrendingDown,
 } from 'lucide-react';
-import { RealTickerMetrics } from '../../../types/engine.js';
 import { IDX_COMPANIES } from '../../../data/idxCompanies.js';
 import { useWorkflowStore } from '../stores/workflow.store.js';
 
@@ -15,7 +14,7 @@ interface CaseDetailModalProps {
   onClose: () => void;
 }
 
-const fmt = (n?: number)  => n.toLocaleString('id-ID');
+const fmt = (n?: number)  => (n ?? 0).toLocaleString('id-ID');
 const pct = (n?: number) => `${(n || 0) >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
 const vol = (n?: number) => `${((n || 0) / 1_000_000).toFixed(2)}M`;
 
@@ -26,7 +25,6 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   onClose,
 }) => {
   const rawMetrics = useWorkflowStore(s => caseItem ? s.marketSnapshots.get(caseItem.symbol) : null);
-  const loadingMetrics = false;
 
   const metrics = rawMetrics ? {
     ...rawMetrics,
@@ -46,29 +44,28 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md overflow-y-auto font-sans"
-      style={{ background: 'rgba(6,10,18,0.85)' }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-bg/85 backdrop-blur-md font-sans"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl bg-[#0d1424] border border-border rounded-xl shadow-2xl overflow-hidden my-6 max-h-[90vh] flex flex-col"
+        className="relative w-full sm:max-w-3xl bg-surface border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-start justify-between p-5 border-b border-border bg-[#111d2e]">
+        <div className="flex items-start justify-between p-5 border-b border-border bg-secondary/70 backdrop-blur-md">
           <div className="flex items-start gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-teal-950/80 border border-teal-600/40 flex items-center justify-center text-teal-300 font-mono font-bold text-sm flex-shrink-0 mt-0.5">
+            <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-mono font-black text-base flex-shrink-0 mt-0.5 shadow-inner">
               {caseItem.symbol}
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base font-bold text-white truncate">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="text-lg sm:text-xl font-extrabold text-white truncate tracking-tight">
                   {companyName}
                 </h3>
-                <span className={`px-2.5 py-0.5 text-xs font-mono font-bold rounded border ${
+                <span className={`px-2.5 py-0.5 text-xs font-mono font-bold rounded-full border ${
                   isAnom
-                    ? 'bg-amber-950/40 text-amber-300 border-amber-600/40'
-                    : 'bg-emerald-950/40 text-emerald-300 border-emerald-600/40'
+                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                    : 'bg-accent/15 text-accent border border-accent/30'
                 }`}>
                   {caseItem.status}
                 </span>
@@ -76,7 +73,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               <div className="flex items-center gap-2 text-xs text-text-muted mt-1 font-mono flex-wrap">
                 <span>{companySector}{companySubSector ? ` · ${companySubSector}` : ''}</span>
                 <span>•</span>
-                <span className="text-slate-500">ID: {caseItem.caseId}</span>
+                <span className="text-text-muted/80">ID: {caseItem.caseId}</span>
                 <span>•</span>
                 <span className="text-text-muted">
                   Dibuka: {new Date(caseItem.openedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, {new Date(caseItem.openedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
@@ -86,54 +83,54 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-text-muted hover:text-white hover:bg-secondary transition-colors flex-shrink-0"
+            className="p-2 rounded-xl text-text-muted hover:text-white hover:bg-secondary transition-colors flex-shrink-0 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs">
+        <div className="p-6 overflow-y-auto space-y-5 text-xs">
           {/* Live Market HUD / KPI Strip */}
           {metrics && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-secondary/80 border border-border">
-              <div className="p-2 rounded-lg bg-slate-950/40 border border-border">
-                <div className="text-[10px] font-mono text-text-muted">Harga Terakhir</div>
-                <div className="text-sm font-bold font-mono text-white mt-0.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-secondary/50 border border-border">
+              <div className="p-2.5 rounded-lg bg-bg/70 border border-border">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-semibold">Harga Terakhir</div>
+                <div className="text-base font-extrabold font-mono text-white mt-0.5">
                   Rp {fmt(metrics.lastPrice)}
                 </div>
-                <div className={`text-[10px] font-mono font-bold flex items-center gap-0.5 mt-0.5 ${metrics.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {metrics.changePercent >= 0 ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                <div className={`text-xs font-mono font-bold flex items-center gap-1 mt-0.5 ${metrics.changePercent >= 0 ? 'text-accent' : 'text-rose-400'}`}>
+                  {metrics.changePercent >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                   {pct(metrics.changePercent)}
                 </div>
               </div>
 
-              <div className="p-2 rounded-lg bg-slate-950/40 border border-border">
-                <div className="text-[10px] font-mono text-text-muted">Volume Hari Ini</div>
-                <div className="text-sm font-bold font-mono text-white mt-0.5">
+              <div className="p-2.5 rounded-lg bg-bg/70 border border-border">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-semibold">Volume Hari Ini</div>
+                <div className="text-base font-extrabold font-mono text-white mt-0.5">
                   {vol(metrics.todayVolume)} lot
                 </div>
-                <div className="text-[10px] font-mono text-text-muted mt-0.5">
+                <div className="text-[11px] font-mono text-text-muted mt-0.5">
                   Med: {vol(metrics.medianVolume20d)} lot
                 </div>
               </div>
 
-              <div className="p-2 rounded-lg bg-slate-950/40 border border-border">
-                <div className="text-[10px] font-mono text-text-muted">Rasio Volume</div>
-                <div className={`text-sm font-bold font-mono mt-0.5 ${metrics.isVolumeAnomaly ? 'text-amber-400' : 'text-teal-300'}`}>
+              <div className="p-2.5 rounded-lg bg-bg/70 border border-border">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-semibold">Rasio Volume</div>
+                <div className={`text-base font-extrabold font-mono mt-0.5 ${metrics.isVolumeAnomaly ? 'text-amber-400' : 'text-accent'}`}>
                   {metrics.volumeMultiplier}x
                 </div>
-                <div className="text-[10px] font-mono text-text-muted mt-0.5">
+                <div className="text-[11px] font-mono text-text-muted mt-0.5">
                   {metrics.isVolumeAnomaly ? '≥ 2.0x Spike' : 'Batas Wajar'}
                 </div>
               </div>
 
-              <div className="p-2 rounded-lg bg-slate-950/40 border border-border">
-                <div className="text-[10px] font-mono text-text-muted">Spread vs IHSG</div>
-                <div className={`text-sm font-bold font-mono mt-0.5 ${metrics.isSpreadAnomaly ? 'text-amber-400' : 'text-slate-200'}`}>
+              <div className="p-2.5 rounded-lg bg-bg/70 border border-border">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-semibold">Spread vs IHSG</div>
+                <div className={`text-base font-extrabold font-mono mt-0.5 ${metrics.isSpreadAnomaly ? 'text-amber-400' : 'text-white'}`}>
                   {pct(metrics.spreadVsIhsg)}
                 </div>
-                <div className="text-[10px] font-mono text-text-muted mt-0.5">
+                <div className="text-[11px] font-mono text-text-muted mt-0.5">
                   IHSG: {pct(metrics.ihsgChangePercent)}
                 </div>
               </div>
@@ -141,22 +138,22 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           )}
 
           {template && (
-            <div className="space-y-3.5">
+            <div className="space-y-4">
               {/* Facts Card */}
-              <div className="p-4 rounded-xl bg-secondary/90 border border-teal-500/30 space-y-2">
+              <div className="p-4.5 rounded-xl bg-secondary/60 border border-accent/30 space-y-2.5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-teal-300 font-bold text-xs uppercase tracking-wider">
-                    <CheckCircle className="w-4 h-4 text-teal-400" />
+                  <div className="flex items-center gap-2 text-accent font-bold text-xs uppercase tracking-wider">
+                    <CheckCircle className="w-4 h-4 text-accent" />
                     <span>FAKTA (Terverifikasi Data Real Bursa &amp; Sectors API)</span>
                   </div>
-                  <span className="text-[10px] font-mono text-teal-400/80 bg-teal-950/50 px-2 py-0.5 rounded border border-teal-800/40">
+                  <span className="text-[10px] font-mono font-bold text-accent bg-accent/10 px-2.5 py-0.5 rounded-full border border-accent/20">
                     100% Deterministik
                   </span>
                 </div>
-                <ul className="space-y-2 text-slate-200 pl-1 font-mono text-[11px] leading-relaxed">
+                <ul className="space-y-2 text-white/90 pl-1 font-mono text-xs leading-relaxed">
                   {template.facts.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-teal-400 font-bold">•</span>
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="text-accent font-bold mt-0.5">•</span>
                       <span>{f}</span>
                     </li>
                   ))}
@@ -164,15 +161,15 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               </div>
 
               {/* Limited Interpretations */}
-              <div className="p-4 rounded-xl bg-secondary/90 border border-sky-500/20 space-y-2">
-                <div className="flex items-center gap-2 text-sky-300 font-bold text-xs uppercase tracking-wider">
-                  <Shield className="w-4 h-4 text-sky-400" />
+              <div className="p-4.5 rounded-xl bg-secondary/60 border border-primary/30 space-y-2.5 shadow-sm">
+                <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+                  <Shield className="w-4 h-4 text-primary" />
                   <span>INTERPRETASI TERBATAS (Berdasarkan Parameter Matematika)</span>
                 </div>
-                <ul className="space-y-1.5 text-text-muted pl-1 text-[11px] leading-relaxed">
+                <ul className="space-y-1.5 text-text-muted pl-1 text-xs leading-relaxed">
                   {template.limitedInterpretations.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-sky-400 font-bold">•</span>
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="text-primary font-bold mt-0.5">•</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -180,15 +177,15 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               </div>
 
               {/* Unknowns */}
-              <div className="p-4 rounded-xl bg-secondary/90 border border-amber-500/20 space-y-2">
-                <div className="flex items-center gap-2 text-amber-300 font-bold text-xs uppercase tracking-wider">
+              <div className="p-4.5 rounded-xl bg-secondary/60 border border-amber-500/30 space-y-2.5 shadow-sm">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
                   <span>BATAS INFORMASI (Tidak Ditebak / Spekulasi)</span>
                 </div>
-                <ul className="space-y-1.5 text-text-muted pl-1 text-[11px] leading-relaxed">
+                <ul className="space-y-1.5 text-text-muted pl-1 text-xs leading-relaxed">
                   {template.unknowns.map((u, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-amber-400 font-bold">•</span>
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="text-amber-400 font-bold mt-0.5">•</span>
                       <span>{u}</span>
                     </li>
                   ))}
@@ -196,58 +193,58 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               </div>
 
               {/* Disclaimer */}
-              <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/20 text-text-muted text-[11px] leading-relaxed">
-                <strong className="text-amber-300 block mb-1">⚠️ Disclaimer Mandatori:</strong>
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-text-muted text-xs leading-relaxed">
+                <strong className="text-amber-400 block mb-1 font-semibold">⚠️ Disclaimer Mandatori:</strong>
                 {template.disclaimer}
               </div>
             </div>
           )}
 
           {/* Official Intelligence Links */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border text-[11px] font-mono">
+          <div className="flex items-center justify-between p-3.5 rounded-xl bg-secondary/40 border border-border text-xs font-mono flex-wrap gap-2">
             <span className="text-text-muted">Verifikasi Langsung ke Sumber Resmi:</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <a
                 href={`https://sectors.app/idx/${caseItem.symbol}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1 text-teal-400 hover:text-teal-300 underline"
+                className="flex items-center gap-1.5 text-primary hover:text-primary-600 font-semibold underline transition-colors"
               >
                 <span>Sectors.app</span>
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
-              <span className="text-slate-600">·</span>
+              <span className="text-border">·</span>
               <a
                 href="https://www.idx.co.id/id/perusahaan-tercatat/keterbukaan-informasi/"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1 text-teal-400 hover:text-teal-300 underline"
+                className="flex items-center gap-1.5 text-primary hover:text-primary-600 font-semibold underline transition-colors"
               >
                 <span>Keterbukaan BEI</span>
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
           </div>
 
           {/* Timeline */}
-          <div className="border-t border-border pt-4">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-teal-400" />
+          <div className="border-t border-border pt-5">
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-3.5 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" />
               <span>Linimasa Perkembangan Kasus ({events.length} Catatan Evaluasi)</span>
             </h4>
 
-            <div className="relative pl-5 space-y-3 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-secondary">
+            <div className="relative pl-6 space-y-3.5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
               {events.map((evt, idx) => (
                 <div key={evt.eventId || idx} className="relative">
-                  <div className="absolute -left-5 top-1.5 w-2 h-2 rounded-full bg-teal-400 ring-2 ring-[#0d1424]" />
-                  <div className="p-3 rounded-xl bg-secondary/90 border border-border">
-                    <div className="flex items-center justify-between text-[11px] mb-1 font-mono">
+                  <div className="absolute -left-6 top-2 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-surface" />
+                  <div className="p-3.5 rounded-xl bg-secondary/60 border border-border">
+                    <div className="flex items-center justify-between text-xs mb-1 font-mono">
                       <span className="font-bold text-white">Status: {evt.newStatus}</span>
                       <span className="text-text-muted">
                         {new Date(evt.timestamp).toLocaleString('id-ID')}
                       </span>
                     </div>
-                    <p className="text-[11px] text-text-muted leading-relaxed font-mono">{evt.renderedSummary}</p>
+                    <p className="text-xs text-text-muted leading-relaxed font-mono">{evt.renderedSummary}</p>
                   </div>
                 </div>
               ))}
@@ -256,13 +253,13 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3.5 border-t border-border bg-secondary/60 flex items-center justify-between">
-          <span className="text-[10px] font-mono text-slate-500">
+        <div className="p-4 border-t border-border bg-secondary/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <span className="text-xs font-mono text-text-muted">
             SIBA Engine · Evaluasi Penutupan 16:30 WIB
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-secondary hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+            className="px-5 py-2 text-xs font-bold text-white bg-secondary hover:bg-secondary/80 border border-border hover:border-primary/40 rounded-xl transition-all cursor-pointer shadow-sm"
           >
             Tutup
           </button>

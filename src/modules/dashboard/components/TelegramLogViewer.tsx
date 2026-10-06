@@ -130,7 +130,7 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
   }
 
   return (
-    <div className="rounded-xl p-5 space-y-4 font-sans bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)] h-full flex flex-col">
+    <div className="rounded-2xl p-6 space-y-4 font-sans bg-secondary/50 border border-border shadow-[0_4px_24px_rgba(0,0,0,0.5)] h-full flex flex-col">
       <style>{`
         .telegram-html-content b { font-weight: 700; color: #fff; }
         .telegram-html-content i { font-style: italic; opacity: 0.8; }
@@ -147,21 +147,18 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
       `}</style>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-secondary/30 text-accent border border-secondary flex items-center justify-center flex-shrink-0">
-            <Send className="w-4 h-4 text-accent" />
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
           <div>
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-bold text-text tracking-wide">
+            <div className="flex flex-col-reverse md:flex-row items-start md:items-center space-x-2">
+              <h3 className="text-lg font-extrabold text-white tracking-tight">
                 Log Entri Telegram Sent
               </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-secondary text-primary border border-primary/30">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-secondary text-primary border border-primary/30">
                 {isLoading ? "..." : logs.length} Notifikasi
               </span>
             </div>
-            <p className="text-[11px] text-text/70 mt-0.5">
+            <p className="text-xs text-text-muted mt-0.5">
               Riwayat pesan &amp; alert anomali bursa yang telah dikirim ke bot
               Telegram Anda.
             </p>
@@ -172,10 +169,8 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
           {logs.length > 0 && !isLoading && (
             <button
               onClick={onClearLogs}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:text-red-300 bg-red-950/30 hover:bg-red-900/40 border border-red-800/40 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Bersihkan Log</span>
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-colors cursor-pointer">
+              <span>Clear</span>
             </button>
           )}
         </div>
@@ -250,10 +245,18 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
                     {log.ticker}
                   </span>
                 )}
-                
+
                 <span className="flex items-center space-x-1.5 text-[10px] text-text/50 font-mono">
                   <Clock className="w-3 h-3" />
-                  <span>{new Date(log.timestamp).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: 'short' })}</span>
+                  <span>
+                    {new Date(log.timestamp).toLocaleString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </span>
                 </span>
               </div>
 
