@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { motion } from 'framer-motion';
 import { WatchlistManager } from '../modules/watchlist/components/WatchlistManager';
 import { WatchlistNewsFeed } from '../modules/watchlist/components/WatchlistNewsFeed';
-import { PopularStocksWidget } from '../modules/watchlist/components/PopularStocksWidget';
 import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { useAuthStore } from '../modules/auth/stores/auth.store';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
@@ -30,30 +29,26 @@ function WatchlistPage() {
       initial={{ opacity: 0, y: 15 }} 
       animate={{ opacity: 1, y: 0 }} 
       transition={{ duration: 0.15, ease: "easeOut" }} 
-      className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)]"
+      className="min-w-0 space-y-6"
     >
-      <div className="min-w-0 space-y-6">
-        <div id="tour-watchlist-content">
-          <WatchlistManager
-            watchlist={watchlist}
-            onAddTicker={addTicker}
-            onRemoveTicker={removeTicker}
-            onAddPreset={addPresets}
-            isTelegramLinked={currentUser?.isTelegramLinked || false}
-            onOpenTelegramModal={() => window.dispatchEvent(new CustomEvent('open-telegram-modal'))}
-            onSendTelegramSummary={handleSendTelegramSummary}
-          />
-        </div>
-        
-        <WatchlistNewsFeed watchlist={watchlist} />
-      </div>
-      
-      <div className="min-w-0 xl:sticky xl:top-4">
-        <PopularStocksWidget 
-          watchlist={watchlist} 
-          onAddTicker={addTicker} 
+      <header>
+        <h1 className="text-2xl font-bold text-text-main sm:text-3xl">Watchlist</h1>
+        <p className="mt-1 text-sm text-text-muted">Kelola saham dan ikuti aktivitas emiten.</p>
+      </header>
+
+      <div id="tour-watchlist-content">
+        <WatchlistManager
+          watchlist={watchlist}
+          onAddTicker={addTicker}
+          onRemoveTicker={removeTicker}
+          onAddPreset={addPresets}
+          isTelegramLinked={currentUser?.isTelegramLinked || false}
+          onOpenTelegramModal={() => window.dispatchEvent(new CustomEvent('open-telegram-modal'))}
+          onSendTelegramSummary={handleSendTelegramSummary}
         />
       </div>
+
+      <WatchlistNewsFeed watchlist={watchlist} />
     </motion.div>
   );
 }

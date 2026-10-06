@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 import { RealTickerMetrics } from "../../../types/engine.js";
 import { sectorsApi, LiveIdxCompany } from "../../../services/sectorsApi.js";
-import { IDX_COMPANIES } from "../../../data/idxCompanies.js";
 import { useWorkflowStore } from "../../cases/stores/workflow.store.js";
 import { SectorPresetsGrid } from "./SectorPresetsGrid.js";
 import { WatchlistSearchPanel } from "./WatchlistSearchPanel.js";
+import { toWatchlistMarketData } from "../watchlist.marketData.js";
 
 interface WatchlistManagerProps {
   watchlist: string[];
@@ -304,6 +304,13 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
   const [liveCompanies, setLiveCompanies] = useState<LiveIdxCompany[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(true);
   const [companiesError, setCompaniesError] = useState(false);
+  const marketSnapshots = useWorkflowStore((state) => state.marketSnapshots);
+  const watchlistMarketData = new Map(
+    watchlist.map((symbol) => [
+      symbol,
+      toWatchlistMarketData(marketSnapshots.get(symbol)),
+    ] as const),
+  );
 
   const loadCompanies = useCallback(async (force = false) => {
     setCompaniesLoading(true);
@@ -358,28 +365,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
           spreadVsIhsg: snap.spreadVsIhsg ?? Math.abs((snap.changePercent||0) - (snap.ihsgChangePercent||0))
         });
       } else {
-        const companyData = IDX_COMPANIES.find(c => c.symbol === sym);
-        if (!companyData) throw new Error(`Simbol ${sym} tidak ditemukan di bursa.`);
-        const data: RealTickerMetrics = {
-          symbol: sym,
-          name: companyData.name,
-          sector: companyData.sector,
-          currency: 'IDR',
-          lastPrice: companyData.lastPrice,
-          changeAmount: 0,
-          changePercent: 0,
-          todayVolume: 0,
-          medianVolume20d: 0,
-          volumeMultiplier: 0,
-          ihsgPrice: 0,
-          ihsgChangePercent: 0,
-          spreadVsIhsg: 0,
-          isVolumeAnomaly: false,
-          isSpreadAnomaly: false,
-          lastUpdated: new Date().toLocaleTimeString('id-ID'),
-          isRealLive: false
-        };
-        setModalMetrics(data);
+        throw new Error(`Snapshot ${sym} belum tersedia di Supabase. Data akan muncul setelah workflow berjalan.`);
       }
     } catch (err) {
       setModalMetricsError(
@@ -404,6 +390,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
         onSendTelegramSummary={onSendTelegramSummary}
         onOpenStockModal={openModal}
         liveCompanies={liveCompanies}
+        marketDataByTicker={watchlistMarketData}
         companiesLoading={companiesLoading}
         companiesError={companiesError}
         onRetryCompanies={() => loadCompanies(true)}

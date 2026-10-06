@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Search, Globe, RefreshCw, ServerCrash, Wifi
+  Search, Globe, RefreshCw, ServerCrash, Wifi, LayoutGrid
 } from 'lucide-react';
 import { LiveIdxCompany } from '../../../services/sectorsApi';
 import { WatchlistCard } from './WatchlistCard';
+import { WatchlistMarketData } from '../watchlist.marketData';
 import { MAX_WATCHLIST_SIZE } from '../watchlist.rules';
+import { SectorExplorerModal } from './SectorExplorerModal';
+import { normalizeSubsectorSearchValue } from '../subsectorTaxonomy';
 
 interface WatchlistSearchPanelProps {
   watchlist: string[];
@@ -16,6 +19,7 @@ interface WatchlistSearchPanelProps {
   onSendTelegramSummary: () => void;
   onOpenStockModal: (symbol: string) => void;
   liveCompanies: LiveIdxCompany[];
+  marketDataByTicker: Map<string, WatchlistMarketData | null>;
   companiesLoading: boolean;
   companiesError: boolean;
   onRetryCompanies: () => void;
@@ -25,23 +29,32 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
   watchlist,
   onAddTicker, onRemoveTicker,
   onOpenStockModal,
-  liveCompanies, companiesLoading, companiesError, onRetryCompanies,
+  liveCompanies, marketDataByTicker,
+  companiesLoading, companiesError, onRetryCompanies,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isExplorerOpen, setIsExplorerOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isWatchlistFull = watchlist.length >= MAX_WATCHLIST_SIZE;
 
+  const query = searchQuery.toLowerCase().trim();
+  const normalizedSubsectorQuery = normalizeSubsectorSearchValue(query);
+  const isSubsectorQuery = query.length > 0 && liveCompanies.some(company =>
+    normalizeSubsectorSearchValue(company.subSector) === normalizedSubsectorQuery,
+  );
   const filteredCompanies = liveCompanies.filter(c => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
+    if (!query) return true;
+    if (isSubsectorQuery) {
+      return normalizeSubsectorSearchValue(c.subSector) === normalizedSubsectorQuery;
+    }
     return (
-      c.symbol.toLowerCase().includes(q) ||
-      c.name.toLowerCase().includes(q) ||
-      c.sector.toLowerCase().includes(q) ||
-      (c.subSector && c.subSector.toLowerCase().includes(q))
+      c.symbol.toLowerCase().includes(query) ||
+      c.name.toLowerCase().includes(query) ||
+      c.sector.toLowerCase().includes(query) ||
+      c.subSector.toLowerCase().includes(query)
     );
-  }).slice(0, 8);
+  }).slice(0, MAX_WATCHLIST_SIZE);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -54,7 +67,11 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
   }, []);
 
   const handleSelect = (symbol: string) => {
-    if (!watchlist.includes(symbol) && !isWatchlistFull) onAddTicker(symbol);
+    const registeredCompany = liveCompanies.find(company => company.symbol === symbol);
+    if (!registeredCompany) return;
+    if (!watchlist.includes(registeredCompany.symbol) && !isWatchlistFull) {
+      onAddTicker(registeredCompany.symbol);
+    }
     setSearchQuery(''); setIsDropdownOpen(false);
   };
 
@@ -78,7 +95,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
           <div className="flex items-center gap-2 mb-1.5">
             <Wifi className="w-3.5 h-3.5 text-accent" />
             <span className="text-xs font-bold text-text-main tracking-wide">
-              Watchlist Dipantau
+              Tambah saham
             </span>
             <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-accent border border-accent text-bg font-bold ml-1">
               {watchlist.length}/{MAX_WATCHLIST_SIZE}
@@ -121,7 +138,8 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
 
       <div className="space-y-5 p-4 sm:p-5">
         {/* Search Bar */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+        <div className="relative min-w-0 flex-1" ref={dropdownRef}>
           <div className="relative group">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted/50 group-focus-within:text-primary transition-colors" />
             <input
@@ -132,7 +150,10 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
               onKeyDown={e => {
                 if (e.key === 'Enter' && searchQuery.trim()) {
                   e.preventDefault();
-                  handleSelect(searchQuery.trim().toUpperCase());
+                  const exactTicker = liveCompanies.find(
+                    company => company.symbol.toUpperCase() === searchQuery.trim().toUpperCase(),
+                  );
+                  if (exactTicker) handleSelect(exactTicker.symbol);
                 }
               }}
               onFocus={() => setIsDropdownOpen(true)}
@@ -161,27 +182,8 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                   <Globe className="w-3 h-3 text-primary" />
                   {searchQuery.trim() ? `${filteredCompanies.length} Hasil Pencarian` : 'Top 3 Saham Pilihan'}
                 </div>
-                <span>Tekan Enter ⏎</span>
+                <span>Pilih emiten terdaftar</span>
               </div>
-
-              {searchQuery.trim().length > 0 && !watchlist.includes(searchQuery.trim().toUpperCase()) && !isWatchlistFull && (
-                <div
-                  onClick={() => handleSelect(searchQuery.trim().toUpperCase())}
-                  className="px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-bg/50 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-xs px-2 py-1 rounded bg-accent text-bg shadow-sm">
-                      {searchQuery.trim().toUpperCase()}
-                    </span>
-                    <span className="text-xs text-text-muted group-hover:text-text-main transition-colors">
-                      Tambah & fetch data real-time
-                    </span>
-                  </div>
-                  <button type="button" className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-bg hover:opacity-90 transition-all shadow-md shadow-primary/20">
-                    + Tambah
-                  </button>
-                </div>
-              )}
 
               {companiesLoading && liveCompanies.length === 0 && (
                 <div aria-label="Memuat daftar emiten" aria-busy="true" className="space-y-2 p-4">
@@ -191,7 +193,13 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                 </div>
               )}
 
-              {isWatchlistFull && searchQuery.trim().length > 0 && !watchlist.includes(searchQuery.trim().toUpperCase()) && (
+              {searchQuery.trim().length > 0 && !companiesLoading && filteredCompanies.length === 0 && (
+                <div role="status" className="px-4 py-5 text-center text-xs text-text-muted">
+                  Tidak ditemukan emiten pada daftar yang tersedia.
+                </div>
+              )}
+
+              {isWatchlistFull && searchQuery.trim().length > 0 && (
                 <div className="px-4 py-3 text-xs text-amber-200" role="status">
                   Watchlist sudah mencapai batas 5 saham.
                 </div>
@@ -263,6 +271,15 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
             </div>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => setIsExplorerOpen(true)}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-border px-3.5 py-3 text-xs font-semibold text-text-main transition-colors hover:border-primary/50 hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <LayoutGrid className="h-4 w-4 text-primary" />
+          Jelajahi sektor
+        </button>
+        </div>
 
         {/* Watchlist Cards Grid */}
         {watchlist.length === 0 ? (
@@ -298,6 +315,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                 <WatchlistCard
                   ticker={ticker}
                   companyInfo={getLiveInfo(ticker)}
+                  marketData={marketDataByTicker.get(ticker) ?? null}
                   onRemove={() => onRemoveTicker(ticker)}
                   onClick={() => onOpenStockModal(ticker)}
                 />
@@ -306,6 +324,17 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
           </motion.div>
         )}
       </div>
+
+      <SectorExplorerModal
+        isOpen={isExplorerOpen}
+        companies={liveCompanies}
+        companiesLoading={companiesLoading}
+        companiesError={companiesError}
+        watchlist={watchlist}
+        onAddTicker={onAddTicker}
+        onRetryCompanies={onRetryCompanies}
+        onClose={() => setIsExplorerOpen(false)}
+      />
     </div>
   );
 };

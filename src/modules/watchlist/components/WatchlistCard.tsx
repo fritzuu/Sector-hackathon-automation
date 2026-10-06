@@ -1,42 +1,33 @@
 import React from 'react';
 import { X, TrendingUp, TrendingDown, AlertTriangle, WifiOff } from 'lucide-react';
-import { RealTickerMetrics } from '../../../types/engine.js';
 import { LiveIdxCompany } from '../../../services/sectorsApi';
-import { useWorkflowStore } from '../../cases/stores/workflow.store.js';
+import { WatchlistMarketData } from '../watchlist.marketData.js';
 
 interface WatchlistCardProps {
   ticker: string;
   companyInfo: LiveIdxCompany | null;
+  marketData: WatchlistMarketData | null;
   onRemove: () => void;
   onClick: () => void;
 }
 
 const fmt = (n?: number)  => (n ?? 0).toLocaleString('id-ID');
 const pct = (n?: number) => `${(n || 0) >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
+const compactVolume = (n?: number) => `${((n ?? 0) / 1_000_000).toFixed(1)}M`;
 
-export const WatchlistCard: React.FC<WatchlistCardProps> = ({ ticker, companyInfo, onRemove, onClick }) => {
-  const rawMetrics = useWorkflowStore(s => s.marketSnapshots.get(ticker));
-  const metrics = rawMetrics ? {
-    ...rawMetrics,
-    volumeMultiplier: rawMetrics.volumeMultiplier ?? (rawMetrics.medianVolume20d > 0 ? Number((rawMetrics.todayVolume / rawMetrics.medianVolume20d).toFixed(2)) : 0),
-    isVolumeAnomaly: rawMetrics.isVolumeAnomaly ?? (rawMetrics.todayVolume >= (rawMetrics.medianVolume20d * 2)),
-    isSpreadAnomaly: rawMetrics.isSpreadAnomaly ?? (Math.abs(rawMetrics.changePercent - rawMetrics.ihsgChangePercent) >= 2.0)
-  } : null;
-  const loading = false;
-  const error = !metrics;
+export const WatchlistCard: React.FC<WatchlistCardProps> = ({ ticker, companyInfo, marketData, onRemove, onClick }) => {
+  const isVolumeAnomaly = (marketData?.volumeMultiplier ?? 0) >= 2;
+  const isUp = (marketData?.changePercent ?? 0) >= 0;
 
-  const isAnom = metrics ? (metrics.isVolumeAnomaly || metrics.isSpreadAnomaly) : false;
-  const isUp = (metrics?.changePercent ?? 0) >= 0;
-
-  const displayName = companyInfo?.name ?? metrics?.name ?? ticker;
-  const displaySector = companyInfo?.sector ?? metrics?.sector ?? 'Emiten IDX';
+  const displayName = companyInfo?.name ?? ticker;
+  const displaySector = companyInfo?.sector ?? 'Emiten IDX';
   const displayMcap = companyInfo?.marketCapTrillion;
 
   return (
     <div
       onClick={onClick}
       className={`group relative rounded-xl cursor-pointer select-none transition-all duration-300 p-4 pr-8 border hover:-translate-y-[2px] ${
-        isAnom 
+        isVolumeAnomaly 
           ? 'bg-amber-900/10 border-amber-500/30 shadow-[0_4px_20px_rgba(245,158,11,0.1)] hover:border-amber-500/50 hover:shadow-[0_4px_20px_rgba(245,158,11,0.2)]'
           : 'bg-secondary/50 border-border shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:border-primary hover:shadow-[0_4px_20px_rgba(168,85,247,0.15)]'
       }`}
@@ -55,15 +46,18 @@ export const WatchlistCard: React.FC<WatchlistCardProps> = ({ ticker, companyInf
         <span className="font-mono font-bold text-[11px] px-2 py-0.5 rounded-md bg-accent border border-accent text-bg shadow-sm shadow-accent/20">
           {ticker}
         </span>
-        {isAnom && (
+        {isVolumeAnomaly && (
           <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 text-amber-400 animate-pulse">
             <AlertTriangle className="w-2.5 h-2.5" />
             ANOM
           </span>
         )}
         {displayMcap != null && displayMcap > 0 && (
-          <span className="ml-auto text-[10px] font-mono text-text-muted">
-            Rp {displayMcap} T
+          <span className="ml-auto text-right">
+            <span className="block text-[9px] font-semibold text-text-muted/70">Market cap</span>
+            <span className="block text-[10px] font-mono font-semibold text-text-muted">
+              Rp {displayMcap.toLocaleString('id-ID')} T
+            </span>
           </span>
         )}
       </div>
@@ -74,29 +68,49 @@ export const WatchlistCard: React.FC<WatchlistCardProps> = ({ ticker, companyInf
         {displaySector}
       </div>
 
-      {/* Price row */}
-      <div className="flex items-center justify-between pt-3 border-t border-white/5">
-        {loading ? (
-          <div className="flex items-center gap-2 w-full">
-            <div className="h-3 w-20 rounded animate-pulse bg-white/10" />
-            <div className="h-3 w-12 rounded animate-pulse bg-white/5 ml-auto" />
-          </div>
-        ) : error ? (
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-text-muted/60">
-            <WifiOff className="w-3 h-3" />
-            Harga tidak tersedia
-          </div>
-        ) : metrics ? (
+      {/* Latest price and daily volume */}
+      <div className="flex items-end justify-between gap-3 border-t border-white/5 pt-3">
+        {marketData ? (
           <>
-            <span className="text-sm font-black font-mono text-text-main">Rp {fmt(metrics.lastPrice)}</span>
-            <div className="flex items-center gap-1.5">
-              {isUp ? <TrendingUp className="w-3 h-3 text-accent" /> : <TrendingDown className="w-3 h-3 text-rose-500" />}
-              <span className={`text-xs font-black font-mono ${isUp ? 'text-accent' : 'text-rose-500'}`}>
-                {pct(metrics.changePercent)}
-              </span>
+            <div className="min-w-0">
+              <span className="mb-1 block text-[9px] font-semibold text-text-muted/70">Harga terakhir</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-black font-mono text-text-main">Rp {fmt(marketData.lastPrice)}</span>
+                {marketData.changePercent !== null && (
+                  <span className={`flex items-center gap-0.5 text-[10px] font-black font-mono ${isUp ? 'text-accent' : 'text-rose-500'}`}>
+                    {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    {pct(marketData.changePercent)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <span className="mb-1 block text-[9px] font-semibold text-text-muted/70">Volume</span>
+              {marketData.volumeMultiplier !== null ? (
+                <>
+                  <span className={`block text-[10px] font-bold font-mono ${isVolumeAnomaly ? 'text-rose-400' : 'text-text-main'}`}>
+                    {marketData.volumeMultiplier.toFixed(1)}× median
+                  </span>
+                  <span className="block text-[9px] font-mono text-text-muted">
+                    {compactVolume(marketData.todayVolume)} hari ini
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="block text-[10px] font-bold font-mono text-text-main">
+                    {compactVolume(marketData.todayVolume)} hari ini
+                  </span>
+                  <span className="block text-[9px] font-mono text-text-muted">Riwayat 20 sesi belum cukup</span>
+                </>
+              )}
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[10px] font-mono text-text-muted/60">
+            <WifiOff className="h-3 w-3 shrink-0" />
+            Snapshot Supabase belum tersedia
+          </div>
+        )}
       </div>
     </div>
   );
