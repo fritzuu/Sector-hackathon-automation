@@ -179,6 +179,29 @@ serve(async (req) => {
         })
       }
     }
+    
+    // Cache IHSG globally for the proxy
+    if (uniqueTickers.length > 0) {
+      const firstTicker = uniqueTickers[0];
+      const benchmark = benchmarkCache.get(firstTicker);
+      if (benchmark && benchmark.length > 0) {
+        const latestIHSG = benchmark[benchmark.length - 1];
+        const prevIHSG = benchmark[benchmark.length - 2] || latestIHSG;
+        const ihsgChangePercent = prevIHSG.close ? ((latestIHSG.close - prevIHSG.close) / prevIHSG.close) * 100 : 0;
+        globalSnapshotsToUpsert.set('IHSG', {
+          symbol: 'IHSG',
+          last_price: latestIHSG.close,
+          change_amount: latestIHSG.close - prevIHSG.close,
+          change_percent: Number(ihsgChangePercent.toFixed(2)),
+          today_volume: 0,
+          median_volume_20d: 0,
+          ihsg_price: latestIHSG.close,
+          ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
+          latest_filings: [],
+          updated_at: timestamp
+        });
+      }
+    }
 
     const durationMs = Date.now() - startTime
     const uniqueRunId = `RUN-${dateStr}-${Math.floor(Date.now() / 1000).toString().slice(-5)}-${user.id.slice(0, 4)}`

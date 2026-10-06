@@ -35,26 +35,36 @@ serve(async (req) => {
   const { symbol } = body
   if (!symbol) return new Response("Missing symbol", { status: 400, headers: corsHeaders })
 
-  // 1. Check if we already have a fresh snapshot in the database
-  const { data: existingSnapshot, error: dbError } = await supabase
+  // 1. Check if we already have fresh snapshots in the database
+  const { data: existingRows, error: dbError } = await supabase
     .from("global_market_snapshots")
     .select("*")
-    .eq("symbol", symbol)
-    .maybeSingle()
+    .in("symbol", [symbol, "IHSG"])
 
-  if (existingSnapshot && !dbError) {
-    const updatedTime = new Date(existingSnapshot.updated_at).getTime()
-    const ageMs = Date.now() - updatedTime
+  let cachedIhsg: any = null;
+
+  if (existingRows && !dbError) {
     const twentyThreeHoursMs = 23 * 60 * 60 * 1000
+    const now = Date.now()
     
-    // The cron runs at 07:00 WIB (00:00 UTC) daily. 
-    // If the snapshot is less than 23 hours old, it's fresh enough.
-    if (ageMs < twentyThreeHoursMs) {
-      console.log(`[Proxy] Cache hit for ${symbol}, age: ${Math.round(ageMs/1000/60)}m`)
-      return new Response(JSON.stringify(existingSnapshot), { 
-        status: 200, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      })
+    const existingSnapshot = existingRows.find(r => r.symbol === symbol)
+    if (existingSnapshot) {
+      const ageMs = now - new Date(existingSnapshot.updated_at).getTime()
+      if (ageMs < twentyThreeHoursMs) {
+        console.log(`[Proxy] Cache hit for ${symbol}, age: ${Math.round(ageMs/1000/60)}m`)
+        return new Response(JSON.stringify(existingSnapshot), { 
+          status: 200, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        })
+      }
+    }
+
+    const ihsgRow = existingRows.find(r => r.symbol === "IHSG")
+    if (ihsgRow) {
+      const ageMs = now - new Date(ihsgRow.updated_at).getTime()
+      if (ageMs < twentyThreeHoursMs) {
+        cachedIhsg = ihsgRow;
+      }
     }
   }
 
@@ -91,18 +101,22 @@ serve(async (req) => {
 
   let prices, benchmark, filings;
   try {
-    [prices, benchmark, filings] = await Promise.all([
+    const promises: any[] = [
       fetchDaily(symbol),
-      fetchBenchmark(),
       sectorsApi.fetchCompanyFilings(symbol)
-    ]);
+    ];
+    if (!cachedIhsg) promises.push(fetchBenchmark());
+    
+    const results = await Promise.all(promises);
+    prices = results[0];
+    filings = results[1];
+    if (!cachedIhsg) benchmark = results[2];
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
   }
 
   // Handle potential `{ data: [...] }` wraps
   const pricesArr = Array.isArray(prices) ? prices : (prices?.data || prices?.results || []);
-  const benchArr = Array.isArray(benchmark) ? benchmark : (benchmark?.data || benchmark?.results || []);
 
   if (!pricesArr || pricesArr.length === 0) {
     return new Response(JSON.stringify({ error: "No data found for symbol" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } })
@@ -116,22 +130,32 @@ serve(async (req) => {
     ? (pricesArr.length > 1 ? pricesArr[1] : pricesArr[0])
     : (pricesArr.length > 1 ? pricesArr[pricesArr.length - 2] : latestPriceData);
   
-  // Find matching benchmark date, fallback to latest available
-  let latestIHSG = benchArr.find((b: any) => b.date === latestPriceData.date)
-  if (!latestIHSG && benchArr.length > 0) latestIHSG = isDesc ? benchArr[0] : benchArr[benchArr.length - 1]
-  if (!latestIHSG) latestIHSG = { close: 0 }
-  
-  let prevIHSG = benchArr.find((b: any) => b.date === prevPriceData.date)
-  if (!prevIHSG && benchArr.length > 1) prevIHSG = isDesc ? benchArr[1] : benchArr[benchArr.length - 2]
-  if (!prevIHSG) prevIHSG = latestIHSG
+  let latestIhsgPrice = 0;
+  let ihsgChangePercent = 0;
+
+  if (cachedIhsg) {
+    latestIhsgPrice = cachedIhsg.ihsg_price;
+    ihsgChangePercent = cachedIhsg.ihsg_change_percent;
+  } else {
+    const benchArr = Array.isArray(benchmark) ? benchmark : (benchmark?.data || benchmark?.results || []);
+    // Find matching benchmark date, fallback to latest available
+    let latestIHSG = benchArr.find((b: any) => b.date === latestPriceData.date)
+    if (!latestIHSG && benchArr.length > 0) latestIHSG = isDesc ? benchArr[0] : benchArr[benchArr.length - 1]
+    if (!latestIHSG) latestIHSG = { close: 0 }
+    
+    let prevIHSG = benchArr.find((b: any) => b.date === prevPriceData.date)
+    if (!prevIHSG && benchArr.length > 1) prevIHSG = isDesc ? benchArr[1] : benchArr[benchArr.length - 2]
+    if (!prevIHSG) prevIHSG = latestIHSG
+
+    latestIhsgPrice = latestIHSG.close ?? latestIHSG.price ?? 0;
+    const prevIhsgPrice = prevIHSG.close ?? prevIHSG.price ?? 0;
+    ihsgChangePercent = prevIhsgPrice ? ((latestIhsgPrice - prevIhsgPrice) / prevIhsgPrice) * 100 : 0;
+  }
 
   const latestPrice = latestPriceData.close ?? latestPriceData.price ?? 0;
   const prevPrice = prevPriceData.close ?? prevPriceData.price ?? 0;
-  const latestIhsgPrice = latestIHSG.close ?? latestIHSG.price ?? 0;
-  const prevIhsgPrice = prevIHSG.close ?? prevIHSG.price ?? 0;
 
   const changePercent = prevPrice ? ((latestPrice - prevPrice) / prevPrice) * 100 : 0
-  const ihsgChangePercent = prevIhsgPrice ? ((latestIhsgPrice - prevIhsgPrice) / prevIhsgPrice) * 100 : 0
 
   // Calculate 20-day median volume
   const sortedByDate = [...pricesArr].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -157,7 +181,24 @@ serve(async (req) => {
   }
 
   // 2. Upsert to global table
-  const { error } = await supabase.from("global_market_snapshots").upsert(snapshot)
+  const upserts = [snapshot];
+  
+  if (!cachedIhsg) {
+    upserts.push({
+      symbol: 'IHSG',
+      last_price: latestIhsgPrice,
+      change_amount: 0,
+      change_percent: ihsgChangePercent,
+      today_volume: 0,
+      median_volume_20d: 0,
+      ihsg_price: latestIhsgPrice,
+      ihsg_change_percent: ihsgChangePercent,
+      latest_filings: [],
+      updated_at: timestamp
+    });
+  }
+
+  const { error } = await supabase.from("global_market_snapshots").upsert(upserts)
   if (error) console.error("Error upserting proxy snapshot", error.message)
 
   return new Response(JSON.stringify(snapshot), { 
