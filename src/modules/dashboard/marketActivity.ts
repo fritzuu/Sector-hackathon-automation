@@ -5,7 +5,6 @@ export interface MarketSnapshot {
   changePercent: number;
   todayVolume: number;
   lastUpdated: string;
-  dataDate?: string | null;
 }
 
 export interface MarketActivityRow {
@@ -29,10 +28,10 @@ export const buildMarketActivityRows = (
   const snapshot = snapshotsByTicker.get(symbol);
   if (!snapshot || snapshot.lastPrice <= 0) return [];
   const company = companies.find(item => item.symbol === symbol);
-  const date = snapshot.dataDate && /^\d{4}-\d{2}-\d{2}$/.test(snapshot.dataDate)
-    && !Number.isNaN(Date.parse(snapshot.dataDate))
-    && new Date(snapshot.dataDate).toISOString().slice(0, 10) === snapshot.dataDate
-    ? snapshot.dataDate : '';
+  const updatedAt = new Date(snapshot.lastUpdated);
+  const date = Number.isNaN(updatedAt.getTime())
+    ? ''
+    : updatedAt.toISOString().slice(0, 10);
 
   return [{
     symbol,

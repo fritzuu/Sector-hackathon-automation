@@ -1,5 +1,3 @@
-import { evaluateSnapshotMetrics, isFiniteNumber } from './snapshotMetrics';
-
 export interface WatchlistMarketData {
   lastPrice: number;
   changePercent: number | null;
@@ -16,24 +14,27 @@ export interface SupabaseMarketSnapshot {
   medianVolume20d?: number;
   volumeMultiplier?: number;
   lastUpdated?: string;
-  dataDate?: string | null;
 }
 
 export const toWatchlistMarketData = (
   snapshot: SupabaseMarketSnapshot | null | undefined,
 ): WatchlistMarketData | null => {
-  if (!snapshot || !isFiniteNumber(snapshot.lastPrice) || snapshot.lastPrice <= 0) return null;
-  const medianVolume20d = isFiniteNumber(snapshot.medianVolume20d) && snapshot.medianVolume20d > 0
+  if (!snapshot || !snapshot.lastPrice) return null;
+  const medianVolume20d = snapshot.medianVolume20d && snapshot.medianVolume20d > 0
     ? snapshot.medianVolume20d
     : null;
-  const { volumeMultiplier } = evaluateSnapshotMetrics(snapshot);
+  const volumeMultiplier = snapshot.volumeMultiplier ?? (
+    medianVolume20d && snapshot.todayVolume !== undefined
+      ? Number((snapshot.todayVolume / medianVolume20d).toFixed(2))
+      : null
+  );
 
   return {
     lastPrice: snapshot.lastPrice,
-    changePercent: isFiniteNumber(snapshot.changePercent) ? snapshot.changePercent : null,
+    changePercent: typeof snapshot.changePercent === 'number' ? snapshot.changePercent : null,
     todayVolume: snapshot.todayVolume ?? 0,
     medianVolume20d,
     volumeMultiplier,
-    asOfDate: snapshot.dataDate ?? '',
+    asOfDate: snapshot.lastUpdated ?? '',
   };
 };

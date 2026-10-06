@@ -20,25 +20,12 @@ interface AuthState {
   syncFromSession: () => Promise<void>;
 }
 
-let sessionGeneration = 0;
-let authEventVersion = 0;
-let activeSync: { key: string; generation: number; promise: Promise<void> } | null = null;
-let hydratedKey: string | null = null;
-
-function invalidateSessionWork() {
-  authEventVersion++;
-  sessionGeneration++;
-  activeSync = null;
-  hydratedKey = null;
-}
-
-async function clearAccountStores(generation = sessionGeneration) {
+async function clearAccountStores() {
   try {
     const [workflowMod, watchlistMod] = await Promise.all([
       import('../../../modules/cases/stores/workflow.store'),
       import('../../../modules/watchlist/stores/watchlist.store'),
     ]);
-    if (generation !== sessionGeneration) return;
     workflowMod.useWorkflowStore.getState().clearAccountState();
     watchlistMod.useWatchlistStore.getState().reset();
   } catch (err) {
@@ -63,7 +50,7 @@ function profileFromAuthUser(authUser: User, existing?: UserProfile | null): Use
   };
 }
 
-async function hydrateUserData(profile: UserProfile, generation = sessionGeneration) {
+async function hydrateUserData(profile: UserProfile) {
   try {
     const [history, workspace, globalSnapshots, workflowMod, watchlistMod] = await Promise.all([
       fetchAuditRunsFromSupabase(profile.id),
@@ -73,18 +60,12 @@ async function hydrateUserData(profile: UserProfile, generation = sessionGenerat
       import('../../../modules/watchlist/stores/watchlist.store'),
     ]);
 
-    if (generation !== sessionGeneration || useAuthStore.getState().currentUser?.id !== profile.id) return false;
+    if (useAuthStore.getState().currentUser?.id !== profile.id) return;
 
-    const currentProfile = useAuthStore.getState().currentUser!;
-    // A user can edit the list while hydration is in flight.
-    const watchlist = currentProfile.defaultWatchlist === profile.defaultWatchlist
-      ? profile.defaultWatchlist || [] : watchlistMod.useWatchlistStore.getState().watchlist;
-    watchlistMod.useWatchlistStore.setState({ watchlist });
-    const snapshotMap = new Map<string, any>(workflowMod.useWorkflowStore.getState().marketSnapshots);
-    globalSnapshots.forEach(snapshot => {
-      if (watchlist.includes(snapshot.symbol)) snapshotMap.set(snapshot.symbol, snapshot);
-    });
-    for (const symbol of snapshotMap.keys()) if (!watchlist.includes(symbol)) snapshotMap.delete(symbol);
+    watchlistMod.useWatchlistStore.setState({ watchlist: profile.defaultWatchlist || [] });
+
+    const snapshotMap = new Map<string, any>();
+    globalSnapshots.forEach(s => snapshotMap.set(s.symbol, s));
 
     workflowMod.useWorkflowStore.setState({
       auditRuns: history,
@@ -96,50 +77,32 @@ async function hydrateUserData(profile: UserProfile, generation = sessionGenerat
       runIndex: workspace?.runIndex ?? 1,
       latestTelegramAlert: null,
     });
-    return true;
   } catch (err) {
     console.warn('[AuthStore] Gagal menghidrasi data user:', err);
-    return false;
   }
 }
 
-function syncAuthUser(authUser: User, force = false): Promise<void> {
-  const key = JSON.stringify([authUser.id, authUser.email, authUser.user_metadata]);
-  if (activeSync?.key === key && activeSync.generation === sessionGeneration) return activeSync.promise;
-  if (!force && hydratedKey === key && useAuthStore.getState().currentUser?.id === authUser.id) return Promise.resolve();
-  const generation = ++sessionGeneration;
-  const promise = performSyncAuthUser(authUser, generation).then(hydrated => {
-    if (hydrated && generation === sessionGeneration && useAuthStore.getState().currentUser?.id === authUser.id) hydratedKey = key;
-  }).finally(() => {
-    if (activeSync?.generation === generation) activeSync = null;
-  });
-  activeSync = { key, generation, promise };
-  return promise;
-}
-
-async function performSyncAuthUser(authUser: User, generation: number) {
+async function syncAuthUser(authUser: User) {
   const prevUser = useAuthStore.getState().currentUser;
-  if (prevUser && prevUser.id !== authUser.id) {
-    await clearAccountStores(generation);
+  if (prevUser && prevUser.id !== authUser.id && prevUser.email !== authUser.email) {
+    await clearAccountStores();
   }
-  if (generation !== sessionGeneration) return;
 
   let profile = await fetchUserProfileFromSupabase(authUser.id);
   if (!profile && authUser.email) {
     const byEmail = await fetchUserProfileFromSupabase(authUser.email);
-    if (byEmail?.id === authUser.id) {
+    if (byEmail) {
       profile = byEmail;
     }
   }
 
-  if (generation !== sessionGeneration) return;
   if (!profile) {
     profile = await saveUserProfileToSupabase(profileFromAuthUser(authUser));
   } else {
     const fresh = profileFromAuthUser(authUser, profile);
-    const hasChanges =
-      profile.name !== (fresh.name || profile.name) ||
-      profile.avatar !== (fresh.avatar || profile.avatar) ||
+    const hasChanges = 
+      profile.name !== (fresh.name || profile.name) || 
+      profile.avatar !== (fresh.avatar || profile.avatar) || 
       profile.email !== (authUser.email || profile.email);
 
     if (hasChanges) {
@@ -152,27 +115,22 @@ async function performSyncAuthUser(authUser: User, generation: number) {
     }
   }
 
-  if (generation !== sessionGeneration) return;
   // Set auth state immediately so route guards don't kick user out
   useAuthStore.setState({ currentUser: profile, authReady: true });
-  return hydrateUserData(profile, generation);
+  await hydrateUserData(profile);
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   currentUser: null,
   authReady: false,
   login: (user) => {
-    invalidateSessionWork();
-    const generation = sessionGeneration;
     set({ currentUser: user, authReady: true });
     saveUserProfileToSupabase(user).then((saved) => {
-      if (generation !== sessionGeneration) return;
       set({ currentUser: saved });
-      hydrateUserData(saved, generation);
+      hydrateUserData(saved);
     });
   },
   logout: () => {
-    invalidateSessionWork();
     set({ currentUser: null });
     clearAccountStores();
     supabase.auth.signOut().catch((err) => {
@@ -188,17 +146,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   syncFromSession: async () => {
-    const generation = sessionGeneration;
     const { data: { session } } = await supabase.auth.getSession();
-    if (generation !== sessionGeneration) {
-      const key = session?.user && JSON.stringify([session.user.id, session.user.email, session.user.user_metadata]);
-      if (key && activeSync?.key === key && activeSync.generation === sessionGeneration) await activeSync.promise;
-      return;
-    }
     if (session?.user) {
-      await syncAuthUser(session.user, true);
+      await syncAuthUser(session.user);
     } else {
-      invalidateSessionWork();
       set({ currentUser: null, authReady: true });
       await clearAccountStores();
     }
@@ -226,20 +177,14 @@ try {
       window.location.search.includes('code=') ||
       window.location.search.includes('error='));
 
-  const initialGeneration = sessionGeneration;
-  let recoveryGeneration = initialGeneration;
   supabase.auth.getSession().then(({ data: { session }, error }) => {
-    if (initialGeneration !== sessionGeneration) return;
     if (error) throw error;
     if (session?.user) {
-      const sync = syncAuthUser(session.user);
-      recoveryGeneration = sessionGeneration;
-      return sync;
+      return syncAuthUser(session.user);
     } else if (!hasAuthCallbackInUrl) {
       useAuthStore.setState({ currentUser: null, authReady: true });
     }
   }).catch((err) => {
-    if (recoveryGeneration !== sessionGeneration) return;
     console.warn('[AuthStore] Gagal memulihkan sesi:', err);
     if (!hasAuthCallbackInUrl) {
       useAuthStore.setState({ currentUser: null, authReady: true });
@@ -263,19 +208,13 @@ try {
         event === 'TOKEN_REFRESHED') &&
       session?.user
     ) {
-      const eventVersion = ++authEventVersion;
       setTimeout(() => {
-        if (eventVersion !== authEventVersion) return;
-        const sync = syncAuthUser(session.user, event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED');
-        const generation = sessionGeneration;
-        sync.catch((err) => {
-          if (generation !== sessionGeneration) return;
+        syncAuthUser(session.user).catch((err) => {
           console.warn('[AuthStore] Gagal sinkronisasi akun:', err);
           useAuthStore.setState({ authReady: true });
         });
       }, 0);
     } else if (event === 'SIGNED_OUT') {
-      invalidateSessionWork();
       useAuthStore.setState({ currentUser: null, authReady: true });
       clearAccountStores();
     }

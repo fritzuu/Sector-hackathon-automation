@@ -20,7 +20,6 @@ import { LiveIdxCompany } from "../../../services/sectorsApi.js";
 import { useWorkflowStore } from "../../cases/stores/workflow.store.js";
 import { SectorPresetsGrid } from "./SectorPresetsGrid.js";
 import { WatchlistSearchPanel } from "./WatchlistSearchPanel.js";
-import { evaluateSnapshotMetrics } from "../snapshotMetrics";
 import { toWatchlistMarketData } from "../watchlist.marketData.js";
 
 interface WatchlistManagerProps {
@@ -39,14 +38,12 @@ const fmt = (n: number) => n.toLocaleString("id-ID");
 const pct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 const vol = (n: number) => `${(n / 1_000_000).toFixed(1)}M`;
 
-type StockDetailMetrics = Omit<RealTickerMetrics, 'volumeMultiplier' | 'spreadVsIhsg' | 'isVolumeAnomaly' | 'isSpreadAnomaly'> & ReturnType<typeof evaluateSnapshotMetrics>;
-
 // ── DETAIL MODAL ─────────────────────────────────────────────────────────────
 
 interface StockDetailModalProps {
   symbol: string;
   companyInfo: LiveIdxCompany | null; // null = live not loaded yet
-  metrics: StockDetailMetrics | null;
+  metrics: RealTickerMetrics | null;
   metricsLoading: boolean;
   metricsError: string;
   onClose: () => void;
@@ -122,7 +119,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                       : "bg-accent text-bg border-accent"
                   }`}
                 >
-                  {isAnom ? "ANOMALI" : metrics.isVolumeAnomaly === null || metrics.isSpreadAnomaly === null ? "DATA BELUM CUKUP" : "NORMAL"}
+                  {isAnom ? "ANOMALI" : "NORMAL"}
                 </span>
               )}
             </div>
@@ -197,17 +194,17 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                   },
                   {
                     label: "Median 20 Sesi",
-                    value: metrics.volumeMultiplier === null ? "Belum tersedia" : `${vol(metrics.medianVolume20d)} lot`,
+                    value: `${vol(metrics.medianVolume20d)} lot`,
                     hot: false,
                   },
                   {
                     label: "Rasio Volume",
-                    value: metrics.volumeMultiplier === null ? "Belum dapat dievaluasi" : `${metrics.volumeMultiplier.toFixed(2)}×`,
+                    value: `${metrics.volumeMultiplier}×`,
                     hot: metrics.isVolumeAnomaly,
                   },
                   {
                     label: "Spread vs IHSG",
-                    value: metrics.spreadVsIhsg === null ? "Belum dapat dievaluasi" : `${metrics.spreadVsIhsg?.toFixed(2)}%`,
+                    value: `${metrics.spreadVsIhsg.toFixed(2)}%`,
                     hot: metrics.isSpreadAnomaly,
                   },
                   {
@@ -250,7 +247,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                     )}
                     {metrics.isSpreadAnomaly && (
                       <div>
-                        Spread vs IHSG {metrics.spreadVsIhsg?.toFixed(2)}% —
+                        Spread vs IHSG {metrics.spreadVsIhsg.toFixed(2)}% —
                         melampaui ambang 2.0%
                       </div>
                     )}
@@ -316,7 +313,7 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
 
   // ── Modal state ────────────────────────────────────────────────────────────
   const [modalSymbol, setModalSymbol] = useState<string | null>(null);
-  const [modalMetrics, setModalMetrics] = useState<StockDetailMetrics | null>(
+  const [modalMetrics, setModalMetrics] = useState<RealTickerMetrics | null>(
     null,
   );
   const [modalMetricsLoading, setModalMetricsLoading] = useState(false);
@@ -338,7 +335,10 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
       if (snap) {
         setModalMetrics({
           ...snap,
-          ...evaluateSnapshotMetrics(snap),
+          volumeMultiplier: snap.volumeMultiplier ?? (snap.medianVolume20d > 0 ? Number((snap.todayVolume / snap.medianVolume20d).toFixed(2)) : 0),
+          isVolumeAnomaly: snap.isVolumeAnomaly ?? (snap.todayVolume >= (snap.medianVolume20d * 2)),
+          isSpreadAnomaly: snap.isSpreadAnomaly ?? (Math.abs((snap.changePercent||0) - (snap.ihsgChangePercent||0)) >= 2.0),
+          spreadVsIhsg: snap.spreadVsIhsg ?? Math.abs((snap.changePercent||0) - (snap.ihsgChangePercent||0))
         });
       } else {
         throw new Error(`Snapshot ${sym} belum tersedia di Supabase. Data akan muncul setelah workflow berjalan.`);
