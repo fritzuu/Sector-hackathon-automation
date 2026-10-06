@@ -172,7 +172,7 @@ serve(async (req) => {
           change_percent: Number(changePercent.toFixed(2)),
           today_volume: latestPriceData.volume || 0,
           median_volume_20d: medianVol,
-          ihsg_price: latestIHSG.close,
+          ihsg_price: Math.round(latestIHSG.close),
           ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
           latest_filings: filings,
           updated_at: timestamp
@@ -190,12 +190,12 @@ serve(async (req) => {
         const ihsgChangePercent = prevIHSG.close ? ((latestIHSG.close - prevIHSG.close) / prevIHSG.close) * 100 : 0;
         globalSnapshotsToUpsert.set('IHSG', {
           symbol: 'IHSG',
-          last_price: latestIHSG.close,
-          change_amount: latestIHSG.close - prevIHSG.close,
+          last_price: Math.round(latestIHSG.close),
+          change_amount: Math.round(latestIHSG.close - prevIHSG.close),
           change_percent: Number(ihsgChangePercent.toFixed(2)),
           today_volume: 0,
           median_volume_20d: 0,
-          ihsg_price: latestIHSG.close,
+          ihsg_price: Math.round(latestIHSG.close),
           ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
           latest_filings: [],
           updated_at: timestamp

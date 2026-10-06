@@ -174,7 +174,7 @@ serve(async (req) => {
     change_percent: Number(changePercent.toFixed(2)),
     today_volume: latestPriceData.volume ?? 0,
     median_volume_20d: Math.round(medianVolume),
-    ihsg_price: latestIhsgPrice || 0, // Fallback to 0 to strictly avoid null
+    ihsg_price: Math.round(latestIhsgPrice) || 0, // Fallback to 0 to strictly avoid null
     ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
     latest_filings: filings || [],
     updated_at: timestamp
@@ -186,12 +186,12 @@ serve(async (req) => {
   if (!cachedIhsg) {
     upserts.push({
       symbol: 'IHSG',
-      last_price: latestIhsgPrice,
+      last_price: Math.round(latestIhsgPrice),
       change_amount: 0,
       change_percent: ihsgChangePercent,
       today_volume: 0,
       median_volume_20d: 0,
-      ihsg_price: latestIhsgPrice,
+      ihsg_price: Math.round(latestIhsgPrice),
       ihsg_change_percent: ihsgChangePercent,
       latest_filings: [],
       updated_at: timestamp
