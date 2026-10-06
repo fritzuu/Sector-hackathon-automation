@@ -10,6 +10,7 @@ import { Sidebar } from "../modules/dashboard/components/Sidebar";
 import { TelegramConnectModal } from "../modules/auth/components/TelegramConnectModal";
 import { TelegramAlertPreview } from "../shared/components/TelegramAlertPreview";
 import { MarketCloseToast } from "../modules/dashboard/components/MarketCloseToast";
+import { CustomAlertToast } from "../shared/components/CustomAlertToast";
 import { DashboardTourModal, DashboardPath } from "../modules/dashboard/components/DashboardTourModal";
 import { useWatchlistStore } from "../modules/watchlist/stores/watchlist.store";
 import { useWorkflowStore } from "../modules/cases/stores/workflow.store";
@@ -153,6 +154,8 @@ function AuthLayout() {
         watchlistCount={watchlist.length}
         onClose={() => setShowMarketCloseToast(false)}
       />
+
+      <CustomAlertToast />
 
       <DashboardTourModal
         isOpen={isTourOpen}

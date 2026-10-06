@@ -6,6 +6,7 @@ import { PopularStocksWidget } from '../modules/watchlist/components/PopularStoc
 import { useWatchlistStore } from '../modules/watchlist/stores/watchlist.store';
 import { useAuthStore } from '../modules/auth/stores/auth.store';
 import { useWorkflowStore } from '../modules/cases/stores/workflow.store';
+import { showCustomAlert } from '../shared/stores/alert.store';
 
 export const Route = createFileRoute('/_auth/dashboard/watchlist')({
   component: WatchlistPage,
@@ -18,11 +19,22 @@ function WatchlistPage() {
 
   const handleSendTelegramSummary = () => {
     if (!currentUser?.isTelegramLinked) {
-      alert("Silakan hubungkan Telegram Bot terlebih dahulu.");
+      showCustomAlert({
+        type: 'warning',
+        title: 'Telegram Belum Terhubung',
+        message: 'Silakan hubungkan bot Telegram Anda terlebih dahulu untuk menerima ringkasan otomatis.',
+        actionLabel: 'Hubungkan Bot',
+        onAction: () => window.dispatchEvent(new CustomEvent('open-telegram-modal')),
+      });
       return;
     }
     const summaryMsg = `📊 [SIBA: Rekap Watchlist Pribadi]\nPengguna: ${currentUser.name}\nTanggal: ${new Date().toLocaleDateString('id-ID')}\n\nSaham yang Dipantau (${watchlist.length}):\n${watchlist.map((t) => `• ${t}`).join('\n')}\n\nJadwal evaluasi otomatis berikutnya: 16:30 WIB.`;
     setLatestTelegramAlert(summaryMsg);
+    showCustomAlert({
+      type: 'success',
+      title: 'Rekap Terkirim ke Pratinjau',
+      message: `Ringkasan ${watchlist.length} saham siap dikirim ke bot Telegram Anda.`,
+    });
   };
 
   return (

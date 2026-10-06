@@ -4,6 +4,7 @@ import { LandingPage } from "../modules/dashboard/components/LandingPage";
 import { Header } from "../modules/dashboard/components/Header";
 import { AuthModal } from "../modules/auth/components/AuthModal";
 import { useAuthStore } from "../modules/auth/stores/auth.store";
+import { CustomAlertToast } from "../shared/components/CustomAlertToast";
 
 const LANDING_SECTIONS = [
   { id: "landing-market", label: "Pasar" },
@@ -82,6 +83,7 @@ function GuestIndexPage() {
         onClose={() => setAuthModalState({ ...authModalState, isOpen: false })}
         onAuthSuccess={handleAuthSuccess}
       />
+      <CustomAlertToast />
     </div>
   );
 }
