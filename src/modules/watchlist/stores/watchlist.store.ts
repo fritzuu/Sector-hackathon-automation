@@ -74,6 +74,7 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
                 medianVolume20d: data.median_volume_20d,
                 ihsgPrice: data.ihsg_price,
                 ihsgChangePercent: data.ihsg_change_percent,
+                latestFilings: data.latest_filings || [],
                 lastUpdated: data.updated_at
               });
               useWorkflowStore.setState({ marketSnapshots: newSnaps });

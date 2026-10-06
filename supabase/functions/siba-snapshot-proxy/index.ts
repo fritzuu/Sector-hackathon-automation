@@ -5,6 +5,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 const SECTORS_API_KEY = Deno.env.get("SECTORS_API_KEY")
 
+import { sectorsApi } from "../../../src/services/sectorsApi.ts"
+
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
 serve(async (req) => {
@@ -32,6 +34,29 @@ serve(async (req) => {
 
   const { symbol } = body
   if (!symbol) return new Response("Missing symbol", { status: 400, headers: corsHeaders })
+
+  // 1. Check if we already have a fresh snapshot in the database
+  const { data: existingSnapshot, error: dbError } = await supabase
+    .from("global_market_snapshots")
+    .select("*")
+    .eq("symbol", symbol)
+    .maybeSingle()
+
+  if (existingSnapshot && !dbError) {
+    const updatedTime = new Date(existingSnapshot.updated_at).getTime()
+    const ageMs = Date.now() - updatedTime
+    const twentyThreeHoursMs = 23 * 60 * 60 * 1000
+    
+    // The cron runs at 07:00 WIB (00:00 UTC) daily. 
+    // If the snapshot is less than 23 hours old, it's fresh enough.
+    if (ageMs < twentyThreeHoursMs) {
+      console.log(`[Proxy] Cache hit for ${symbol}, age: ${Math.round(ageMs/1000/60)}m`)
+      return new Response(JSON.stringify(existingSnapshot), { 
+        status: 200, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      })
+    }
+  }
 
   // Calculate date 30 days ago for ?start= parameter
   const timestamp = new Date().toISOString();
@@ -62,11 +87,14 @@ serve(async (req) => {
     return res.json();
   }
 
-  let prices, benchmark;
+  if (SECTORS_API_KEY) sectorsApi.setApiKey(SECTORS_API_KEY);
+
+  let prices, benchmark, filings;
   try {
-    [prices, benchmark] = await Promise.all([
+    [prices, benchmark, filings] = await Promise.all([
       fetchDaily(symbol),
-      fetchBenchmark()
+      fetchBenchmark(),
+      sectorsApi.fetchCompanyFilings(symbol)
     ]);
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
@@ -124,6 +152,7 @@ serve(async (req) => {
     median_volume_20d: Math.round(medianVolume),
     ihsg_price: latestIhsgPrice || 0, // Fallback to 0 to strictly avoid null
     ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
+    latest_filings: filings || [],
     updated_at: timestamp
   }
 

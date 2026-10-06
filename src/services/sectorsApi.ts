@@ -1,5 +1,5 @@
 import { DailyTransaction, BenchmarkData, CompanyFiling } from '../types/sectors.ts';
-import { useCompanyStore } from "../data/companyStore.ts";
+
 
 export interface CompanyRealOverview {
   symbol: string;
@@ -241,6 +241,8 @@ export class SectorsApiService {
     }
 
     // Graceful fallback to rich curated IDX list to save tokens
+    // Using dynamic import to avoid Deno breaking on zustand during edge function deployment
+    const { useCompanyStore } = await import('../data/companyStore.ts');
     const fallbackList: LiveIdxCompany[] = useCompanyStore.getState().companies.map((item: any, idx: number) => ({
       symbol: item.symbol,
       name: item.name,

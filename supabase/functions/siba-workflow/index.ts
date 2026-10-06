@@ -174,6 +174,7 @@ serve(async (req) => {
           median_volume_20d: medianVol,
           ihsg_price: latestIHSG.close,
           ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
+          latest_filings: filings,
           updated_at: timestamp
         })
       }
