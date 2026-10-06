@@ -27,7 +27,7 @@ export function evaluateDataset(dataset: TickerDataset): EvaluationResult {
   }
 
   // 3. Evaluate New Filings
-  const filingResult = evaluateNewFiling(dataset.filings, dataset.lastEvaluatedFilingId);
+  const filingResult = evaluateNewFiling(dataset.filings, dataset.seenFilingIds ?? null);
   ruleResults.push(filingResult);
   if (filingResult.missingDataReasons) {
     missingDataReasons.push(...filingResult.missingDataReasons);

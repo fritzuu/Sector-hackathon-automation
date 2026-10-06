@@ -21,7 +21,7 @@ export interface RelativeMovementEvidence {
 
 export interface NewFilingEvidence {
   newFilings: CompanyFiling[];
-  latestFilingId: string | null;
+  knownFilingIds: string[];
   count: number;
 }
 
@@ -100,4 +100,10 @@ export interface RealTickerMetrics {
   lastUpdated: string;
   isRealLive: boolean;
   latestFilings?: import('./sectors.ts').CompanyFiling[];
+}
+
+export interface TickerState {
+  lastProcessedDataDate: string | null;
+  seenFilingIds: string[] | null;
+  consecutiveIncompleteRuns: number;
 }

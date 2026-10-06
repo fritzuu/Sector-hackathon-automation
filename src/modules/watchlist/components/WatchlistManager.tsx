@@ -1,3 +1,4 @@
+import { useCompanyStore } from "../../../data/companyStore";
 /**
  * WatchlistManager — Orchestrator.
  * Live company data fetched ONCE from Sectors API and passed down to children.
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { RealTickerMetrics } from "../../../types/engine.js";
 import { sectorsApi, LiveIdxCompany } from "../../../services/sectorsApi.js";
-import { IDX_COMPANIES } from "../../../data/idxCompanies.js";
+import { supabase } from "../../../lib/supabaseClient";
 import { useWorkflowStore } from "../../cases/stores/workflow.store.js";
 import { SectorPresetsGrid } from "./SectorPresetsGrid.js";
 import { WatchlistSearchPanel } from "./WatchlistSearchPanel.js";
@@ -309,10 +310,29 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
     setCompaniesLoading(true);
     setCompaniesError(false);
     try {
-      if (force) sectorsApi.invalidateAll(); // bust cache on manual retry
-      const companies = await sectorsApi.fetchTopCompanies();
-      if (companies.length > 0) {
-        setLiveCompanies(companies);
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*, global_market_snapshots(*)');
+        
+      if (error) {
+        console.error('Failed to load companies:', error);
+        setCompaniesError(true);
+      } else if (data && data.length > 0) {
+        const mapped = data.map(d => ({
+          symbol: d.symbol,
+          name: d.name,
+          sector: d.sector,
+          subSector: d.sub_sector,
+          marketCapTier: d.market_cap_tier, market_cap: d.market_cap,
+          marketCapTrillion: d.market_cap ? Number((d.market_cap / 1_000_000_000_000).toFixed(2)) : 0,
+          lastPrice: Array.isArray(d.global_market_snapshots) 
+            ? (d.global_market_snapshots[0]?.last_price || 0) 
+            : (d.global_market_snapshots?.last_price || 0),
+          indexMembership: [],
+          description: '', rank: 0
+        }));
+        setLiveCompanies(mapped);
+        useCompanyStore.getState().setCompanies(mapped);
       } else {
         setCompaniesError(true);
       }
@@ -358,14 +378,14 @@ export const WatchlistManager: React.FC<WatchlistManagerProps> = ({
           spreadVsIhsg: snap.spreadVsIhsg ?? Math.abs((snap.changePercent||0) - (snap.ihsgChangePercent||0))
         });
       } else {
-        const companyData = IDX_COMPANIES.find(c => c.symbol === sym);
+        const companyData = useCompanyStore.getState().getCompany(sym);
         if (!companyData) throw new Error(`Simbol ${sym} tidak ditemukan di bursa.`);
         const data: RealTickerMetrics = {
           symbol: sym,
           name: companyData.name,
           sector: companyData.sector,
           currency: 'IDR',
-          lastPrice: companyData.lastPrice,
+          lastPrice: (companyData.lastPrice || 0),
           changeAmount: 0,
           changePercent: 0,
           todayVolume: 0,

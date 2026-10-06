@@ -49,6 +49,16 @@ export function renderCaseTemplate(
             `Pergerakan harga saham menyimpang tajam dari tren indeks acuan bursa (selisih ≥ ${ev.thresholdPercentagePoints}%).`
           );
         }
+      } else if (result.ruleId === 'NEW_FILING') {
+        const ev = result.evidence as any;
+        if (result.isTriggered && ev.newFilings && ev.newFilings.length > 0) {
+          facts.push(
+            `Keterbukaan Informasi: Ditemukan ${ev.newFilings.length} pengumuman baru (termasuk: "${ev.newFilings[0].title}").`
+          );
+          limitedInterpretations.push(
+            `Terdapat pengumuman resmi dari emiten yang berpotensi menjadi katalis pergerakan pasar.`
+          );
+        }
       }
     }
 

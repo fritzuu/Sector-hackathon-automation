@@ -47,7 +47,22 @@ export function evaluateRelativeMovement(
 
   const stockReturn = (currentPrice.close - previousPrice.close) / previousPrice.close;
 
-  const targetBenchmark = benchmarkData.find((b) => b.date === currentPrice.date) || benchmarkData[benchmarkData.length - 1];
+  const targetBenchmark = benchmarkData.find((b) => b.date === currentPrice.date);
+  if (!targetBenchmark) {
+    return {
+      ruleId,
+      name,
+      isTriggered: false,
+      summary: `Data IHSG untuk tanggal ${currentPrice.date} belum tersedia.`,
+      evidence: {
+        stockReturn: 0,
+        benchmarkReturn: 0,
+        spreadPercentagePoints: 0,
+        thresholdPercentagePoints,
+      },
+      missingDataReasons: [`Data IHSG untuk tanggal ${currentPrice.date} belum tersedia.`],
+    };
+  }
   const benchmarkReturn = targetBenchmark.percentChange;
 
   const stockReturnPercent = stockReturn * 100;

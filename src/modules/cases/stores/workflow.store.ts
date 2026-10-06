@@ -1,17 +1,9 @@
 import { create } from 'zustand';
 import { CaseState, CaseEvent, RenderedTemplate } from '../../../types/engine';
 import { AuditRunItem } from '../components/RunAuditHistory';
-import { evaluateDataset } from '../../../engine/rules/index';
-import { processCaseTransition } from '../../../engine/caseEngine';
-import { renderCaseTemplate } from '../../../engine/templateRenderer';
-import { sectorsApi } from '../../../services/sectorsApi';
-import { dispatchCaseAlert } from '../../../services/telegramService';
 import {
-  saveAuditRunToSupabase,
   saveUserWorkspaceToSupabase,
 } from '../../../services/supabaseStorage';
-import { TickerDataset } from '../../../types/sectors';
-import { useWatchlistStore } from '../../watchlist/stores/watchlist.store';
 import { useAuthStore } from '../../auth/stores/auth.store';
 
 import { TelegramLogEntry } from '../../dashboard/components/TelegramLogViewer';
