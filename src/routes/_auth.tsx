@@ -61,6 +61,12 @@ function AuthLayout() {
     navigate({ to: path });
   }, [navigate]);
 
+  const handleTourStepChange = useCallback((targetId: string) => {
+    setTourTargetId(targetId);
+    const isSidebarTarget = targetId.startsWith('tour-sidebar') || targetId === 'tour-user-info';
+    if (!isSidebarTarget) setIsMobileMenuOpen(false);
+  }, []);
+
 
 
   if (!currentUser) {
@@ -164,12 +170,7 @@ function AuthLayout() {
           setTourTargetId(null);
         }}
         onNavigate={navigateTourStep}
-      onStepChange={(targetId) => {
-          setTourTargetId(targetId);
-          // Close mobile menu when tour targets content (non-sidebar) steps
-          const isSidebarTarget = targetId.startsWith('tour-sidebar') || targetId === 'tour-user-info';
-          if (!isSidebarTarget) setIsMobileMenuOpen(false);
-        }}
+        onStepChange={handleTourStepChange}
       />
 
     </div>

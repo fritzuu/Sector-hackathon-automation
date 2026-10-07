@@ -45,12 +45,12 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({
   };
 
   return (
-    <div className={`rounded-2xl overflow-hidden font-sans relative border transition-all duration-500 shadow-sm ${isComplete ? 'bg-accent/5 border-accent/30' : 'bg-secondary/40 border-primary/30'}`}>
+    <div className={`rounded-2xl overflow-hidden font-sans relative border transition-all duration-200 shadow-sm ${isComplete ? 'bg-accent/5 border-accent/30' : 'bg-secondary/40 border-primary/30'}`}>
       
       {/* Progress Bar Background */}
       <div className="absolute top-0 left-0 h-1.5 bg-secondary w-full">
         <div 
-          className="h-full bg-primary transition-all duration-1000 ease-out" 
+          className="h-full bg-primary transition-all duration-300 ease-out" 
           style={{ width: `${(progress / 2) * 100}%` }}
         />
       </div>

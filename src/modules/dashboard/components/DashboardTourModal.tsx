@@ -122,19 +122,14 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
 
     document.body.style.overflow = 'hidden';
     setTargetRect(null);
-    onNavigate(currentStep.path);
     onStepChange?.(currentStep.targetId);
 
     let frameId = 0;
-    let attempts = 0;
     const measureTarget = () => {
       const target = getTargetElement(currentStep.targetId);
-      if (!target) {
-        attempts += 1;
-        if (attempts < 90) frameId = window.requestAnimationFrame(measureTarget);
-        return;
-      }
+      if (!target) return;
 
+      observer.disconnect();
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
       frameId = window.requestAnimationFrame(() => {
         const rect = target.getBoundingClientRect();
@@ -142,7 +137,10 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
       });
     };
 
+    const observer = new MutationObserver(measureTarget);
+    observer.observe(document.body, { childList: true, subtree: true });
     frameId = window.requestAnimationFrame(measureTarget);
+    onNavigate(currentStep.path);
     const updateTargetRect = () => {
       const target = getTargetElement(currentStep.targetId);
       if (!target) return;
@@ -155,6 +153,7 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
     return () => {
       document.body.style.overflow = '';
       window.cancelAnimationFrame(frameId);
+      observer.disconnect();
       window.removeEventListener('resize', updateTargetRect);
       window.removeEventListener('scroll', updateTargetRect, true);
     };
@@ -193,7 +192,7 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-hidden select-none pointer-events-auto touch-none"
+      className="fixed inset-0 z-[60] overflow-hidden select-none pointer-events-auto touch-pan-y"
       onWheel={(e) => e.stopPropagation()}
       onTouchMove={(e) => e.stopPropagation()}
     >
@@ -203,7 +202,7 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
       {/* Dynamic spotlight cutout overlay - accurately highlights active step target */}
       {targetRect ? (
         <div
-          className="fixed rounded-2xl pointer-events-none transition-all duration-300 ease-out z-40 border-2 border-accent"
+          className="fixed rounded-2xl pointer-events-none transition-all duration-200 ease-out z-40 border-2 border-accent"
           style={{
             top: spotlightTop,
             left: spotlightLeft,
@@ -218,22 +217,22 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
 
       {/* Floating Compact Tooltip Card - Non-overlapping Smart Position */}
       <div
-        className={`fixed inset-x-0 z-50 flex justify-center p-4 pointer-events-none transition-all duration-300 ${
-          isTargetInBottomHalf ? 'top-6 items-start' : 'bottom-6 items-end'
+        className={`fixed inset-x-0 z-50 flex justify-center p-3 sm:p-4 pointer-events-none transition-all duration-200 ${
+          isTargetInBottomHalf ? 'top-3 sm:top-6 items-start' : 'bottom-3 sm:bottom-6 items-end'
         }`}
       >
-        <div className="w-full max-w-sm bg-[#130720] border-2 border-border rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.95)] p-4 space-y-3.5 pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
+        <div className="w-full max-w-sm max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain touch-pan-y bg-[#130720] border-2 border-border rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.95)] p-3 sm:p-4 space-y-3 sm:space-y-3.5 pointer-events-auto animate-in fade-in zoom-in-95 duration-200 max-[400px]:rounded-xl">
           {/* Card Header */}
           <div className="flex items-center justify-between pb-2.5 border-b border-border">
-            <div className="flex items-center space-x-2.5">
+            <div className="flex min-w-0 items-center space-x-2.5">
               <div className="w-8 h-8 rounded-xl bg-secondary text-accent border border-border flex items-center justify-center font-bold flex-shrink-0 shadow-inner">
                 <Target className="w-4 h-4 text-accent" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] font-mono font-black text-accent uppercase tracking-wider block">
                   TUR INTERAKTIF ({currentStepIndex + 1}/{TOUR_STEPS.length})
                 </span>
-                <h3 className="text-sm font-extrabold text-white leading-tight">
+                <h3 className="text-sm font-extrabold text-white leading-tight break-words">
                   {currentStep.title}
                 </h3>
               </div>
@@ -272,7 +271,7 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
           </div>
 
           {/* Bottom Actions */}
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center justify-between gap-2 pt-1 max-[400px]:flex-col-reverse max-[400px]:items-stretch">
             <button
               onClick={onClose}
               className="text-[11px] font-bold text-white/60 hover:text-white px-2 py-1 rounded-lg hover:bg-secondary transition-colors cursor-pointer"
@@ -280,7 +279,7 @@ export const DashboardTourModal: React.FC<DashboardTourModalProps> = ({ isOpen, 
               Lewati (Skip)
             </button>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-end gap-2">
               {!isFirst && (
                 <button
                   onClick={handlePrev}
