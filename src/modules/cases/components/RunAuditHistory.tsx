@@ -12,9 +12,12 @@ export interface AuditRunItem {
 
 interface RunAuditHistoryProps {
   runs: AuditRunItem[];
+  error?: string | null;
+  isLoading?: boolean;
+  onRetry?: () => void;
 }
 
-export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs }) => {
+export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs, error, isLoading = false, onRetry }) => {
   return (
     <div
       id="tour-audit-content"
@@ -24,15 +27,21 @@ export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs }) => {
         <div className="flex items-center space-x-2">
           <History className="w-4 h-4 text-primary" />
           <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-            Audit Trail Unattended Run ({runs.length})
+            Riwayat Evaluasi ({runs.length})
           </h2>
-        </div>
-        <div className="flex items-center space-x-1.5 self-start sm:self-auto px-2 py-0.5 bg-bg border border-border rounded text-[11px] text-text/60 font-mono">
-          <span>P0-02 Unattended Execution Proof</span>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {error && (
+        <div role="alert" className="rounded-lg border border-border p-3 text-sm text-text-muted">
+          {error}
+          <button type="button" className="ml-2 text-primary underline" disabled={isLoading} onClick={onRetry}>
+            {isLoading ? 'Memuat...' : 'Coba lagi'}
+          </button>
+        </div>
+      )}
+
+      <div className="overflow-x-auto" aria-busy={isLoading}>
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-border text-text/50 font-semibold uppercase tracking-wider text-[10px]">
@@ -48,7 +57,7 @@ export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs }) => {
             {runs.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-6 text-center text-text/50 font-sans">
-                  Belum ada log eksekusi. Klik "Jalankan Run" untuk menghasilkan bukti audit unattended.
+                  {isLoading ? 'Memuat riwayat evaluasi...' : error ? 'Riwayat evaluasi tidak tersedia.' : 'Belum ada riwayat evaluasi.'}
                 </td>
               </tr>
             ) : (
