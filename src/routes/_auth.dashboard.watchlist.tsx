@@ -27,7 +27,7 @@ function WatchlistPage() {
       });
       return;
     }
-    const summaryMsg = `📊 [SIBA: Rekap Watchlist Pribadi]\nPengguna: ${currentUser.name}\nTanggal: ${new Date().toLocaleDateString('id-ID')}\n\nSaham yang Dipantau (${watchlist.length}):\n${watchlist.map((t) => `• ${t}`).join('\n')}\n\nJadwal evaluasi otomatis berikutnya: 07:00 WIB.`;
+    const summaryMsg = `📊 [SIBA: Rekap Watchlist Pribadi]\nPengguna: ${currentUser.name}\nTanggal: ${new Date().toLocaleDateString('id-ID')}\n\nSaham yang Dipantau (${watchlist.length}):\n${watchlist.map((t) => `• ${t}`).join('\n')}\n\nJadwal evaluasi otomatis berikutnya: 16:30 WIB.`;
     setLatestTelegramAlert(summaryMsg);
     showCustomAlert({
       type: 'success',

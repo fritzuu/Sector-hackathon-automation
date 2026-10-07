@@ -93,7 +93,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
   const inputPlaceholder = companiesLoading
     ? 'Memuat daftar emiten IDX live...'
     : companiesError
-      ? 'Data emiten tidak tersedia: coba lagi'
+      ? 'Data emiten tidak tersedia — coba lagi'
       : liveCompanies.length > 0
         ? `Cari dari ${liveCompanies.length} emiten IDX...`
         : 'Memuat emiten IDX...';

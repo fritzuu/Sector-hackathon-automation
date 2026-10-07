@@ -77,7 +77,7 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({
             {/* Body */}
             <p className="text-xs sm:text-sm leading-relaxed max-w-3xl text-text-muted mb-5 font-normal">
               {isComplete 
-                ? "Hebat! SIBA sekarang sepenuhnya otomatis. Sistem akan mengevaluasi portofolio Anda setiap hari bursa pada pukul 07:00 WIB dan mengirimkan notifikasi ke Telegram Anda."
+                ? "Hebat! SIBA sekarang sepenuhnya otomatis. Sistem akan mengevaluasi portofolio Anda setiap hari bursa pada pukul 16:30 WIB dan mengirimkan notifikasi ke Telegram Anda."
                 : "Untuk mengaktifkan otomatisasi penuh, selesaikan 2 langkah singkat di bawah ini agar SIBA dapat mulai memantau portofolio Anda."
               }
             </p>
@@ -124,7 +124,7 @@ export const BeginnerGuideBanner: React.FC<BeginnerGuideBannerProps> = ({
                       2. Hubungkan Telegram
                     </div>
                     <div className="text-xs text-text-muted mt-0.5">
-                      Untuk menerima alert 07:00 WIB
+                      Untuk menerima alert 16:30 WIB
                     </div>
                   </div>
                   {!hasTelegram && <ArrowRight className="w-4 h-4 text-text-muted ml-2 group-hover:text-primary transition-transform group-hover:translate-x-1 shrink-0" />}

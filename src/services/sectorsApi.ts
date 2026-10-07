@@ -266,7 +266,7 @@ export class SectorsApiService {
    */
   invalidateAll(): void {
     this.cache.clear();
-    console.log('[SectorsApiService] Cache invalidated: market-close refresh.');
+    console.log('[SectorsApiService] Cache invalidated — market-close refresh.');
   }
 }
 

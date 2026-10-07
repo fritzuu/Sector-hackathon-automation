@@ -36,7 +36,7 @@ export const QuickWatchlistWidget: React.FC<QuickWatchlistWidgetProps> = ({ watc
               {watchlist.length} Emiten
             </span>
           </div>
-          <p className="text-xs text-text-muted mt-1 font-medium">Saham yang dipantau sistem secara otomatis setiap hari bursa pukul 07:00 WIB</p>
+          <p className="text-xs text-text-muted mt-1 font-medium">Saham yang dipantau sistem secara otomatis setiap penutupan bursa (16:30 WIB)</p>
         </div>
         <Link 
           to="/dashboard/watchlist"

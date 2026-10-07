@@ -333,24 +333,29 @@ export async function fetchAuditRunsFromSupabase(
   userId: string
 ): Promise<AuditRunItem[]> {
   if (!userId) return [];
-  const { data, error } = await supabase
-    .from('audit_runs')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(20);
+  try {
+    const { data, error } = await supabase
+      .from('audit_runs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20);
 
-  if (error) throw error;
-  if (!data) throw new Error("Riwayat evaluasi tidak dapat dimuat.");
+    if (error || !data) {
+      return [];
+    }
 
-  return data.map((row: { run_id?: string; id?: string; timestamp: string; tickers_count: number; active_triggers_count: number; status: string; duration_ms: number }) => ({
-    runId: row.run_id || row.id || '',
-    timestamp: row.timestamp,
-    tickersCount: row.tickers_count,
-    activeTriggersCount: row.active_triggers_count,
-    status: (row.status as AuditRunItem['status']) || 'SUCCESS',
-    durationMs: row.duration_ms,
-  }));
+    return data.map((row: { run_id?: string; id?: string; timestamp: string; tickers_count: number; active_triggers_count: number; status: string; duration_ms: number }) => ({
+      runId: row.run_id || row.id || '',
+      timestamp: row.timestamp,
+      tickersCount: row.tickers_count,
+      activeTriggersCount: row.active_triggers_count,
+      status: (row.status as AuditRunItem['status']) || 'SUCCESS',
+      durationMs: row.duration_ms,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchUserWorkspaceFromSupabase(

@@ -302,7 +302,7 @@ export const SectorExplorerModal: React.FC<SectorExplorerModalProps> = ({
                             </td>
                             <td className="py-3 pr-3 text-[10px] text-text-muted">{company.subSector}</td>
                             <td className="py-3 pr-3 text-right font-mono text-[10px] text-text-main">
-                              {company.marketCapTrillion > 0 ? `Rp ${company.marketCapTrillion.toLocaleString('id-ID')} T` : 'N/A'}
+                              {company.marketCapTrillion > 0 ? `Rp ${company.marketCapTrillion.toLocaleString('id-ID')} T` : '—'}
                             </td>
                             <td className="py-3 text-right">
                               {watchlist.includes(company.symbol) ? (

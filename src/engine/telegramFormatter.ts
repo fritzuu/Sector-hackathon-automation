@@ -146,7 +146,7 @@ export function formatTelegramHtml(
       : '';
 
   sections.push(
-    `<b>${headerIcon} ${headerTitle}: ${escapeHtml(cleanSymbol)}</b>${statusBadge}\n` +
+    `<b>${headerIcon} ${headerTitle} — ${escapeHtml(cleanSymbol)}</b>${statusBadge}\n` +
     `📅 ${dateFormatted || escapeHtml(asOfDate)}`
   );
 
@@ -171,7 +171,7 @@ export function formatTelegramHtml(
       changeText = ` · ${dir} ${sign}${pct.toFixed(2)}%`;
     }
 
-    let priceLines = `💵 <b>Harga penutupan: ${dateFormatted || escapeHtml(latestPrice.date)}</b>\n`;
+    let priceLines = `💵 <b>Harga penutupan — ${dateFormatted || escapeHtml(latestPrice.date)}</b>\n`;
     priceLines += `<b>Rp${close.toLocaleString('id-ID')}</b>${changeText}`;
 
     if (prevClose !== null) {
@@ -231,7 +231,7 @@ export function formatTelegramHtml(
   if (context.foreignFlow) {
     const ff = context.foreignFlow;
     const netType = ff.net >= 0 ? 'Net buy' : 'Net sell';
-    let ffBlock = `🌏 <b>Aliran dana asing: ${dateFormatted}</b>\n`;
+    let ffBlock = `🌏 <b>Aliran dana asing — ${dateFormatted}</b>\n`;
     ffBlock += `Pembelian: Rp${formatRupiahScale(ff.buy)}\n`;
     ffBlock += `Penjualan: Rp${formatRupiahScale(ff.sell)}\n`;
     ffBlock += `<b>${netType}: Rp${formatRupiahScale(Math.abs(ff.net))}</b>`;
@@ -248,7 +248,7 @@ export function formatTelegramHtml(
   if (context.news && context.news.length > 0) {
     // Maximum 3 articles as per PDF Hal 2
     const topNews = context.news.slice(0, 3);
-    const newsLines: string[] = [`📰 <b>Berita terkait ${escapeHtml(cleanSymbol)}: ${dateFormatted}</b>`];
+    const newsLines: string[] = [`📰 <b>Berita terkait ${escapeHtml(cleanSymbol)} — ${dateFormatted}</b>`];
     for (const item of topNews) {
       let itemText = `<b>${escapeHtml(item.title)}</b>`;
       if (item.summary) {

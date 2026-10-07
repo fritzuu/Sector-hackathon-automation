@@ -239,7 +239,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         {/* Modal Footer */}
         <div className="p-4 border-t border-border bg-secondary/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <span className="text-xs font-mono text-text-muted">
-            SIBA Engine · Evaluasi Pagi 07:00 WIB
+            SIBA Engine · Evaluasi Penutupan 16:30 WIB
           </span>
           <button
             onClick={onClose}

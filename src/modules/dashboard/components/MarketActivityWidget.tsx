@@ -100,7 +100,7 @@ export const MarketActivityWidget: React.FC<MarketActivityWidgetProps> = ({ watc
                 <div className="whitespace-nowrap font-mono text-[10px] font-semibold text-text-main">{formatEstimatedValue(row.estimatedValue)}</div>
                 <div className={`mt-0.5 flex items-center justify-end gap-0.5 font-mono text-[9px] ${row.changePercent === null ? 'text-text-muted' : row.changePercent >= 0 ? 'text-accent' : 'text-rose-400'}`}>
                   {row.changePercent !== null && (row.changePercent >= 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />)}
-                  {row.changePercent === null ? 'N/A' : `${row.changePercent > 0 ? '+' : ''}${row.changePercent.toFixed(2)}%`}
+                  {row.changePercent === null ? '—' : `${row.changePercent > 0 ? '+' : ''}${row.changePercent.toFixed(2)}%`}
                 </div>
               </div>
             </div>

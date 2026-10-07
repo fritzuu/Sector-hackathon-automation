@@ -272,9 +272,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   style={{
                     flex: 1, padding: '8px 0', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 800,
                     transition: 'all 180ms',
-                    background: view === v ? 'var(--btn-primary-bg, #7822cd)' : 'transparent',
-                    color: view === v ? '#ffffff' : 'var(--color-text-muted)',
-                    boxShadow: 'none',
+                    background: view === v ? 'hsl(141, 100%, 50%)' : 'transparent',
+                    color: view === v ? 'hsl(279, 100%, 3%)' : 'rgba(255,255,255,0.5)',
+                    boxShadow: view === v ? '0 2px 12px rgba(0,255,85,0.3)' : 'none',
                   }}
                   onMouseEnter={e => {
                     if (view !== v) {
@@ -551,11 +551,11 @@ function SubmitBtn({ loading, label }: { loading: boolean; label: string }) {
       disabled={loading}
       style={{
         width: '100%', padding: '13px 0', marginTop: 4,
-        background: loading ? 'var(--color-secondary)' : 'var(--btn-primary-bg, #7822cd)',
-        border: '1px solid var(--color-primary)', borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer',
-        fontSize: 14, fontWeight: 700, color: '#ffffff',
+        background: loading ? 'hsl(301, 100%, 15%)' : 'hsl(141, 100%, 50%)',
+        border: '1px solid hsl(141, 100%, 50%)', borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer',
+        fontSize: 13, fontWeight: 900, color: 'hsl(279, 100%, 3%)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        boxShadow: 'none',
+        boxShadow: loading ? 'none' : '0 4px 24px rgba(0, 255, 85, 0.35)',
         transition: 'all 200ms',
       }}
       onMouseEnter={e => {
