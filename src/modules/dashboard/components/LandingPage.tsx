@@ -20,40 +20,15 @@ const fmt  = (n?: number) => (n || 0).toLocaleString('id-ID');
 const pct  = (n?: number) => `${(n || 0) >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
 const vol  = (n?: number) => `${((n || 0) / 1_000_000).toFixed(1)}M`;
 
-const generateDeterministicMetrics = (sym: string, basePrice: number) => {
-  const hash = sym.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const changePercent = ((hash % 100) / 10) - 4.5; 
-  const changeAmount = basePrice * (changePercent / 100);
-  const todayVolume = (hash * 1234567) % 300000000 + 50000000; 
-  const medianVolume20d = todayVolume / (1 + ((hash % 50) / 100)); 
-  const volumeMultiplier = Number((todayVolume / medianVolume20d).toFixed(2));
-  const ihsgChangePercent = ((hash % 30) / 10) - 1.5;
-  const spreadVsIhsg = Math.abs(changePercent - ihsgChangePercent);
-  
-  return {
-    changeAmount: Number(changeAmount.toFixed(0)),
-    changePercent: Number(changePercent.toFixed(2)),
-    todayVolume,
-    medianVolume20d,
-    volumeMultiplier,
-    ihsgPrice: 7000 + (hash * 10),
-    ihsgChangePercent: Number(ihsgChangePercent.toFixed(2)),
-    spreadVsIhsg: Number(spreadVsIhsg.toFixed(2)),
-    isVolumeAnomaly: volumeMultiplier >= 2.0,
-    isSpreadAnomaly: spreadVsIhsg >= 2.0,
-  };
-};
-
-
 const DEMO_COMPANIES = [
-  { symbol: 'BBCA', name: 'Bank Central Asia Tbk', sector: 'Financials', lastPrice: 9500 },
-  { symbol: 'BBRI', name: 'Bank Rakyat Indonesia Tbk', sector: 'Financials', lastPrice: 4800 },
-  { symbol: 'BMRI', name: 'Bank Mandiri Tbk', sector: 'Financials', lastPrice: 6200 },
-  { symbol: 'TLKM', name: 'Telkom Indonesia Tbk', sector: 'Infrastructures', lastPrice: 3200 },
-  { symbol: 'ASII', name: 'Astra International Tbk', sector: 'Industrials', lastPrice: 5100 },
-  { symbol: 'BREN', name: 'Barito Renewables Energy Tbk', sector: 'Infrastructures', lastPrice: 7800 },
-  { symbol: 'AMMN', name: 'Amman Mineral Internasional Tbk', sector: 'Basic Materials', lastPrice: 8200 },
-  { symbol: 'ADRO', name: 'Alamtri Resources Indonesia Tbk', sector: 'Energy', lastPrice: 2400 },
+  { symbol: 'BBCA', name: 'Bank Central Asia Tbk', sector: 'Financials', lastPrice: 9500, changePercent: 0.8, medianVolume20d: 30000000, volumeMultiplier: 1.1 },
+  { symbol: 'BBRI', name: 'Bank Rakyat Indonesia Tbk', sector: 'Financials', lastPrice: 4800, changePercent: 1.2, medianVolume20d: 65000000, volumeMultiplier: 2.3 },
+  { symbol: 'BMRI', name: 'Bank Mandiri Tbk', sector: 'Financials', lastPrice: 6200, changePercent: 3.4, medianVolume20d: 45000000, volumeMultiplier: 1.3 },
+  { symbol: 'TLKM', name: 'Telkom Indonesia Tbk', sector: 'Infrastructures', lastPrice: 3200, changePercent: -0.4, medianVolume20d: 50000000, volumeMultiplier: 0.9 },
+  { symbol: 'ASII', name: 'Astra International Tbk', sector: 'Industrials', lastPrice: 5100, changePercent: 0.6, medianVolume20d: 24000000, volumeMultiplier: 1.0 },
+  { symbol: 'BREN', name: 'Barito Renewables Energy Tbk', sector: 'Infrastructures', lastPrice: 7800, changePercent: -2.5, medianVolume20d: 18000000, volumeMultiplier: 1.2 },
+  { symbol: 'AMMN', name: 'Amman Mineral Internasional Tbk', sector: 'Basic Materials', lastPrice: 8200, changePercent: 1.1, medianVolume20d: 20000000, volumeMultiplier: 2.1 },
+  { symbol: 'ADRO', name: 'Alamtri Resources Indonesia Tbk', sector: 'Energy', lastPrice: 2400, changePercent: 0.9, medianVolume20d: 35000000, volumeMultiplier: 1.1 },
 ];
 
 const DEMO_TICKERS: Record<string, RealTickerMetrics> = Object.fromEntries(
@@ -62,7 +37,13 @@ const DEMO_TICKERS: Record<string, RealTickerMetrics> = Object.fromEntries(
     {
       ...company,
       currency: 'IDR',
-      ...generateDeterministicMetrics(company.symbol, company.lastPrice),
+      changeAmount: Math.round(company.lastPrice * company.changePercent / 100),
+      todayVolume: company.medianVolume20d * company.volumeMultiplier,
+      ihsgPrice: 7000,
+      ihsgChangePercent: 0.6,
+      spreadVsIhsg: Math.abs(company.changePercent - 0.6),
+      isVolumeAnomaly: company.volumeMultiplier >= 2,
+      isSpreadAnomaly: Math.abs(company.changePercent - 0.6) >= 2,
       lastUpdated: '07:00',
       isRealLive: false,
     },
@@ -150,8 +131,8 @@ const GLOBAL_CSS = `
     display: flex; align-items: center; gap: 10px;
     flex-shrink: 0;
   }
-  .tape-sym { color: var(--tx-0); font-weight: 700; }
-  .tape-price { color: var(--tx-1); }
+  .tape-sym { color: var(--tx-1); font-weight: 600; }
+  .tape-price { color: var(--tx-2); }
   .tape-chg { font-weight: 600; }
   .tape-chg.up { color: var(--up); }
   .tape-chg.dn { color: var(--dn); }
@@ -200,7 +181,7 @@ const GLOBAL_CSS = `
   }
   .hero-h1 {
     font-size: clamp(34px, 5.8vw, 64px);
-    font-weight: 900;
+    font-weight: 800;
     line-height: 1.12;
     letter-spacing: -0.03em;
     color: var(--tx-0);
@@ -392,7 +373,7 @@ const GLOBAL_CSS = `
   .console-wrap {
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
-    border: 1px solid var(--ed2);
+    border: 1px solid var(--ed);
     border-radius: var(--r2);
     overflow: hidden;
     background: var(--sf);
@@ -550,7 +531,7 @@ const GLOBAL_CSS = `
     padding: 4px 10px;
     border-radius: 6px;
     font-family: var(--font-mono);
-    font-size: 11px; font-weight: 700;
+    font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     white-space: nowrap;
@@ -771,7 +752,7 @@ const GLOBAL_CSS = `
   /* ── CTA BLOCK ────────────────────────────────────────── */
   .cta-block {
     background: var(--sf);
-    border: 1px solid var(--ed2);
+    border: 1px solid var(--ed);
     border-radius: 12px;
     padding: 56px 36px;
     text-align: center;
@@ -904,8 +885,8 @@ const GLOBAL_CSS = `
   .landing-footer-brand { display: flex; flex-direction: column; align-items: center; gap: 5px; }
   .landing-footer-brand img { width: 40px; height: 40px; object-fit: contain; }
   .landing-footer-wordmark { color: var(--tx-0); font-size: 22px; font-weight: 900; line-height: 1; }
-  .landing-footer-tagline { color: var(--tx-1); font-size: 11px; margin-top: 8px; }
-  .landing-footer-copyright { color: var(--tx-2); font-size: 10px; margin-top: 10px; }
+  .landing-footer-tagline { color: var(--tx-1); font-size: 12px; margin-top: 8px; }
+  .landing-footer-copyright { color: var(--tx-2); font-size: 12px; margin-top: 10px; }
   @media (max-width: 640px) {
     .landing-footer { padding: 18px 16px 14px; }
     .landing-footer::before, .landing-footer::after { width: 180px; height: 112px; opacity: 0.8; }
@@ -1076,7 +1057,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
                   {pct(item.changePercent)}
                 </span>
                 {(item.isVolumeAnomaly || item.isSpreadAnomaly) && (
-                  <span className="badge badge-anom" style={{ padding: '2px 8px', fontSize: 10 }}>LONJAKAN</span>
+                  <span className="badge badge-anom" style={{ padding: '2px 8px', fontSize: 12 }}>LONJAKAN</span>
                 )}
               </div>
             ))}
@@ -1098,14 +1079,14 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             Pantau saham IDX dan terima laporan lewat Telegram
           </div>
           <h1 className="hero-h1">
-            Daftar pantauan saham IDX Anda<br />
-            dicek teratur<br />
-            setiap <em>pagi pukul 07:00 WIB</em>.
+            Pantau saham IDX.<br />
+            Terima ringkasannya<br />
+            <em>di Telegram.</em>
           </h1>
           <p className="hero-sub">
-            SIBA mengevaluasi data sesi bursa terakhir yang tersedia: lonjakan volume transaksi, pergerakan harga yang menyimpang dari IHSG,
-            serta dokumen keterbukaan emiten resmi. Ringkasannya dikirim ke Telegram Anda.
-            Semua hasil berasal dari perhitungan data transaksi bursa, tanpa prediksi atau rekomendasi jual beli.
+            Setiap hari bursa pukul 07:00 WIB, SIBA memeriksa data sesi terakhir:
+            volume, pergerakan harga terhadap IHSG, dan keterbukaan emiten.
+            Ringkasannya dikirim ke Telegram, tanpa prediksi atau rekomendasi jual beli.
           </p>
 
           {/* Primary CTA for new users */}
@@ -1155,7 +1136,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
           <div className="console-sidebar">
             <div className="console-sidebar-header">
               <span>Daftar Contoh Saham</span>
-              <span style={{ fontSize: 12, color: 'var(--tx-2)', fontWeight: 'normal' }}>
+              <span style={{ fontSize: 12, color: 'var(--tx-1)', fontWeight: 'normal' }}>
                 8 Emiten Pilihan
               </span>
             </div>
@@ -1255,7 +1236,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
                         Simulasi produk · bukan data pasar aktual
                       </span>
                     </div>
-                    <span style={{ fontSize: 11, color: 'var(--tx-2)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--tx-2)' }}>
                       Daftar untuk memantau saham Anda dengan data Sectors API di dashboard.
                     </span>
                   </div>
@@ -1490,12 +1471,17 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
         <div className="cta-block">
           <div className="section-label" style={{ display: 'inline-flex', margin: '0 auto 14px auto' }}>Mulai pantau saham tanpa biaya</div>
           <h2 className="cta-h2">
-            Berhenti buka grafik saham setiap sore.
+            Mulai pantau saham pilihan Anda.
           </h2>
           <p className="cta-lead">
             Daftar gratis, susun daftar pantauan saham IDX Anda,
             sambungkan Telegram untuk menerima laporan evaluasi pukul 07:00 WIB pada hari bursa.
           </p>
+          <div className="cta-ctas">
+            <button className="btn-primary" onClick={() => onOpenAuth('register')}>
+              Daftar gratis
+            </button>
+          </div>
         </div>
       </motion.section>
 

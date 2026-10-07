@@ -87,9 +87,6 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center space-x-1.5 self-start sm:self-auto px-3 py-1 bg-bg/80 border border-border rounded-full text-xs text-text-muted font-mono">
-          <span>P0-05 Stateful Timeline</span>
-        </div>
       </div>
 
       {cases.length === 0 ? (

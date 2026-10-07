@@ -55,7 +55,7 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-[9999] w-full max-w-sm pointer-events-auto"
+      className="fixed bottom-6 right-6 z-[9999] w-[calc(100%-3rem)] max-w-sm pointer-events-auto"
       style={{
         transform: mounted ? 'translateY(0)' : 'translateY(calc(100% + 24px))',
         opacity: mounted ? 1 : 0,
@@ -64,14 +64,14 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
     >
       {/* Card */}
       <div
-        className="relative overflow-hidden rounded-xl border border-teal-700/50 shadow-2xl bg-[#0D1424]"
+        className="relative overflow-hidden rounded-xl border border-border shadow-2xl bg-secondary"
         style={{
-          boxShadow: '0 0 40px rgba(20,184,166,0.15), 0 20px 60px rgba(0,0,0,0.6)',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
         }}
       >
         {/* Top glow accent */}
         <div
-          className="absolute inset-x-0 top-0 h-px bg-teal-500/80"
+          className="absolute inset-x-0 top-0 h-px bg-primary/80"
         />
 
         <div className="p-4">
@@ -79,12 +79,12 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
           <div className="flex items-start gap-3">
             {/* Icon */}
             <div
-              className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5 bg-teal-500/20 border border-teal-500/40"
+              className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5 bg-primary/20 border border-primary/40"
               style={{
-                boxShadow: '0 0 12px rgba(20,184,166,0.3)',
+                boxShadow: 'none',
               }}
             >
-              <Bell className="w-4 h-4 text-teal-300" />
+              <Bell className="w-4 h-4 text-primary" />
             </div>
 
             {/* Text */}
@@ -92,7 +92,7 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
               <div className="flex items-center gap-2">
                 <span
                   className="text-xs font-bold font-mono uppercase tracking-widest"
-                  style={{ color: 'rgba(20,184,166,0.9)' }}
+                  style={{ color: 'var(--color-primary)' }}
                 >
                   Evaluasi Pagi 07:00 WIB
                 </span>
@@ -100,9 +100,9 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
               <p className="text-sm font-semibold text-white mt-0.5 leading-snug">
                 Data pasar sudah diperbarui
               </p>
-              <p className="text-[11px] text-text-muted mt-1 leading-relaxed">
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
                 Harga penutupan &amp; berita terbaru untuk{' '}
-                <span className="text-teal-300 font-bold font-mono">{watchlistCount} saham</span>{' '}
+                <span className="text-primary font-bold font-mono">{watchlistCount} saham</span>{' '}
                 di watchlist Anda sudah tersedia.
               </p>
             </div>
@@ -118,35 +118,35 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
           </div>
 
           {/* Info pills */}
-          <div className="flex items-center gap-2 mt-3 ml-12">
+          <div className="flex flex-wrap items-center gap-2 mt-3 ml-12">
             <div
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold font-mono"
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold font-mono"
               style={{
-                background: 'rgba(20,184,166,0.08)',
-                border: '1px solid rgba(20,184,166,0.2)',
-                color: 'rgba(20,184,166,0.85)',
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-muted)',
               }}
             >
               <TrendingUp className="w-3 h-3" />
               Harga Live
             </div>
             <div
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold font-mono"
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold font-mono"
               style={{
-                background: 'rgba(6,182,212,0.08)',
-                border: '1px solid rgba(6,182,212,0.2)',
-                color: 'rgba(6,182,212,0.85)',
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-muted)',
               }}
             >
               <Newspaper className="w-3 h-3" />
               News Terbaru
             </div>
             <div
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold font-mono"
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold font-mono"
               style={{
-                background: 'rgba(99,102,241,0.08)',
-                border: '1px solid rgba(99,102,241,0.2)',
-                color: 'rgba(129,140,248,0.85)',
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-muted)',
               }}
             >
               <RefreshCw className="w-3 h-3" />
@@ -158,7 +158,7 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
         {/* Progress bar — auto dismiss countdown */}
         <div className="h-0.5 bg-secondary/60">
           <div
-            className="h-full bg-teal-500"
+            className="h-full bg-primary"
             style={{
               width: `${progress}%`,
               transition: 'width 50ms linear',
