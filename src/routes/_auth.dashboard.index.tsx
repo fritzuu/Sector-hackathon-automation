@@ -22,7 +22,7 @@ function DashboardOverviewPage() {
   const { watchlist } = useWatchlistStore();
   const {
     activeCases, auditRuns, lastRunTime, isRunning,
-    telegramLogs, isFetchingLogs, fetchTelegramLogs
+    telegramLogs, telegramLogsError, isFetchingLogs, fetchTelegramLogs
   } = useWorkflowStore();
 
   const companiesQuery = useCompanies();
@@ -49,7 +49,7 @@ function DashboardOverviewPage() {
   }, [currentUser, fetchTelegramLogs]);
 
   // Auto-scheduler has been moved to Supabase Edge Functions (siba-workflow)
-  // It is triggered automatically by pg_cron at 16:30 WIB.
+  // It is triggered automatically by pg_cron at 07:00 WIB.
 
   const activeCasesArray = Array.from(activeCases.values()).filter(c => watchlist.includes(c.symbol));
 
@@ -95,7 +95,9 @@ function DashboardOverviewPage() {
           <TelegramLogViewer
             user={currentUser!}
             logs={telegramLogs || []}
-            isLoading={isFetchingLogs && telegramLogs === null}
+            isLoading={isFetchingLogs}
+            error={telegramLogsError}
+            onRetry={() => { if (currentUser?.telegramChatId) void fetchTelegramLogs(currentUser.telegramChatId); }}
             onClearLogs={() => {}} // Disabled for Hackathon: server-side outbox acts as source of truth
           />
         </div>

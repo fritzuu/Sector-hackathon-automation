@@ -85,7 +85,7 @@ export const SectorPresetsGrid: React.FC<SectorPresetsGridProps> = ({ watchlist,
             Bagaimana koleksi 6 sektor ini disusun?
           </div>
           <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(203,213,225,0.7)' }}>
-            Pengelompokan emiten terlikuid berdasarkan data <strong className="text-slate-200">Sectors API v2</strong> — bukan rekomendasi beli/jual.
+            Pengelompokan emiten terlikuid berdasarkan data <strong className="text-slate-200">Sectors API v2</strong>: bukan rekomendasi beli/jual.
           </p>
           <ul className="text-[11px] space-y-1 pl-3 list-disc" style={{ color: 'rgba(148,163,184,0.65)' }}>
             <li><strong className="text-text-muted">Konstituen Resmi LQ45 &amp; IDX30:</strong> Saham dengan nilai transaksi &amp; frekuensi tertinggi di BEI.</li>

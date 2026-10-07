@@ -211,12 +211,12 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                   },
                   {
                     label: "Market Cap",
-                    value: displayMcap ?? "—",
+                    value: displayMcap ?? "N/A",
                     hot: false,
                   },
                   {
                     label: "Rank IDX",
-                    value: companyInfo ? `#${companyInfo.rank}` : "—",
+                    value: companyInfo ? `#${companyInfo.rank}` : "N/A",
                     hot: false,
                   },
                 ].map((m) => (
@@ -243,13 +243,13 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                   <div className="text-xs text-amber-300 leading-relaxed">
                     {metrics.isVolumeAnomaly && (
                       <div>
-                        Volume {metrics.volumeMultiplier}× median — melampaui
+                        Volume {metrics.volumeMultiplier}× median: melampaui
                         ambang 2.0×
                       </div>
                     )}
                     {metrics.isSpreadAnomaly && (
                       <div>
-                        Spread vs IHSG {metrics.spreadVsIhsg.toFixed(2)}% —
+                        Spread vs IHSG {metrics.spreadVsIhsg.toFixed(2)}%
                         melampaui ambang 2.0%
                       </div>
                     )}

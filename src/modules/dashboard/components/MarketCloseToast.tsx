@@ -1,5 +1,5 @@
 /**
- * MarketCloseToast — muncul otomatis jam 16:30 WIB setelah market close.
+ * MarketCloseToast — muncul otomatis jam 07:00 WIB untuk evaluasi pagi.
  * Memberitahu user bahwa harga + news terbaru sudah di-refresh.
  * Auto-dismiss dalam 8 detik. Slide-in dari bawah.
  */
@@ -94,7 +94,7 @@ export const MarketCloseToast: React.FC<MarketCloseToastProps> = ({
                   className="text-xs font-bold font-mono uppercase tracking-widest"
                   style={{ color: 'rgba(20,184,166,0.9)' }}
                 >
-                  Market Close 16:30 WIB
+                  Evaluasi Pagi 07:00 WIB
                 </span>
               </div>
               <p className="text-sm font-semibold text-white mt-0.5 leading-snug">

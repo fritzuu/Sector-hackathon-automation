@@ -4,7 +4,6 @@ import { UserProfile } from '../../../data/userProfiles';
 import {
   saveUserProfileToSupabase,
   fetchUserProfileFromSupabase,
-  fetchAuditRunsFromSupabase,
   fetchUserWorkspaceFromSupabase,
   fetchGlobalMarketSnapshots,
 } from '../../../services/supabaseStorage';
@@ -52,8 +51,8 @@ function profileFromAuthUser(authUser: User, existing?: UserProfile | null): Use
 
 async function hydrateUserData(profile: UserProfile) {
   try {
-    const [history, workspace, globalSnapshots, workflowMod, watchlistMod] = await Promise.all([
-      fetchAuditRunsFromSupabase(profile.id),
+    const [, workspace, globalSnapshots, workflowMod, watchlistMod] = await Promise.all([
+      import('../../../modules/cases/stores/workflow.store').then(mod => mod.useWorkflowStore.getState().fetchAuditRuns(profile.id)),
       fetchUserWorkspaceFromSupabase(profile.id),
       fetchGlobalMarketSnapshots(profile.defaultWatchlist || []),
       import('../../../modules/cases/stores/workflow.store'),
@@ -68,7 +67,6 @@ async function hydrateUserData(profile: UserProfile) {
     globalSnapshots.forEach(s => snapshotMap.set(s.symbol, s));
 
     workflowMod.useWorkflowStore.setState({
-      auditRuns: history,
       activeCases: workspace?.activeCases ?? new Map(),
       caseEvents: workspace?.caseEvents ?? new Map(),
       caseTemplates: workspace?.caseTemplates ?? new Map(),

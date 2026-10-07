@@ -82,7 +82,7 @@ export function renderCaseTemplate(
 
   // Format Plain Text
   const plainTextLines: string[] = [
-    `[SIBA — ${symbol}] Status: ${caseStatus} (${evaluationDate}) [Versi ${TEMPLATE_VERSION}]`,
+    `[SIBA: ${symbol}] Status: ${caseStatus} (${evaluationDate}) [Versi ${TEMPLATE_VERSION}]`,
     '',
     '📌 FAKTA (Terverifikasi Data Sectors API):',
     ...facts.map((f) => `• ${f}`),

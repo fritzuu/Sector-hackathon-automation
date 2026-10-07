@@ -100,8 +100,8 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({
           </p>
           <p className="text-xs text-text-muted max-w-md mx-auto">
             Sistem akan secara otomatis mendeteksi anomali volume, pergerakan
-            relatif vs IHSG, dan keterbukaan informasi setiap penutupan pasar
-            pukul 16:30 WIB.
+            relatif vs IHSG, dan keterbukaan informasi setiap hari bursa
+            pukul 07:00 WIB.
           </p>
         </div>
       ) : (
