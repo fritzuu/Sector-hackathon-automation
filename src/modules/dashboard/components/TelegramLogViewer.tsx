@@ -31,6 +31,8 @@ interface TelegramLogViewerProps {
   user: UserProfile;
   logs: TelegramLogEntry[];
   isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   onClearLogs: () => void;
 }
 
@@ -38,6 +40,8 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
   user,
   logs,
   isLoading = false,
+  error,
+  onRetry,
   onClearLogs,
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -191,7 +195,15 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
       )}
 
       {/* Log list */}
-      {isLoading ? (
+      {error && (
+        <div role="alert" className="rounded-lg border border-border p-3 text-sm text-text-muted">
+          {error}
+          <button type="button" className="ml-2 text-primary underline" disabled={isLoading} onClick={onRetry}>
+            {isLoading ? 'Memuat...' : 'Coba lagi'}
+          </button>
+        </div>
+      )}
+      {isLoading && logs.length === 0 ? (
         <div className="space-y-3 mt-2 pt-1 pb-2 px-1 -mx-1 hide-scrollbar">
           {[1, 2, 3].map((_, i) => (
             <div
@@ -212,7 +224,7 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
             </div>
           ))}
         </div>
-      ) : filteredLogs.length === 0 ? (
+      ) : error && logs.length === 0 ? null : filteredLogs.length === 0 ? (
         <div
           className="py-8 mt-2 text-center border border-dashed rounded-xl space-y-2"
           style={{
@@ -286,7 +298,7 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
                 <ShieldCheck className="w-5 h-5 text-accent" />
                 <div>
                   <h3 className="font-bold text-sm text-text">
-                    Detail Alert — {selectedLog.ticker}
+                    Detail Alert: {selectedLog.ticker}
                   </h3>
                   <p className="text-[11px] text-text/60 font-mono">
                     Terkirim pada{" "}
@@ -387,7 +399,6 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
                               key={i}
                               className="text-[11px] text-text/50 leading-relaxed flex items-start"
                             >
-                              <span className="mr-2 opacity-30 mt-0.5">—</span>
                               <span>{u}</span>
                             </li>
                           ))}
