@@ -40,11 +40,19 @@ function DashboardOverviewPage() {
     if (currentUser?.telegramChatId) {
       fetchTelegramLogs(currentUser.telegramChatId);
       
-      // Auto-refresh every 5 seconds (Hackathon shortcut for realtime feel)
-      const interval = setInterval(() => {
-        fetchTelegramLogs(currentUser.telegramChatId!);
-      }, 5000);
-      return () => clearInterval(interval);
+      // Use Supabase Realtime instead of polling
+      const channel = supabase
+        .channel(`telegram_outbox_${currentUser.telegramChatId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'telegram_outbox', filter: `chat_id=eq.${currentUser.telegramChatId}` },
+          () => fetchTelegramLogs(currentUser.telegramChatId!)
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [currentUser, fetchTelegramLogs]);
 

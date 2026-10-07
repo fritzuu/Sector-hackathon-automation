@@ -4,6 +4,7 @@ import { UserProfile } from '../../../data/userProfiles.js';
 import { generateSecurePairingToken } from '../../../utils/token.js';
 import { useAuthStore } from '../stores/auth.store';
 import { fetchUserProfileFromSupabase } from '../../../services/supabaseStorage';
+import { supabase } from '../../../lib/supabaseClient';
 
 interface TelegramConnectModalProps {
   user: UserProfile;
@@ -29,7 +30,7 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
 
   const botUsername = (import.meta as any).env?.VITE_TELEGRAM_BOT_USERNAME || 'SIBANotbot';
   const fullCommand = `/start ${token}`;
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!isOpen) stopPolling();
@@ -39,9 +40,9 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
   if (!isOpen) return null;
 
   function stopPolling() {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
     }
   }
 
@@ -62,21 +63,30 @@ export const TelegramConnectModal: React.FC<TelegramConnectModalProps> = ({
 
     setPairingState('waiting');
     
-    // 2. Poll Supabase directly to see if the Edge Function updated our profile!
-    pollRef.current = setInterval(async () => {
-      const freshProfile = await fetchUserProfileFromSupabase(user.id);
-      if (freshProfile && freshProfile.isTelegramLinked && freshProfile.telegramChatId) {
-        stopPolling();
-        setPairingState('linked');
-        
-        // Update local global state so UI changes everywhere
-        useAuthStore.getState().updateUser(freshProfile);
-        
-        setTimeout(() => {
-          onLinkSuccess(freshProfile.telegramChatId!, freshProfile.telegramUsername || `@${botUsername}_user`);
-        }, 1200);
-      }
-    }, 3000);
+    // 2. Subscribe to Realtime to see if the Edge Function updated our profile!
+    const channel = supabase
+      .channel(`profile_updates_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+        async () => {
+          const freshProfile = await fetchUserProfileFromSupabase(user.id);
+          if (freshProfile && freshProfile.isTelegramLinked && freshProfile.telegramChatId) {
+            stopPolling();
+            setPairingState('linked');
+            
+            // Update local global state so UI changes everywhere
+            useAuthStore.getState().updateUser(freshProfile);
+            
+            setTimeout(() => {
+              onLinkSuccess(freshProfile.telegramChatId!, freshProfile.telegramUsername || `@${botUsername}_user`);
+            }, 1200);
+          }
+        }
+      )
+      .subscribe();
+      
+    channelRef.current = channel;
   };
 
   const handleCopy = () => {
