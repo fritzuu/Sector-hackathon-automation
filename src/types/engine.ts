@@ -73,10 +73,8 @@ export interface RenderedTemplate {
   symbol: string;
   asOfDate: string;
   status: CaseStatus;
-  version: string;
   facts: string[];
   limitedInterpretations: string[];
-  unknowns: string[];
   disclaimer: string;
   plainText: string;
 }

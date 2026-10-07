@@ -1,7 +1,7 @@
 import React from 'react';
 import { CaseState, CaseEvent, RenderedTemplate } from '../../../types/engine.js';
 import {
-  X, Shield, AlertTriangle, CheckCircle, Clock, ExternalLink,
+  X, Shield, CheckCircle, Clock, ExternalLink,
   TrendingUp, TrendingDown,
 } from 'lucide-react';
 import { useCompanyStore } from "../../../data/companyStore";
@@ -171,22 +171,6 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                     <li key={i} className="flex items-start gap-2.5">
                       <span className="text-primary font-bold mt-0.5">•</span>
                       <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Unknowns */}
-              <div className="p-4.5 rounded-xl bg-secondary/60 border border-amber-500/30 space-y-2.5 shadow-sm">
-                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
-                  <span>BATAS INFORMASI (Tidak Ditebak / Spekulasi)</span>
-                </div>
-                <ul className="space-y-1.5 text-text-muted pl-1 text-xs leading-relaxed">
-                  {template.unknowns.map((u, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <span className="text-amber-400 font-bold mt-0.5">•</span>
-                      <span>{u}</span>
                     </li>
                   ))}
                 </ul>
