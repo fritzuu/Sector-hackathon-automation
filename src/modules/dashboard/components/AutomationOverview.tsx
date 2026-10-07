@@ -112,7 +112,7 @@ export const AutomationOverview: React.FC<OverviewProps> = ({
         ? "Mengevaluasi..." 
         : lastRunTime
           ? new Date(lastRunTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
-          : "—",
+          : "N/A",
       sub: isRunning 
         ? "Sistem sedang memproses data bursa" 
         : `Total ${totalRunsCount} eksekusi otomatis selesai`,
@@ -135,12 +135,6 @@ export const AutomationOverview: React.FC<OverviewProps> = ({
             Ringkasan Otomatisasi
           </h2>
           <p className="text-xs text-text-muted mt-1 font-medium">Status evaluasi bursa &amp; metrik eksekusi harian</p>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 shadow-sm shrink-0">
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isRunning ? 'bg-amber-400 animate-pulse' : 'bg-accent shadow-[0_0_8px_rgba(0,255,85,0.8)]'}`} />
-          <span className={`text-[11px] font-mono font-extrabold ${isRunning ? 'text-amber-400' : 'text-accent'}`}>
-            {isRunning ? 'MENGEVALUASI...' : 'AKTIF · 16:30 WIB'}
-          </span>
         </div>
       </div>
       
