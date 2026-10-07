@@ -136,7 +136,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({
 
                     return (
                       <a
-                        key={item.id || i}
+                        key={`${item.id || item.sourceUrl || "filing"}-${i}`}
                         href={item.sourceUrl || "#"}
                         target="_blank"
                         rel="noreferrer"
