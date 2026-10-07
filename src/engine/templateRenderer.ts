@@ -1,8 +1,6 @@
 import { EvaluationResult, CaseStatus, RenderedTemplate } from '../types/engine.ts';
 import { VolumeEvidence, RelativeMovementEvidence } from '../types/engine.ts';
 
-export const TEMPLATE_VERSION = 'v1.0.0';
-
 export const STANDARD_DISCLAIMER =
   'Pemberitahuan otomatis SIBA (Sistem Informasi Bursa dan Aset) berbasis aturan deterministik dan data resmi Sectors API. Bukan saran investasi, rekomendasi beli/jual, atau prediksi harga. Seluruh keputusan investasi merupakan tanggung jawab mandiri investor (DYOR).';
 
@@ -14,7 +12,6 @@ export function renderCaseTemplate(
 
   const facts: string[] = [];
   const limitedInterpretations: string[] = [];
-  const unknowns: string[] = [];
 
   if (hasIncompleteData) {
     facts.push(`Status data: Data historis/benchmark tidak lengkap pada sesi ${evaluationDate}.`);
@@ -24,7 +21,6 @@ export function renderCaseTemplate(
     limitedInterpretations.push(
       'Evaluasi aturan ditangguhkan untuk menjaga akurasi dan mencegah sinyal palsu.'
     );
-    unknowns.push('Nilai metrik teknis dan selisih terhadap IHSG belum dapat dihitung secara valid.');
   } else {
     for (const result of ruleResults) {
       if (result.ruleId === 'ABNORMAL_VOLUME') {
@@ -66,32 +62,17 @@ export function renderCaseTemplate(
       facts.push(`Tidak ada anomali yang terdeteksi pada sesi ${evaluationDate}.`);
       limitedInterpretations.push('Seluruh indikator volume dan harga berada dalam rentang normal.');
     }
-
-    unknowns.push(
-      'Faktor katalis eksternal, rumor pasar, dan sentimen media sosial di luar data transaksi resmi BEI tidak dipantau.'
-    );
-    unknowns.push(
-      'Dampak fundamental jangka panjang terhadap kinerja keuangan emiten memerlukan riset laporan keuangan mandiri.'
-    );
-    
-    // Inject the static link for Keterbukaan Informasi to replace the mock filings
-    unknowns.push(
-      `🔗 Cek Keterbukaan Informasi BEI untuk mengetahui apakah ada aksi korporasi terbaru: https://www.idx.co.id/id/perusahaan-tercatat/keterbukaan-informasi/`
-    );
   }
 
   // Format Plain Text
   const plainTextLines: string[] = [
-    `[SIBA — ${symbol}] Status: ${caseStatus} (${evaluationDate}) [Versi ${TEMPLATE_VERSION}]`,
+    `[SIBA — ${symbol}] Status: ${caseStatus} (${evaluationDate})`,
     '',
     '📌 FAKTA (Terverifikasi Data Sectors API):',
     ...facts.map((f) => `• ${f}`),
     '',
     '🔍 INTERPRETASI TERBATAS (Tanpa Prediksi):',
     ...limitedInterpretations.map((i) => `• ${i}`),
-    '',
-    '❓ BELUM DIKETAHUI:',
-    ...unknowns.map((u) => `• ${u}`),
     '',
     `⚠️ DISCLAIMER:\n${STANDARD_DISCLAIMER}`,
   ];
@@ -100,10 +81,8 @@ export function renderCaseTemplate(
     symbol,
     asOfDate: evaluationDate,
     status: caseStatus,
-    version: TEMPLATE_VERSION,
     facts,
     limitedInterpretations,
-    unknowns,
     disclaimer: STANDARD_DISCLAIMER,
     plainText: plainTextLines.join('\n'),
   };

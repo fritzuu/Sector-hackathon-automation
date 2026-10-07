@@ -1,7 +1,7 @@
 import React from 'react';
 import { CaseState, CaseEvent, RenderedTemplate } from '../../../types/engine.js';
 import {
-  X, Shield, AlertTriangle, CheckCircle, Clock, ExternalLink,
+  X, Shield, CheckCircle, Clock, ExternalLink,
   TrendingUp, TrendingDown,
 } from 'lucide-react';
 import { useCompanyStore } from "../../../data/companyStore";
@@ -176,22 +176,6 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 </ul>
               </div>
 
-              {/* Unknowns */}
-              <div className="p-4.5 rounded-xl bg-secondary/60 border border-amber-500/30 space-y-2.5 shadow-sm">
-                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
-                  <span>BATAS INFORMASI (Tidak Ditebak / Spekulasi)</span>
-                </div>
-                <ul className="space-y-1.5 text-text-muted pl-1 text-xs leading-relaxed">
-                  {template.unknowns.map((u, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <span className="text-amber-400 font-bold mt-0.5">•</span>
-                      <span>{u}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
               {/* Disclaimer */}
               <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-text-muted text-xs leading-relaxed">
                 <strong className="text-amber-400 block mb-1 font-semibold">⚠️ Disclaimer Mandatori:</strong>
@@ -255,7 +239,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         {/* Modal Footer */}
         <div className="p-4 border-t border-border bg-secondary/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <span className="text-xs font-mono text-text-muted">
-            SIBA Engine · Evaluasi Penutupan 16:30 WIB
+            SIBA Engine · Evaluasi Pagi 07:00 WIB
           </span>
           <button
             onClick={onClose}

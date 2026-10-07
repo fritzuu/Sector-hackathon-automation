@@ -22,7 +22,7 @@ function DashboardOverviewPage() {
   const { watchlist } = useWatchlistStore();
   const {
     activeCases, auditRuns, lastRunTime, isRunning,
-    telegramLogs, isFetchingLogs, fetchTelegramLogs
+    telegramLogs, telegramLogsError, isFetchingLogs, fetchTelegramLogs
   } = useWorkflowStore();
 
   const companiesQuery = useCompanies();
@@ -40,16 +40,24 @@ function DashboardOverviewPage() {
     if (currentUser?.telegramChatId) {
       fetchTelegramLogs(currentUser.telegramChatId);
       
-      // Auto-refresh every 5 seconds (Hackathon shortcut for realtime feel)
-      const interval = setInterval(() => {
-        fetchTelegramLogs(currentUser.telegramChatId!);
-      }, 5000);
-      return () => clearInterval(interval);
+      // Use Supabase Realtime instead of polling
+      const channel = supabase
+        .channel(`telegram_outbox_${currentUser.telegramChatId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'telegram_outbox', filter: `chat_id=eq.${currentUser.telegramChatId}` },
+          () => fetchTelegramLogs(currentUser.telegramChatId!)
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [currentUser, fetchTelegramLogs]);
 
   // Auto-scheduler has been moved to Supabase Edge Functions (siba-workflow)
-  // It is triggered automatically by pg_cron at 16:30 WIB.
+  // It is triggered automatically by pg_cron at 07:00 WIB.
 
   const activeCasesArray = Array.from(activeCases.values()).filter(c => watchlist.includes(c.symbol));
 
@@ -95,7 +103,9 @@ function DashboardOverviewPage() {
           <TelegramLogViewer
             user={currentUser!}
             logs={telegramLogs || []}
-            isLoading={isFetchingLogs && telegramLogs === null}
+            isLoading={isFetchingLogs}
+            error={telegramLogsError}
+            onRetry={() => { if (currentUser?.telegramChatId) void fetchTelegramLogs(currentUser.telegramChatId); }}
             onClearLogs={() => {}} // Disabled for Hackathon: server-side outbox acts as source of truth
           />
         </div>

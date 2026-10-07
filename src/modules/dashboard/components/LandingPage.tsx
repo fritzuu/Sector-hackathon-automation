@@ -7,11 +7,9 @@
  * Differs from last (Workbench · dark teal): macrostructure + accent-hue (teal→indigo) + paper-band shift
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { RealTickerMetrics } from '../../../types/engine.js';
-import { sectorsApi, LiveIdxCompany } from '../../../services/sectorsApi.js';
-import { useCompanyStore } from "../../../data/companyStore";
 
 interface LandingPageProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
@@ -22,29 +20,35 @@ const fmt  = (n?: number) => (n || 0).toLocaleString('id-ID');
 const pct  = (n?: number) => `${(n || 0) >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
 const vol  = (n?: number) => `${((n || 0) / 1_000_000).toFixed(1)}M`;
 
-const generateDeterministicMetrics = (sym: string, basePrice: number) => {
-  const hash = sym.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const changePercent = ((hash % 100) / 10) - 4.5; 
-  const changeAmount = basePrice * (changePercent / 100);
-  const todayVolume = (hash * 1234567) % 300000000 + 50000000; 
-  const medianVolume20d = todayVolume / (1 + ((hash % 50) / 100)); 
-  const volumeMultiplier = Number((todayVolume / medianVolume20d).toFixed(2));
-  const ihsgChangePercent = ((hash % 30) / 10) - 1.5;
-  const spreadVsIhsg = Math.abs(changePercent - ihsgChangePercent);
-  
-  return {
-    changeAmount: Number(changeAmount.toFixed(0)),
-    changePercent: Number(changePercent.toFixed(2)),
-    todayVolume,
-    medianVolume20d,
-    volumeMultiplier,
-    ihsgPrice: 7000 + (hash * 10),
-    ihsgChangePercent: Number(ihsgChangePercent.toFixed(2)),
-    spreadVsIhsg: Number(spreadVsIhsg.toFixed(2)),
-    isVolumeAnomaly: volumeMultiplier >= 2.0,
-    isSpreadAnomaly: spreadVsIhsg >= 2.0,
-  };
-};
+const DEMO_COMPANIES = [
+  { symbol: 'BBCA', name: 'Bank Central Asia Tbk', sector: 'Financials', lastPrice: 9500, changePercent: 0.8, medianVolume20d: 30000000, volumeMultiplier: 1.1 },
+  { symbol: 'BBRI', name: 'Bank Rakyat Indonesia Tbk', sector: 'Financials', lastPrice: 4800, changePercent: 1.2, medianVolume20d: 65000000, volumeMultiplier: 2.3 },
+  { symbol: 'BMRI', name: 'Bank Mandiri Tbk', sector: 'Financials', lastPrice: 6200, changePercent: 3.4, medianVolume20d: 45000000, volumeMultiplier: 1.3 },
+  { symbol: 'TLKM', name: 'Telkom Indonesia Tbk', sector: 'Infrastructures', lastPrice: 3200, changePercent: -0.4, medianVolume20d: 50000000, volumeMultiplier: 0.9 },
+  { symbol: 'ASII', name: 'Astra International Tbk', sector: 'Industrials', lastPrice: 5100, changePercent: 0.6, medianVolume20d: 24000000, volumeMultiplier: 1.0 },
+  { symbol: 'BREN', name: 'Barito Renewables Energy Tbk', sector: 'Infrastructures', lastPrice: 7800, changePercent: -2.5, medianVolume20d: 18000000, volumeMultiplier: 1.2 },
+  { symbol: 'AMMN', name: 'Amman Mineral Internasional Tbk', sector: 'Basic Materials', lastPrice: 8200, changePercent: 1.1, medianVolume20d: 20000000, volumeMultiplier: 2.1 },
+  { symbol: 'ADRO', name: 'Alamtri Resources Indonesia Tbk', sector: 'Energy', lastPrice: 2400, changePercent: 0.9, medianVolume20d: 35000000, volumeMultiplier: 1.1 },
+];
+
+const DEMO_TICKERS: Record<string, RealTickerMetrics> = Object.fromEntries(
+  DEMO_COMPANIES.map(company => [
+    company.symbol,
+    {
+      ...company,
+      currency: 'IDR',
+      changeAmount: Math.round(company.lastPrice * company.changePercent / 100),
+      todayVolume: company.medianVolume20d * company.volumeMultiplier,
+      ihsgPrice: 7000,
+      ihsgChangePercent: 0.6,
+      spreadVsIhsg: Math.abs(company.changePercent - 0.6),
+      isVolumeAnomaly: company.volumeMultiplier >= 2,
+      isSpreadAnomaly: Math.abs(company.changePercent - 0.6) >= 2,
+      lastUpdated: '07:00',
+      isRealLive: false,
+    },
+  ]),
+);
 
 /* ─── INJECTED DESIGN TOKENS & GLOBAL STYLES ─────────────────────────────── */
 const GLOBAL_CSS = `
@@ -111,11 +115,12 @@ const GLOBAL_CSS = `
   }
   .tape-inner {
     display: flex; gap: 0;
-    animation: tape-scroll 2000s linear infinite;
+    animation: tape-scroll 60s linear infinite;
+    width: max-content;
+    flex-shrink: 0;
     white-space: nowrap;
     will-change: transform;
   }
-  .tape-inner:hover { animation-play-state: paused; }
   .tape-item {
     padding: 0 24px;
     font-family: var(--font-mono);
@@ -126,8 +131,8 @@ const GLOBAL_CSS = `
     display: flex; align-items: center; gap: 10px;
     flex-shrink: 0;
   }
-  .tape-sym { color: var(--tx-0); font-weight: 700; }
-  .tape-price { color: var(--tx-1); }
+  .tape-sym { color: var(--tx-1); font-weight: 600; }
+  .tape-price { color: var(--tx-2); }
   .tape-chg { font-weight: 600; }
   .tape-chg.up { color: var(--up); }
   .tape-chg.dn { color: var(--dn); }
@@ -176,7 +181,7 @@ const GLOBAL_CSS = `
   }
   .hero-h1 {
     font-size: clamp(34px, 5.8vw, 64px);
-    font-weight: 900;
+    font-weight: 800;
     line-height: 1.12;
     letter-spacing: -0.03em;
     color: var(--tx-0);
@@ -367,15 +372,15 @@ const GLOBAL_CSS = `
   /* ── MARKET CONSOLE ───────────────────────────────────── */
   .console-wrap {
     display: grid;
-    grid-template-columns: 260px 1fr;
-    border: 1px solid var(--ed2);
+    grid-template-columns: 260px minmax(0, 1fr);
+    border: 1px solid var(--ed);
     border-radius: var(--r2);
     overflow: hidden;
     background: var(--sf);
     min-height: 420px;
   }
   @media (max-width: 768px) {
-    .console-wrap { grid-template-columns: 1fr; }
+    .console-wrap { grid-template-columns: minmax(0, 1fr); }
   }
   .console-sidebar {
     border-right: 1px solid var(--ed);
@@ -386,35 +391,6 @@ const GLOBAL_CSS = `
   .console-sidebar-list {
     display: flex;
     flex-direction: column;
-  }
-  @media (max-width: 768px) {
-    .console-sidebar {
-      border-right: none;
-      border-bottom: 1px solid var(--ed);
-    }
-    .console-sidebar-header {
-      padding: 12px 16px;
-    }
-    .console-sidebar-list {
-      flex-direction: row;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 10px 12px;
-      gap: 8px;
-    }
-    .ticker-list-btn {
-      width: auto;
-      flex: 0 0 auto;
-      border: 1px solid var(--ed);
-      border-radius: 8px;
-      padding: 8px 14px;
-      gap: 10px;
-    }
-    .ticker-list-btn.active {
-      border-left: 1px solid var(--ac);
-      border-color: var(--ac);
-      padding-left: 14px;
-    }
   }
   .console-sidebar-header {
     padding: 16px 18px;
@@ -456,6 +432,36 @@ const GLOBAL_CSS = `
   .t-pct.up { color: var(--up); }
   .t-pct.dn { color: var(--dn); }
 
+  @media (max-width: 768px) {
+    .console-sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--ed);
+    }
+    .console-sidebar-header {
+      padding: 12px 16px;
+    }
+    .console-sidebar-list {
+      flex-direction: row;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px 12px;
+      gap: 8px;
+    }
+    .ticker-list-btn {
+      width: auto;
+      flex: 0 0 auto;
+      border: 1px solid var(--ed);
+      border-radius: 8px;
+      padding: 8px 14px;
+      gap: 10px;
+    }
+    .ticker-list-btn.active {
+      border-left: 1px solid var(--ac);
+      border-color: var(--ac);
+      padding-left: 14px;
+    }
+  }
+  .console-sidebar, .console-main { min-width: 0; }
   .console-main { display: flex; flex-direction: column; }
   .console-topbar {
     padding: 16px 22px;
@@ -525,7 +531,7 @@ const GLOBAL_CSS = `
     padding: 4px 10px;
     border-radius: 6px;
     font-family: var(--font-mono);
-    font-size: 11px; font-weight: 700;
+    font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     white-space: nowrap;
@@ -746,7 +752,7 @@ const GLOBAL_CSS = `
   /* ── CTA BLOCK ────────────────────────────────────────── */
   .cta-block {
     background: var(--sf);
-    border: 1px solid var(--ed2);
+    border: 1px solid var(--ed);
     border-radius: 12px;
     padding: 56px 36px;
     text-align: center;
@@ -879,8 +885,8 @@ const GLOBAL_CSS = `
   .landing-footer-brand { display: flex; flex-direction: column; align-items: center; gap: 5px; }
   .landing-footer-brand img { width: 40px; height: 40px; object-fit: contain; }
   .landing-footer-wordmark { color: var(--tx-0); font-size: 22px; font-weight: 900; line-height: 1; }
-  .landing-footer-tagline { color: var(--tx-1); font-size: 11px; margin-top: 8px; }
-  .landing-footer-copyright { color: var(--tx-2); font-size: 10px; margin-top: 10px; }
+  .landing-footer-tagline { color: var(--tx-1); font-size: 12px; margin-top: 8px; }
+  .landing-footer-copyright { color: var(--tx-2); font-size: 12px; margin-top: 10px; }
   @media (max-width: 640px) {
     .landing-footer { padding: 18px 16px 14px; }
     .landing-footer::before, .landing-footer::after { width: 180px; height: 112px; opacity: 0.8; }
@@ -933,7 +939,7 @@ const GLOBAL_CSS = `
     .hero-ctas .btn-primary, .hero-ctas .btn-ghost { width: 100%; text-align: center; }
     .cta-ctas { flex-direction: column; width: 100%; }
     .cta-ctas .btn-primary, .cta-ctas .btn-ghost { width: 100%; text-align: center; }
-    .console-metrics { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .console-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .metric-card { padding: 12px 14px; }
   }
 `;
@@ -945,7 +951,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Kapan evaluasi harian berjalan dan bagaimana cara kerjanya?',
-    a: 'Evaluasi harian dirancang berjalan setiap hari bursa menjelang penutupan sesi sore (sekitar pukul 16:30 WIB) saat dashboard SIBA Anda dibuka. Sistem secara objektif membandingkan data transaksi hari ini dengan patokan median 20 sesi bursa serta memeriksa keterbukaan informasi emiten resmi. Anda juga dapat menjalankan evaluasi sewaktu-waktu lewat tombol Run di dashboard.'
+    a: 'Evaluasi harian dijadwalkan pukul 07:00 WIB pada hari bursa menggunakan data sesi bursa terakhir yang tersedia. Sistem membandingkan volume dengan median 20 sesi bursa serta memeriksa pergerakan relatif terhadap IHSG dan keterbukaan informasi emiten.'
   },
   {
     q: 'Dari mana SIBA mengambil data saham dan pasar?',
@@ -980,88 +986,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onAuthSucc
   const sectionRevealVariants = prefersReducedMotion
     ? REDUCED_SECTION_REVEAL_VARIANTS
     : SECTION_REVEAL_VARIANTS;
-  const [selected, setSelected]         = useState('');
-  const [openFaq, setOpenFaq]           = useState<number | null>(0);
-  const [tickers, setTickers]           = useState<Record<string, RealTickerMetrics>>({});
-  const [liveCompanies, setLiveCompanies] = useState<LiveIdxCompany[]>([]);
-  const [companiesLoading, setCompLoading] = useState(true);
-  const [companiesError, setCompError]   = useState<string>('');
-  const [failedSyms, setFailed]         = useState<Record<string, string>>({});  // sym → error msg
-  const [globalErr, setGlobalErr]       = useState<string>('');                  // IHSG / network down
-  const [loading, setLoading]           = useState(true);
-  const [search, setSearch]             = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchErr, setSearchErr]       = useState('');
+  const [selected, setSelected] = useState(DEMO_COMPANIES[0].symbol);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [search, setSearch] = useState('');
+  const [searchErr, setSearchErr] = useState('');
   const tapeRef = useRef<HTMLDivElement>(null);
-
-  // Fetch live companies from Sectors API first, then fetch live prices via Yahoo Finance
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setCompLoading(true);
-      setCompError('');
-      setLoading(true);
-
-      let companies: LiveIdxCompany[] = [];
-      try {
-        companies = await sectorsApi.fetchTopCompanies();
-      } catch (err) {
-        console.error('Failed to fetch companies from Sectors API:', err);
-      }
-
-      if (!alive) return;
-
-      if (!companies || companies.length === 0) {
-        setCompLoading(false);
-        setLoading(false);
-        return;
-      }
-
-      setLiveCompanies(companies);
-      setCompLoading(false);
-
-      // Default selected to the first company (highest market cap)
-      if (companies.length > 0) {
-        setSelected(prev => prev || companies[0].symbol);
-      }
-
-      // Fetch prices via Sectors API database snapshot (fallback to IDX_COMPANIES for public landing page)
-      const targetSymbols = companies.map(c => c.symbol);
-      const acc: Record<string, RealTickerMetrics> = {};
-      const failed: Record<string, string> = {};
-
-      if (!alive) return;
-
-      targetSymbols.forEach((sym) => {
-        const companyData = useCompanyStore.getState().getCompany(sym);
-        if (companyData) {
-          acc[sym] = {
-            symbol: sym,
-            name: companyData.name,
-            sector: companyData.sector,
-            currency: 'IDR',
-            lastPrice: (companyData.lastPrice || 0),
-            ...generateDeterministicMetrics(sym, (companyData.lastPrice || 0)),
-            lastUpdated: new Date().toLocaleTimeString('id-ID'),
-            isRealLive: false
-          };
-        } else {
-          failed[sym] = `Gagal memuat data ${sym}.`;
-        }
-      });
-
-      setTickers(acc);
-      setFailed(failed);
-      setLoading(false);
-    })();
-
-    return () => { alive = false; };
-  }, []);
-
+  const tickers = DEMO_TICKERS;
   const active = tickers[selected];
 
   const telegramText = active
-    ? `[SIBA: ${active.symbol}]  ${new Date().toLocaleDateString('id-ID')} pukul 16:30 WIB
+    ? `[SIMULASI SIBA: ${active.symbol}] pukul 07:00 WIB
+Data contoh: bukan data pasar aktual.
 Status: ${active.isVolumeAnomaly || active.isSpreadAnomaly ? 'PERLU DICEK, LONJAKAN TERDETEKSI' : 'DALAM PEMANTAUAN'}
 
 RINGKASAN DATA TRANSAKSI
@@ -1088,38 +1023,17 @@ dianalisis saat evaluasi dashboard dijalankan.
 Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
     : '';
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const sym = search.trim().toUpperCase().replace('.JK', '');
-    if (!sym) return;
-    setSearchErr('');
-    setSearchLoading(true);
-    try {
-      const companyData = useCompanyStore.getState().getCompany(sym);
-      if (!companyData) throw new Error(`Simbol ${sym} tidak ditemukan di database publik.`);
-      
-      const data: RealTickerMetrics = {
-        symbol: sym,
-        name: companyData.name,
-        sector: companyData.sector,
-        currency: 'IDR',
-        lastPrice: (companyData.lastPrice || 0),
-        ...generateDeterministicMetrics(sym, (companyData.lastPrice || 0)),
-        lastUpdated: new Date().toLocaleTimeString('id-ID'),
-        isRealLive: false
-      };
-      setTickers(prev => ({ ...prev, [sym]: data }));
-      setFailed(prev => { const n = { ...prev }; delete n[sym]; return n; });
-      setSelected(sym);
-      setSearch('');
-    } catch (err) {
-      const msg = err instanceof Error
-        ? err.message
-        : `Kode "${sym}" tidak dapat dimuat. Cek koneksi atau coba lagi.`;
-      setSearchErr(msg);
-    } finally {
-      setSearchLoading(false);
+    const symbol = search.trim().toUpperCase().replace('.JK', '');
+    if (!symbol) return;
+    if (!tickers[symbol]) {
+      setSearchErr('Kode tidak tersedia dalam demo. Pilih salah satu dari 8 saham contoh.');
+      return;
     }
+    setSearchErr('');
+    setSelected(symbol);
+    setSearch('');
   };
 
   /* build double-tape for seamless loop */
@@ -1143,42 +1057,13 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
                   {pct(item.changePercent)}
                 </span>
                 {(item.isVolumeAnomaly || item.isSpreadAnomaly) && (
-                  <span className="badge badge-anom" style={{ padding: '2px 8px', fontSize: 10 }}>LONJAKAN</span>
+                  <span className="badge badge-anom" style={{ padding: '2px 8px', fontSize: 12 }}>LONJAKAN</span>
                 )}
               </div>
             ))}
           </div>
         </div>
-      ) : loading ? (
-        <div className="tape-wrap" role="status" aria-label="Memuat ringkasan harga saham" aria-busy="true">
-          {[0, 1, 2, 3].map(item => <div key={item} className="sk sk-tape" aria-hidden="true" />)}
-        </div>
       ) : null}
-
-      {/* ── GLOBAL ERROR BANNER (network / IHSG down) ───────── */}
-      {globalErr && (
-        <div style={{
-          background: 'rgba(248,113,113,0.08)',
-          borderBottom: '1px solid rgba(248,113,113,0.22)',
-          padding: '12px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-        }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#f87171' }}>
-            Data acuan IHSG tidak tersedia
-          </span>
-          <span style={{ fontSize: 13, color: 'var(--tx-1)' }}>{globalErr}</span>
-          <button
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#f87171', background: 'none', border: '1px solid rgba(248,113,113,0.35)', borderRadius: 4, padding: '3px 12px', cursor: 'pointer' }}
-            onClick={() => { setGlobalErr(''); window.location.reload(); }}
-          >
-            Coba lagi
-          </button>
-        </div>
-      )}
 
       {/* ── MARQUEE HERO ────────────────────────────────────── */}
       <motion.div
@@ -1194,14 +1079,14 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             Pantau saham IDX dan terima laporan lewat Telegram
           </div>
           <h1 className="hero-h1">
-            Daftar pantauan saham IDX Anda<br />
-            dicek teratur<br />
-            setiap <em>pasar tutup</em>.
+            Pantau saham IDX.<br />
+            Terima ringkasannya<br />
+            <em>di Telegram.</em>
           </h1>
           <p className="hero-sub">
-            SIBA memeriksa lonjakan volume transaksi, pergerakan harga yang menyimpang dari IHSG,
-            serta dokumen keterbukaan emiten resmi. Ringkasannya dikirim ke Telegram Anda.
-            Semua hasil berasal dari perhitungan data transaksi bursa, tanpa prediksi atau rekomendasi jual beli.
+            Setiap hari bursa pukul 07:00 WIB, SIBA memeriksa data sesi terakhir:
+            volume, pergerakan harga terhadap IHSG, dan keterbukaan emiten.
+            Ringkasannya dikirim ke Telegram, tanpa prediksi atau rekomendasi jual beli.
           </p>
 
           {/* Primary CTA for new users */}
@@ -1217,8 +1102,8 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
           {/* Real data stat row — clean 4-col desktop, 2x2 mobile grid */}
           <div className="stat-row">
             <div className="stat-cell">
-              <div className="stat-num"><span className="ac">16:30</span> <span style={{ fontSize: '0.65em', color: 'var(--tx-1)' }}>WIB</span></div>
-              <div className="stat-desc">Waktu evaluasi saat dashboard dibuka pada hari bursa</div>
+              <div className="stat-num"><span className="ac">07:00</span> <span style={{ fontSize: '0.65em', color: 'var(--tx-1)' }}>WIB</span></div>
+              <div className="stat-desc">Jadwal evaluasi pagi pada hari bursa</div>
             </div>
             <div className="stat-cell">
               <div className="stat-num"><span className="ac">2,0</span>x</div>
@@ -1238,12 +1123,12 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
 
       {/* ── LIVE MARKET CONSOLE ─────────────────────────────── */}
       <motion.section id="landing-market" className="siba-section" initial="hidden" whileInView="visible" viewport={SECTION_VIEWPORT} variants={sectionRevealVariants}>
-        <div className="section-label">Simulasi pantauan pasar dengan Sectors API</div>
+        <div className="section-label">Demo pantauan saham</div>
         <h2 className="section-h2">Cek indikasi saham pilihan Anda</h2>
         <p className="section-lead">
-          Pilih kode saham di bawah untuk melihat indikasi harga, volume, dan deteksi lonjakan.
-          Konsol ini menyajikan simulasi kuotasi pasar berbasis data Sectors API. Evaluasi mendalam di dashboard
-          menggunakan data transaksi historis dan dokumen keterbukaan resmi dari Sectors API.
+          Pilih saham untuk mencoba tampilan harga, volume, dan deteksi lonjakan.
+          Simulasi produk: seluruh angka pada halaman ini adalah data contoh, bukan data pasar aktual.
+          Dashboard menggunakan data transaksi dan keterbukaan informasi dari Sectors API.
         </p>
 
         <div className="console-wrap">
@@ -1251,45 +1136,13 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
           <div className="console-sidebar">
             <div className="console-sidebar-header">
               <span>Daftar Contoh Saham</span>
-              <span style={{ fontSize: 12, color: 'var(--tx-2)', fontWeight: 'normal' }}>
+              <span style={{ fontSize: 12, color: 'var(--tx-1)', fontWeight: 'normal' }}>
                 8 Emiten Pilihan
               </span>
             </div>
 
-            {companiesError ? (
-              <div style={{ padding: '16px 12px', textAlign: 'center' }}>
-                <div style={{ fontSize: 13, color: '#f87171', marginBottom: 8, lineHeight: 1.4 }}>
-                  {companiesError}
-                </div>
-                <button
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 12,
-                    color: '#f87171',
-                    background: 'rgba(248,113,113,0.1)',
-                    border: '1px solid rgba(248,113,113,0.3)',
-                    borderRadius: 4,
-                    padding: '4px 10px',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    sectorsApi.invalidateAll();
-                    window.location.reload();
-                  }}
-                >
-                  Muat Ulang
-                </button>
-              </div>
-            ) : companiesLoading ? (
-              <div className="api-loading-sidebar" role="status" aria-live="polite" aria-busy="true" style={{ display: 'block', padding: '10px 12px' }}>
-                <span className="sr-only">Memuat daftar emiten</span>
-                {[0, 1, 2, 3, 4].map(item => (
-                  <div key={item} className="sk" aria-hidden="true" style={{ height: 36, marginBottom: 8 }} />
-                ))}
-              </div>
-            ) : (
               <div className="console-sidebar-list">
-                {Array.from(new Set(['BBCA', 'BBRI', 'BMRI', 'TLKM', 'ASII', 'BREN', 'AMMN', 'ADRO', selected].filter(Boolean))).map(sym => {
+                {DEMO_COMPANIES.map(company => company.symbol).map(sym => {
                   const d = tickers[sym];
                   const isAct = selected === sym;
                   return (
@@ -1299,89 +1152,16 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
                       onClick={() => setSelected(sym)}
                     >
                       <span className="t-sym">{sym}</span>
-                      {d
-                        ? <span className={`t-pct ${d.changePercent >= 0 ? 'up' : 'dn'}`}>{pct(d.changePercent)}</span>
-                        : failedSyms[sym]
-                        ? <span className="t-pct" style={{ color: 'var(--dn)' }}>Gagal</span>
-                        : <span className="t-pct" style={{ color: 'var(--tx-2)' }}>Memuat</span>
-                      }
+                      <span className={`t-pct ${d.changePercent >= 0 ? 'up' : 'dn'}`}>{pct(d.changePercent)}</span>
                     </button>
                   );
                 })}
               </div>
-            )}
           </div>
 
           {/* Main panel */}
           <div className="console-main">
-            {failedSyms[selected] ? (
-              <div style={{ padding: '36px 20px', textAlign: 'center' }}>
-                <div style={{ fontSize: 14, color: '#f87171', marginBottom: 8, fontWeight: 700 }}>
-                  Data pasar untuk {selected} tidak tersedia
-                </div>
-                <p style={{ fontSize: 13, color: 'var(--tx-1)', marginBottom: 16, maxWidth: 420, margin: '0 auto 16px', lineHeight: 1.5 }}>
-                  {failedSyms[selected]}
-                </p>
-                <button
-                  className="btn-primary btn-sm"
-                  onClick={async () => {
-                    setLoading(true);
-                    try {
-                      const companyData = useCompanyStore.getState().getCompany(selected);
-                      if (!companyData) throw new Error(`Simbol ${selected} tidak ditemukan.`);
-                      const data: RealTickerMetrics = {
-                        symbol: selected,
-                        name: companyData.name,
-                        sector: companyData.sector,
-                        currency: 'IDR',
-                        lastPrice: (companyData.lastPrice || 0),
-                        ...generateDeterministicMetrics(selected, (companyData.lastPrice || 0)),
-                        lastUpdated: new Date().toLocaleTimeString('id-ID'),
-                        isRealLive: false
-                      };
-                      setTickers(prev => ({ ...prev, [selected]: data }));
-                      setFailed(prev => { const n = { ...prev }; delete n[selected]; return n; });
-                    } catch (err) {
-                      setFailed(prev => ({
-                        ...prev,
-                        [selected]: err instanceof Error ? err.message : `Gagal memuat data ${selected}.`
-                      }));
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                >
-                  Coba Muat Ulang {selected}
-                </button>
-              </div>
-            ) : loading && !active ? (
-              <div className="console-skeleton" role="status" aria-live="polite" aria-busy="true" style={{ padding: 20 }}>
-                <span className="sr-only">Memuat data pasar</span>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
-                  <div style={{ display: 'grid', gap: 10, width: '55%' }}>
-                    <div className="sk sk-heading" aria-hidden="true" style={{ width: '42%' }} />
-                    <div className="sk sk-text" aria-hidden="true" style={{ width: '86%' }} />
-                  </div>
-                  <div style={{ display: 'grid', justifyItems: 'end', gap: 10, width: '35%' }}>
-                    <div className="sk sk-value" aria-hidden="true" style={{ width: '75%' }} />
-                    <div className="sk sk-text" aria-hidden="true" style={{ width: '55%' }} />
-                  </div>
-                </div>
-                <div className="console-metrics">
-                  {[0, 1, 2, 3, 4, 5].map(item => (
-                    <div className="metric-card" key={item} aria-hidden="true">
-                      <div className="sk sk-text" style={{ width: '72%', marginBottom: 12 }} />
-                      <div className="sk sk-value" style={{ width: '54%' }} />
-                      <div className="sk sk-text" style={{ width: '28%', marginTop: 8 }} />
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 18 }}>
-                  <div className="sk sk-text" aria-hidden="true" style={{ width: 150 }} />
-                  <div className="sk" aria-hidden="true" style={{ width: 150, height: 34 }} />
-                </div>
-              </div>
-            ) : active ? (
+            {active ? (
               <>
                 <div className="console-topbar">
                   <div>
@@ -1451,13 +1231,13 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
                 <div className="console-status-bar">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span className="badge badge-idle">Sectors API</span>
+                      <span className="badge badge-idle">Data contoh</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-1)' }}>
-                        Data tersimpan (cache): {active.lastUpdated} WIB
+                        Simulasi produk · bukan data pasar aktual
                       </span>
                     </div>
-                    <span style={{ fontSize: 11, color: 'var(--tx-2)' }}>
-                      Kuotasi simulasi pantauan pasar berbasis Sectors API.
+                    <span style={{ fontSize: 12, color: 'var(--tx-2)' }}>
+                      Daftar untuk memantau saham Anda dengan data Sectors API di dashboard.
                     </span>
                   </div>
                 </div>
@@ -1505,18 +1285,10 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
                   </div>
                 </div>
               </div>
-              <pre className="tg-body" aria-busy={loading && !active}>
-                {active ? telegramText : loading ? (
-                  <span role="status" aria-label="Memuat contoh laporan" style={{ display: 'grid', gap: 10, padding: '8px 0' }}>
-                    {[82, 96, 70, 90, 62, 88, 75].map((width, index) => (
-                      <span key={index} className="sk sk-text" aria-hidden="true" style={{ display: 'block', width: `${width}%` }} />
-                    ))}
-                  </span>
-                ) : 'Pilih saham di konsol di atas untuk melihat contoh laporan.'}
-              </pre>
+              <pre className="tg-body">{telegramText}</pre>
               <div className="tg-foot">
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-1)' }}>
-                  Evaluasi 16:30 WIB saat dashboard aktif / via tombol Run
+                  Contoh laporan · jadwal evaluasi 07:00 WIB
                 </span>
                 <button className="btn-primary btn-sm" onClick={() => onOpenAuth('register')}>
                   Sambungkan Telegram
@@ -1538,7 +1310,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
           {[
             { n: '01', title: 'Daftar dan susun daftar pantauan', body: 'Buat akun gratis. Tentukan kode saham IDX yang ingin Anda pantau, seperti BBCA, TLKM, BBRI, atau emiten lain pilihan Anda.' },
             { n: '02', title: 'Sambungkan ke Telegram', body: 'Salin kode token unik ke bot Telegram SIBA. ID chat Anda hanya digunakan untuk mengirimkan laporan akun pribadi Anda dan dijaga kerahasiaannya.' },
-            { n: '03', title: 'Jalankan evaluasi harian', body: 'Saat dashboard dibuka menjelang 16:30 WIB pada hari bursa, sistem otomatis memeriksa kondisi saham dan mengirimkan laporan jika ada lonjakan. Anda juga dapat menjalankan evaluasi sewaktu-waktu lewat tombol Run.' },
+            { n: '03', title: 'Jalankan evaluasi harian', body: 'Sistem dijadwalkan mengevaluasi data sesi bursa terakhir yang tersedia setiap hari bursa pukul 07:00 WIB dan mengirimkan laporan jika ada lonjakan.' },
           ].map(s => (
             <div key={s.n} className="step-cell">
               <span className="step-n-watermark" aria-hidden="true">{s.n}</span>
@@ -1576,8 +1348,8 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
               {
                 num: '02',
                 title: 'Pergerakan berbeda jauh dari IHSG',
-                badgeLabel: 'SELISIH > 2,0%',
-                body: 'Selisih persentase perubahan harga saham terhadap indeks acuan (IHSG) dihitung secara absolut. Bila selisihnya melebihi 2,0%, dicatat sebagai pergerakan tidak lazim terhadap pasar.',
+                badgeLabel: 'SELISIH ≥ 2,0%',
+                body: 'Selisih persentase perubahan harga saham terhadap indeks acuan (IHSG) dihitung secara absolut. Bila selisihnya minimal 2,0%, dicatat sebagai pergerakan tidak lazim terhadap pasar.',
               },
               {
                 num: '03',
@@ -1606,7 +1378,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             <div className="section-label">Ringkasan Pasar</div>
             <h2 className="section-h2" style={{ marginBottom: 4 }}>Daftar saham dalam pantauan</h2>
             <p style={{ fontSize: 13, color: 'var(--tx-2)', marginBottom: 0 }}>
-              Data kuotasi diperoleh dari Sectors API dengan pembaruan berkala sebagai gambaran awal pasar.
+              Seluruh harga dan indikator berikut adalah data contoh untuk demonstrasi produk.
             </p>
           </div>
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
@@ -1621,11 +1393,8 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
               type="submit"
               className="btn-primary btn-sm"
               style={{ padding: '9px 16px' }}
-              disabled={searchLoading}
-              aria-busy={searchLoading}
             >
-              {searchLoading && <span className="api-loading-spinner api-loading-spinner-sm" aria-hidden="true" />}
-              {searchLoading ? 'Memuat' : 'Cari'}
+              Cari
             </button>
           </form>
         </div>
@@ -1638,7 +1407,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
 
         <div style={{ border: '1px solid var(--ed)', borderRadius: 'var(--r2)', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table className="cov-table" aria-busy={loading && Object.values(tickers).length === 0}>
+            <table className="cov-table">
               <thead>
                 <tr>
                   {['Kode', 'Nama Emiten', 'Harga', 'Perubahan', 'Volume Hari Ini', 'Rasio Volume', 'Status'].map(h => (
@@ -1648,22 +1417,10 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
               </thead>
               <tbody>
                 {(() => {
-                  const demoSyms = ['BBCA', 'BBRI', 'BMRI', 'TLKM', 'ASII', 'BREN', 'AMMN', 'ADRO'];
+                  const demoSyms = DEMO_COMPANIES.map(company => company.symbol);
                   const displayedList = search.trim()
                     ? Object.values(tickers).filter(t => t.symbol.toLowerCase().includes(search.toLowerCase()) || t.name.toLowerCase().includes(search.toLowerCase()))
                     : demoSyms.map(s => tickers[s]).filter(Boolean);
-
-                  if (loading && Object.values(tickers).length === 0) {
-                    return Array.from({ length: 5 }, (_, rowIndex) => (
-                      <tr className="sk-table-row" key={`skeleton-${rowIndex}`} aria-hidden="true">
-                        {[42, 150, 74, 52, 76, 48, 64].map((width, cellIndex) => (
-                          <td key={cellIndex}>
-                            <span className={`sk ${cellIndex === 0 || cellIndex === 2 ? 'sk-text' : ''}`} style={{ width, maxWidth: '100%' }} />
-                          </td>
-                        ))}
-                      </tr>
-                    ));
-                  }
 
                   if (displayedList.length === 0) {
                     return (
@@ -1714,12 +1471,17 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
         <div className="cta-block">
           <div className="section-label" style={{ display: 'inline-flex', margin: '0 auto 14px auto' }}>Mulai pantau saham tanpa biaya</div>
           <h2 className="cta-h2">
-            Berhenti buka grafik saham setiap sore.
+            Mulai pantau saham pilihan Anda.
           </h2>
           <p className="cta-lead">
             Daftar gratis, susun daftar pantauan saham IDX Anda,
-            sambungkan Telegram dan terima laporan otomatis setiap 16:30 WIB saat dashboard terbuka.
+            sambungkan Telegram untuk menerima laporan evaluasi pukul 07:00 WIB pada hari bursa.
           </p>
+          <div className="cta-ctas">
+            <button className="btn-primary" onClick={() => onOpenAuth('register')}>
+              Daftar gratis
+            </button>
+          </div>
         </div>
       </motion.section>
 
