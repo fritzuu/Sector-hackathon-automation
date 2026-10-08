@@ -1,3 +1,4 @@
+import { StockLogo } from '../../../shared/components/StockLogo';
 import React from "react";
 import { FileText, ExternalLink, Clock } from "lucide-react";
 import { useWorkflowStore } from "../../cases/stores/workflow.store.js";
@@ -47,10 +48,10 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({
       <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-secondary/80 backdrop-blur-md sticky top-0 z-10 flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+            <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
               Keterbukaan Informasi &amp; Transaksi Insider
             </h2>
-            <p className="text-xs text-text-muted mt-0.5">
+            <p className="text-sm text-text-muted mt-0.5">
               Sectors API • Dokumen Resmi IDX
             </p>
           </div>
@@ -75,7 +76,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({
             <p className="text-sm text-white font-bold">
               Tidak Ada Laporan Baru
             </p>
-            <p className="text-xs text-text-muted max-w-sm">
+            <p className="text-sm text-text-muted max-w-sm">
               Tidak ada dokumen Keterbukaan Informasi &amp; Transaksi Insider
               terbaru untuk emiten di Watchlist Anda.
             </p>
@@ -86,12 +87,13 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({
           <div className="space-y-6">
             {filingsByTicker.map((block) => (
               <div key={block.ticker} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <StockLogo ticker={block.ticker} />
                     <span className="px-2.5 py-0.5 bg-primary/15 text-primary font-mono font-extrabold text-xs rounded-lg border border-primary/30">
                       {block.ticker}
                     </span>
-                    <span className="text-xs text-text-muted font-semibold uppercase tracking-wider">
+                    <span className="text-sm text-text-muted font-semibold uppercase tracking-wider">
                       Pengumuman Resmi BEI
                     </span>
                   </div>
@@ -99,7 +101,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({
                     href={`https://sectors.app/idx/${block.ticker}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-text-muted hover:text-primary transition-colors flex items-center gap-1 group font-semibold"
+                    className="text-sm text-text-muted hover:text-primary transition-colors flex items-center gap-1 group font-semibold"
                   >
                     <span>Lihat di Sectors</span>
                     <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -180,13 +182,13 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({
                             </div>
 
                             <div className="flex flex-col gap-1">
-                              <h3 className="text-sm font-semibold text-white group-hover:text-primary leading-snug transition-colors">
+                              <h3 className="text-base font-semibold text-white group-hover:text-primary leading-snug transition-colors">
                                 {item.title}
                               </h3>
 
                               {/* Price and Volume details */}
                               {item.amount && item.price && (
-                                <p className="text-xs text-text-muted font-mono">
+                                <p className="text-sm text-text-muted font-mono">
                                   {item.amount.toLocaleString("id-ID")} lembar @
                                   Rp {item.price.toLocaleString("id-ID")}
                                 </p>
@@ -213,7 +215,7 @@ export const WatchlistNewsFeed: React.FC<WatchlistNewsFeedProps> = ({
                         </div>
 
                         {/* Footer tags */}
-                        <div className="flex items-center gap-3 text-xs text-text-muted font-mono mt-3 ml-0 md:ml-12">
+                        <div className="flex items-center gap-3 text-sm text-text-muted font-mono mt-3 ml-0 md:ml-12">
                           <span>
                             {new Date(item.publishedAt).toLocaleDateString(
                               "id-ID",

@@ -1,3 +1,4 @@
+import { StockLogo } from '../../../shared/components/StockLogo';
 import { useCompanies } from "../../../data/useCompanies";
 /**
  * WatchlistManager — Orchestrator.
@@ -110,6 +111,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
+              <StockLogo ticker={symbol} size="large" />
               <span className="font-mono font-bold text-sm text-bg bg-accent px-2.5 py-1 rounded-lg border border-accent">
                 {symbol}
               </span>
@@ -125,7 +127,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                 </span>
               )}
             </div>
-            <div className="text-base font-extrabold text-white mt-1.5 truncate">
+            <div className="text-base font-bold text-text-main mt-1.5 leading-snug">
               {displayName}
             </div>
             <div className="text-xs text-text/60 mt-0.5">
@@ -162,7 +164,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
               {/* Price row */}
               <div className="flex items-end justify-between">
                 <div>
-                  <div className="text-2xl font-bold font-mono text-white">
+                  <div className="text-3xl font-bold font-mono text-white">
                     Rp {fmt(metrics.lastPrice)}
                   </div>
                   <div
@@ -173,7 +175,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                     ) : (
                       <TrendingDown className="w-3.5 h-3.5" />
                     )}
-                    {pct(metrics.changePercent)} hari ini
+                    {pct(metrics.changePercent)} pada snapshot terakhir
                   </div>
                 </div>
                 <div className="text-right">
@@ -187,16 +189,16 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
               </div>
 
               {/* Metrics grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   {
-                    label: "Volume Hari Ini",
-                    value: `${vol(metrics.todayVolume)} lot`,
+                    label: "Volume sesi terakhir",
+                    value: `${fmt(metrics.todayVolume)} lembar`,
                     hot: metrics.isVolumeAnomaly,
                   },
                   {
                     label: "Median 20 Sesi",
-                    value: `${vol(metrics.medianVolume20d)} lot`,
+                    value: `${fmt(metrics.medianVolume20d)} lembar`,
                     hot: false,
                   },
                   {
@@ -224,11 +226,11 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                     key={m.label}
                     className="bg-bg border border-border rounded-xl p-2.5"
                   >
-                    <div className="text-[10px] text-text/50 uppercase tracking-wider mb-1 font-semibold">
+                    <div className="text-xs text-text-muted mb-1 font-semibold">
                       {m.label}
                     </div>
                     <div
-                      className={`text-xs font-bold font-mono ${m.hot ? "text-amber-400" : "text-white"}`}
+                      className={`text-sm font-bold font-mono ${m.hot ? "text-amber-400" : "text-white"}`}
                     >
                       {m.value}
                     </div>
@@ -257,7 +259,7 @@ const StockDetailModal: React.FC<StockDetailModalProps> = ({
                 </div>
               )}
 
-              <div className="text-[10px] text-text/40 font-mono text-right">
+              <div className="text-xs text-text-muted font-mono text-right">
                 Sectors API · Diperbarui {metrics.lastUpdated} · Cache 5 mnt
               </div>
             </>

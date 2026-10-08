@@ -1,5 +1,6 @@
+import { StockLogo } from '../../../shared/components/StockLogo';
 import React from 'react';
-import { X, TrendingUp, TrendingDown, AlertTriangle, WifiOff } from 'lucide-react';
+import { X, ArrowRight, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { LiveIdxCompany } from '../../../services/sectorsApi';
 import { WatchlistMarketData } from '../watchlist.marketData.js';
 
@@ -11,107 +12,65 @@ interface WatchlistCardProps {
   onClick: () => void;
 }
 
-const fmt = (n?: number)  => (n ?? 0).toLocaleString('id-ID');
-const pct = (n?: number) => `${(n || 0) >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
-const compactVolume = (n?: number) => `${((n ?? 0) / 1_000_000).toFixed(1)}M`;
+const validNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+const fmt = (value: number) => value.toLocaleString('id-ID', { maximumFractionDigits: 2 });
 
 export const WatchlistCard: React.FC<WatchlistCardProps> = ({ ticker, companyInfo, marketData, onRemove, onClick }) => {
-  const isVolumeAnomaly = (marketData?.volumeMultiplier ?? 0) >= 2;
-  const isUp = (marketData?.changePercent ?? 0) >= 0;
-
-  const displayName = companyInfo?.name ?? ticker;
-  const displaySector = companyInfo?.sector ?? 'Emiten IDX';
-  const displayMcap = companyInfo?.marketCapTrillion;
+  const price = validNumber(marketData?.lastPrice) && marketData.lastPrice > 0 ? marketData.lastPrice : null;
+  const change = validNumber(marketData?.changePercent) ? marketData.changePercent : null;
+  const volume = validNumber(marketData?.todayVolume) && marketData.todayVolume >= 0 ? marketData.todayVolume : null;
+  const multiplier = validNumber(marketData?.volumeMultiplier) ? marketData.volumeMultiplier : null;
+  const isVolumeAnomaly = multiplier !== null && multiplier >= 2;
+  const mcap = companyInfo?.marketCapTrillion;
+  const updatedAt = marketData?.asOfDate ? new Date(marketData.asOfDate) : null;
+  const timeLabel = updatedAt && Number.isFinite(updatedAt.getTime())
+    ? `Diperbarui ${updatedAt.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} WIB`
+    : 'Waktu snapshot belum tersedia';
 
   return (
-    <div
-      onClick={onClick}
-      className={`group relative rounded-xl cursor-pointer select-none transition-all duration-300 p-4 pr-8 border hover:-translate-y-[2px] ${
-        isVolumeAnomaly
-          ? 'bg-amber-900/10 border-amber-500/30 shadow-[0_4px_20px_rgba(245,158,11,0.1)] hover:border-amber-500/50 hover:shadow-[0_4px_20px_rgba(245,158,11,0.2)]'
-          : 'bg-secondary/50 border-border shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:border-primary hover:shadow-[0_4px_20px_rgba(168,85,247,0.15)]'
-      }`}
-    >
-      {/* Remove button */}
-      <button
-        onClick={e => { e.stopPropagation(); onRemove(); }}
-        title={`Hapus ${ticker}`}
-        className="absolute top-2.5 right-2.5 z-10 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-lg p-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300"
-      >
-        <X className="w-3.5 h-3.5" />
+    <article className={`flex h-full min-w-0 flex-col rounded-xl border bg-bg/40 p-4 sm:p-5 ${isVolumeAnomaly ? 'border-amber-500/40' : 'border-border'}`}>
+      <header className="flex items-start justify-between gap-2">
+        <button type="button" onClick={onClick} aria-label={`Lihat detail ${ticker}`} className="flex min-w-0 items-start gap-3 rounded-md text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+          <StockLogo ticker={ticker} size="large" />
+          <span className="min-w-0">
+            <span className="block font-mono text-lg font-bold text-text-main">{ticker}</span>
+            <span className="mt-0.5 block text-sm leading-snug text-text-muted">{companyInfo?.name ?? 'Nama perusahaan belum tersedia'}</span>
+          </span>
+        </button>
+        <button type="button" onClick={onRemove} aria-label={`Hapus ${ticker} dari watchlist`} title={`Hapus ${ticker}`} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-rose-400/10 hover:text-rose-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+          <X className="h-4 w-4" />
+        </button>
+      </header>
+
+      <div className="my-5">
+        <p className="mb-1 text-xs font-semibold text-text-muted">Harga penutupan terakhir</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-mono text-2xl font-bold tabular-nums text-text-main sm:text-3xl">{price !== null ? `Rp ${fmt(price)}` : 'Belum tersedia'}</p>
+          <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold tabular-nums ${change === null || change === 0 ? 'bg-secondary text-text-muted' : change > 0 ? 'bg-accent/10 text-accent' : 'bg-rose-400/10 text-rose-400'}`}>
+            {change !== null && change !== 0 && (change > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />)}
+            {change === null ? 'Perubahan belum tersedia' : `${change > 0 ? '+' : ''}${change.toFixed(2)}%`}
+          </span>
+        </div>
+      </div>
+
+      <dl className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3 border-t border-border pt-4">
+        <div><dt className="text-xs text-text-muted">Volume sesi terakhir</dt><dd className="mt-1 whitespace-nowrap font-mono text-base font-semibold text-text-main">{volume !== null ? fmt(volume) : 'Belum tersedia'}</dd><dd className="text-xs text-text-muted">lembar saham</dd></div>
+        <div><dt className="text-xs text-text-muted">Kapitalisasi pasar</dt><dd className="mt-1 font-mono text-base font-semibold text-text-main">{validNumber(mcap) && mcap > 0 ? `Rp ${fmt(mcap)} T` : 'Belum tersedia'}</dd><dd className="text-xs text-text-muted">Profil emiten Sectors</dd></div>
+      </dl>
+
+      <div className="mt-4 space-y-1 border-t border-border pt-3">
+        {multiplier !== null ? (
+          <p className={`flex items-center gap-1.5 text-xs leading-relaxed ${isVolumeAnomaly ? 'text-amber-300' : 'text-text-muted'}`}>
+            {isVolumeAnomaly && <AlertTriangle className="h-3.5 w-3.5 shrink-0" />}
+            Volume {multiplier.toFixed(2)}× median 20 sesi{isVolumeAnomaly ? ' · Di atas ambang 2×' : ''}
+          </p>
+        ) : <p className="text-xs text-text-muted">Perbandingan median volume belum tersedia.</p>}
+        <p className="text-xs leading-relaxed text-text-muted">{companyInfo?.subSector || companyInfo?.sector || 'Sektor belum tersedia'}</p>
+        <p className="text-xs leading-relaxed text-text-muted">{timeLabel}</p>
+      </div>
+      <button type="button" onClick={onClick} className="mt-auto flex min-h-10 items-center justify-between gap-2 pt-4 text-sm font-semibold text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-label={`Buka rincian ${ticker}`}>
+        Lihat detail saham <ArrowRight className="h-4 w-4" />
       </button>
-
-      {/* Top row */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="font-mono font-bold text-[11px] px-2 py-0.5 rounded-md bg-accent border border-accent text-bg shadow-sm shadow-accent/20">
-          {ticker}
-        </span>
-        {isVolumeAnomaly && (
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 text-amber-400 animate-pulse">
-            <AlertTriangle className="w-2.5 h-2.5" />
-            ANOM
-          </span>
-        )}
-        {displayMcap != null && displayMcap > 0 && (
-          <span className="ml-auto text-right">
-            <span className="block text-[9px] font-semibold text-text-muted/70">Market cap</span>
-            <span className="block text-[10px] font-mono font-semibold text-text-muted">
-              Rp {displayMcap.toLocaleString('id-ID')} T
-            </span>
-          </span>
-        )}
-      </div>
-
-      {/* Name + sector */}
-      <div className="text-xs font-bold text-text-main truncate mb-1 group-hover:text-primary transition-colors">{displayName}</div>
-      <div className="text-[10px] truncate mb-4 text-text-muted">
-        {displaySector}
-      </div>
-
-      {/* Latest price and daily volume */}
-      <div className="flex items-end justify-between gap-3 border-t border-white/5 pt-3">
-        {marketData ? (
-          <>
-            <div className="min-w-0">
-              <span className="mb-1 block text-[9px] font-semibold text-text-muted/70">Harga terakhir</span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-black font-mono text-text-main">Rp {fmt(marketData.lastPrice)}</span>
-                {marketData.changePercent !== null && (
-                  <span className={`flex items-center gap-0.5 text-[10px] font-black font-mono ${isUp ? 'text-accent' : 'text-rose-500'}`}>
-                    {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    {pct(marketData.changePercent)}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="shrink-0 text-right">
-              <span className="mb-1 block text-[9px] font-semibold text-text-muted/70">Volume</span>
-              {marketData.volumeMultiplier !== null ? (
-                <>
-                  <span className={`block text-[10px] font-bold font-mono ${isVolumeAnomaly ? 'text-rose-400' : 'text-text-main'}`}>
-                    {marketData.volumeMultiplier.toFixed(1)}× median
-                  </span>
-                  <span className="block text-[9px] font-mono text-text-muted">
-                    {compactVolume(marketData.todayVolume)} hari ini
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="block text-[10px] font-bold font-mono text-text-main">
-                    {compactVolume(marketData.todayVolume)} hari ini
-                  </span>
-                  <span className="block text-[9px] font-mono text-text-muted">Riwayat 20 sesi belum cukup</span>
-                </>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[10px] font-mono text-text-muted/60">
-            <WifiOff className="h-3 w-3 shrink-0" />
-            Snapshot Supabase belum tersedia
-          </div>
-        )}
-      </div>
-    </div>
+    </article>
   );
 };

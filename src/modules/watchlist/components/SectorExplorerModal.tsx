@@ -1,3 +1,4 @@
+import { StockLogo } from '../../../shared/components/StockLogo';
 import React, { useEffect, useState } from 'react';
 import { Check, ChevronRight, Plus, Search, X } from 'lucide-react';
 import { LiveIdxCompany } from '../../../services/sectorsApi';
@@ -116,7 +117,7 @@ export const SectorExplorerModal: React.FC<SectorExplorerModalProps> = ({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <span className="hidden text-[10px] font-mono text-text-muted sm:inline">
+            <span className="hidden text-xs font-mono text-text-muted sm:inline">
               {sectors.length} sektor · {SECTOR_SUBSECTORS.length} subsektor · {watchlist.length}/{MAX_WATCHLIST_SIZE} dipantau
             </span>
             <button
@@ -200,7 +201,7 @@ export const SectorExplorerModal: React.FC<SectorExplorerModalProps> = ({
                     {selectedSector === 'all' ? 'Pilih sektor untuk melihat filter subsektor.' : 'Pilih subsektor untuk mempersempit hasil.'}
                   </p>
                 </div>
-                <span className="text-[10px] font-mono text-text-muted">
+                <span className="text-xs font-mono text-text-muted">
                   {companiesLoading ? 'Memuat emiten...' : `${filteredCompanies.length} emiten ditemukan`}
                 </span>
               </div>
@@ -210,7 +211,7 @@ export const SectorExplorerModal: React.FC<SectorExplorerModalProps> = ({
                   type="button"
                   aria-pressed={!selectedSubsector}
                   onClick={() => setSelectedSubsector('')}
-                  className={`rounded-md border px-2.5 py-1.5 text-[10px] font-semibold transition-colors ${
+                  className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
                     !selectedSubsector
                       ? 'border-primary bg-primary text-bg'
                       : 'border-border bg-secondary/60 text-text-muted hover:border-primary/50 hover:text-text-main'
@@ -227,7 +228,7 @@ export const SectorExplorerModal: React.FC<SectorExplorerModalProps> = ({
                       type="button"
                       aria-pressed={isSelected}
                       onClick={() => setSelectedSubsector(isSelected ? '' : pair.subsector)}
-                      className={`rounded-md border px-2.5 py-1.5 text-[10px] font-semibold transition-colors ${
+                      className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
                         isSelected
                           ? 'border-primary bg-primary text-bg'
                           : 'border-border bg-secondary/60 text-text-muted hover:border-primary/50 hover:text-text-main'
@@ -286,7 +287,7 @@ export const SectorExplorerModal: React.FC<SectorExplorerModalProps> = ({
                 <div className="overflow-x-auto border-y border-border">
                   <table className="w-full min-w-[520px] border-collapse text-left">
                     <thead>
-                      <tr className="border-b border-border text-[10px] font-semibold text-text-muted">
+                      <tr className="border-b border-border text-xs font-semibold text-text-muted">
                         <th className="py-2.5 pr-3">Emiten</th>
                         <th className="py-2.5 pr-3">Subsektor</th>
                         <th className="py-2.5 pr-3 text-right">Market cap</th>
@@ -297,16 +298,21 @@ export const SectorExplorerModal: React.FC<SectorExplorerModalProps> = ({
                       {filteredCompanies.map(company => (
                           <tr key={company.symbol} className="border-b border-border/70 transition-colors last:border-0 hover:bg-secondary/30">
                             <td className="py-3 pr-3 pl-2">
-                              <div className="font-mono text-xs font-bold text-text-main">{company.symbol}</div>
-                              <div className="mt-0.5 max-w-56 truncate text-[10px] text-text-muted" title={company.name}>{company.name}</div>
+                              <div className="flex items-center gap-2.5">
+                                <StockLogo ticker={company.symbol} />
+                                <div className="min-w-0">
+                                  <div className="font-mono text-sm font-bold text-text-main">{company.symbol}</div>
+                                  <div className="mt-0.5 max-w-56 truncate text-xs text-text-muted" title={company.name}>{company.name}</div>
+                                </div>
+                              </div>
                             </td>
-                            <td className="py-3 pr-3 text-[10px] text-text-muted">{company.subSector}</td>
-                            <td className="py-3 pr-3 text-right font-mono text-[10px] text-text-main">
+                            <td className="py-3 pr-3 text-xs text-text-muted">{company.subSector}</td>
+                            <td className="py-3 pr-3 text-right font-mono text-xs text-text-main">
                               {company.marketCapTrillion > 0 ? `Rp ${company.marketCapTrillion.toLocaleString('id-ID')} T` : 'N/A'}
                             </td>
                             <td className="py-3 text-right">
                               {watchlist.includes(company.symbol) ? (
-                                <span className="inline-flex min-w-24 items-center justify-center gap-1 rounded-md border border-border bg-secondary/70 px-2.5 py-1.5 text-[10px] font-semibold text-text-muted">
+                                <span className="inline-flex min-w-24 items-center justify-center gap-1 rounded-md border border-border bg-secondary/70 px-2.5 py-1.5 text-xs font-semibold text-text-muted">
                                   <Check className="h-3 w-3" /> Dipantau
                                 </span>
                               ) : (
@@ -315,7 +321,7 @@ export const SectorExplorerModal: React.FC<SectorExplorerModalProps> = ({
                                   disabled={isWatchlistFull}
                                   onClick={() => onAddTicker(company.symbol)}
                                   aria-label={isWatchlistFull ? 'Watchlist penuh' : `Tambah ${company.symbol} ke watchlist`}
-                                  className="inline-flex min-w-24 items-center justify-center gap-1 rounded-md border border-primary/50 px-2.5 py-1.5 text-[10px] font-semibold text-primary transition-colors hover:bg-primary hover:text-bg disabled:cursor-not-allowed disabled:border-border disabled:text-text-muted"
+                                  className="inline-flex min-w-24 items-center justify-center gap-1 rounded-md border border-primary/50 px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary hover:text-bg disabled:cursor-not-allowed disabled:border-border disabled:text-text-muted"
                                 >
                                   <Plus className="h-3 w-3" /> Tambah
                                 </button>
@@ -330,7 +336,7 @@ export const SectorExplorerModal: React.FC<SectorExplorerModalProps> = ({
             </main>
 
             <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5">
-              <p className="text-[10px] text-text-muted">
+              <p className="text-xs text-text-muted">
                 {isWatchlistFull ? `Watchlist penuh (${MAX_WATCHLIST_SIZE}/${MAX_WATCHLIST_SIZE}).` : `${watchlist.length}/${MAX_WATCHLIST_SIZE} saham dipantau.`}
               </p>
               <button type="button" onClick={onClose} className="rounded-md bg-primary px-4 py-2 text-xs font-bold text-bg transition-opacity hover:opacity-90">

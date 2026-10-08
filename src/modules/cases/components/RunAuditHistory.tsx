@@ -1,5 +1,8 @@
 import React from 'react';
-import { History, CheckCircle } from 'lucide-react';
+import { History, CheckCircle, AlertTriangle } from 'lucide-react';
+import { formatWib } from '../../automation/lib/automationStatus';
+import { Pagination } from '../../../shared/components/Pagination';
+import { usePagination } from '../../../shared/hooks/usePagination';
 
 export interface AuditRunItem {
   runId: string;
@@ -18,6 +21,7 @@ interface RunAuditHistoryProps {
 }
 
 export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs, error, isLoading = false, onRetry }) => {
+  const pagination = usePagination(runs);
   return (
     <div
       id="tour-audit-content"
@@ -42,15 +46,16 @@ export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs, error, i
       )}
 
       <div className="overflow-x-auto" aria-busy={isLoading}>
-        <table className="w-full text-left text-xs">
+        <table className="w-full min-w-[720px] text-left text-sm">
+          <caption className="sr-only">Riwayat evaluasi saham dalam zona waktu WIB</caption>
           <thead>
-            <tr className="border-b border-border text-text/50 font-semibold uppercase tracking-wider text-[10px]">
-              <th className="pb-2.5 pl-2">Run ID</th>
-              <th className="pb-2.5">Waktu Eksekusi</th>
-              <th className="pb-2.5 text-center">Ticker Dievaluasi</th>
-              <th className="pb-2.5 text-center">Trigger Aktif</th>
-              <th className="pb-2.5 text-center">Durasi</th>
-              <th className="pb-2.5 pr-2 text-right">Status</th>
+            <tr className="border-b border-border text-text/50 font-semibold uppercase tracking-wider text-xs">
+              <th scope="col" className="pb-2.5 pl-2">Run ID</th>
+              <th scope="col" className="pb-2.5">Waktu Eksekusi</th>
+              <th scope="col" className="pb-2.5 text-center">Emiten dievaluasi</th>
+              <th scope="col" className="pb-2.5 text-center">Pemicu aktif</th>
+              <th scope="col" className="pb-2.5 text-center">Durasi</th>
+              <th scope="col" className="pb-2.5 pr-2 text-right">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60 font-mono">
@@ -61,23 +66,23 @@ export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs, error, i
                 </td>
               </tr>
             ) : (
-              runs.map((r) => (
+              pagination.items.map((r) => (
                 <tr key={r.runId} className="hover:bg-secondary/40 transition-colors">
                   <td className="py-2.5 pl-2 text-primary">{r.runId}</td>
                   <td className="py-2.5 text-text/80 font-sans">
-                    {new Date(r.timestamp).toLocaleTimeString('id-ID')}
+                    <time dateTime={r.timestamp}>{formatWib(r.timestamp)}</time>
                   </td>
                   <td className="py-2.5 text-center text-text">{r.tickersCount} saham</td>
                   <td className="py-2.5 text-center">
                     <span className={r.activeTriggersCount > 0 ? 'text-amber-400 font-bold' : 'text-text/50'}>
-                      {r.activeTriggersCount} trigger
+                      {r.activeTriggersCount} pemicu
                     </span>
                   </td>
                   <td className="py-2.5 text-center text-text/70">{r.durationMs}ms</td>
                   <td className="py-2.5 pr-2 text-right">
-                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-bold bg-accent/15 text-accent border border-accent/30">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>{r.status}</span>
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${r.status === 'SUCCESS' ? 'bg-accent/15 text-accent border-accent/30' : 'bg-amber-400/10 text-amber-300 border-amber-400/30'}`}>
+                      {r.status === 'SUCCESS' ? <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" /> : <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
+                      <span>{r.status === 'SUCCESS' ? 'Berhasil' : r.status === 'PARTIAL' ? 'Sebagian data tersedia' : 'Data belum lengkap'}</span>
                     </span>
                   </td>
                 </tr>
@@ -86,6 +91,7 @@ export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs, error, i
           </tbody>
         </table>
       </div>
+      <Pagination {...pagination} label="Halaman audit trail" />
     </div>
   );
 };

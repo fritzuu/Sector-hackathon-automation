@@ -38,7 +38,18 @@ Konfigurasi Google di layanan eksternal diperlukan untuk uji login nyata. `npm t
 
 `Jalankan Run` memulai satu siklus evaluasi langsung untuk ticker di watchlist saat ini. Untuk setiap ticker, aplikasi mengambil transaksi harian Sectors, data IHSG untuk tanggal yang sama, dan filing yang tersedia; mengevaluasi tiga rule deterministik; lalu membuka, memperbarui, memantau, atau menutup kasus beserta event dan template-nya. Jika Telegram terhubung, notifikasi dikirim untuk event material. Hasil run dan workspace kasus juga dicatat.
 
-Run manual ini tidak memprediksi harga, memberi rekomendasi, atau melakukan transaksi. Scheduler pascapasar adalah pemicu terpisah. Pada implementasi saat ini, scheduler web berjalan saat dashboard terbuka; eksekusi terjadwal tanpa browser masih perlu dipindahkan ke worker/server. Selain itu, kegagalan API saat ini ditangkap, tetapi audit run tetap ditulis dengan status `SUCCESS`; status ini belum dapat dijadikan bukti bahwa semua ticker berhasil diperiksa.
+Run manual ini tidak memprediksi harga, memberi rekomendasi, atau melakukan transaksi.
+
+### Otomatisasi pagi
+
+Cron `invoke-siba-workflow` menjalankan rekap dan evaluasi kasus bersama pada **07.00 WIB, Senin–Jumat** (`0 0 * * 1-5` UTC), menggunakan `phase=workflow`. Fungsi mengambil sesi perdagangan terakhir sebelum hari ini, mencocokkan tanggal saham dan IHSG, mengevaluasi kasus, lalu mengantrekan Rekap Pagi satu pesan per saham. Berita berada setelah harga, IHSG, volume, dan hasil evaluasi. Data belum lengkap mempertahankan status kasus dan diberi keterangan menunggu sumber.
+
+Cron `invoke-telegram-worker` memeriksa antrean setiap menit. Job evaluasi terpisah `invoke-siba-cases` dinonaktifkan; tidak ada Cron malam aktif. Dashboard membaca pembaruan server setiap 30 detik saat halaman terlihat.
+
+Konfigurasi scheduler tersedia di migrasi Supabase; gunakan migrasi gabungan terbaru `20261008190000_combined_morning_workflow.sql` dan deploy workflow dari sumber kanonis. Lihat [panduan deploy](supabase/functions/siba-workflow/DEPLOYMENT.md). Default checkpoint adalah `morning`. Nilai `evening` tetap diterima untuk kompatibilitas pemanggilan manual lama dan riwayat, bukan jadwal otomatis.
+
+Berita diperiksa dengan rentang overlap tujuh hari; halaman yang belum tuntas dicatat sebagai cakupan parsial. Mode preview manual tidak mengubah workspace atau ledger dan bukan bukti Cron berjalan tanpa campur tangan.
+
 
 ---
 

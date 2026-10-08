@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
-import { LayoutDashboard, List, ShieldAlert, History, ChevronRight, ChevronLeft, LogOut, Sparkles, X } from 'lucide-react';
+import { LayoutDashboard, List, ShieldAlert, History, CalendarClock, ChevronRight, ChevronLeft, LogOut, Sparkles, X } from 'lucide-react';
 import { UserProfile } from '../../../data/userProfiles.js';
 
 interface SidebarProps {
@@ -44,6 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { label: 'Overview', mobileLabel: 'Overview', path: '/dashboard', id: 'tour-sidebar-overview', icon: LayoutDashboard },
     { label: 'Watchlist', mobileLabel: 'Watchlist', path: '/dashboard/watchlist', id: 'tour-sidebar-watchlist', icon: List },
     { label: 'Kasus Aktif', mobileLabel: 'Kasus', path: '/dashboard/cases', id: 'tour-sidebar-cases', icon: ShieldAlert },
+    { label: 'Otomatisasi', mobileLabel: 'Otomatisasi', path: '/dashboard/automation', id: 'tour-sidebar-automation', icon: CalendarClock },
     { label: 'Audit Trail', mobileLabel: 'Audit', path: '/dashboard/audit', id: 'tour-sidebar-audit', icon: History },
   ];
 

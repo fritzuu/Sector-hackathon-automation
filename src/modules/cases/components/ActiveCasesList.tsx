@@ -12,11 +12,15 @@ import {
 interface ActiveCasesListProps {
   cases: CaseState[];
   onSelectCase: (caseItem: CaseState) => void;
+  waitingCaseIds?: Set<string>;
+  eventCounts?: Map<string, number>;
 }
 
 export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({
   cases,
   onSelectCase,
+  waitingCaseIds,
+  eventCounts,
 }) => {
   const getStatusBadge = (status: CaseStatus) => {
     switch (status) {
@@ -104,10 +108,9 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {cases.map((c) => (
-            <div
+            <article
               key={c.caseId}
-              onClick={() => onSelectCase(c)}
-              className="p-5 rounded-2xl bg-bg/70 hover:bg-secondary/60 border border-border hover:border-primary/40 transition-all cursor-pointer group flex flex-col justify-between shadow-sm"
+              className="p-5 rounded-2xl bg-bg/70 hover:bg-secondary/60 border border-border hover:border-primary/40 transition-all group flex flex-col justify-between shadow-sm"
             >
               <div>
                 <div className="flex flex-wrap items-center justify-between mb-3">
@@ -117,6 +120,7 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({
                   {getStatusBadge(c.status)}
                 </div>
 
+                {waitingCaseIds?.has(c.caseId) && <p className="mb-3 text-sm text-amber-300">Menunggu kelengkapan data sumber · status kasus dipertahankan</p>}
                 <div className="text-xs text-text-muted space-y-1 mb-4 font-mono">
                   <div>
                     ID Kasus:{" "}
@@ -131,7 +135,7 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({
                   <div>
                     Riwayat:{" "}
                     <span className="text-primary font-bold">
-                      {c.eventsCount} pembaruan tercatat
+                      {eventCounts?.get(c.caseId) ?? c.eventsCount} catatan evaluasi
                     </span>
                   </div>
                   {c.consecutiveInactiveRuns > 0 && (
@@ -156,11 +160,11 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-primary font-bold group-hover:text-accent transition-colors">
+              <button type="button" onClick={() => onSelectCase(c)} aria-label={`Lihat detail kasus ${c.symbol}`} aria-haspopup="dialog" className="min-h-11 w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-primary font-bold group-hover:text-accent transition-colors">
                 <span>Periksa Rincian Fakta &amp; Linimasa</span>
                 <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
+              </button>
+            </article>
           ))}
         </div>
       )}

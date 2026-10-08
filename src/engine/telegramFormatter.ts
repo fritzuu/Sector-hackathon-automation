@@ -1,3 +1,5 @@
+import { evaluateAbnormalVolume } from './rules/abnormalVolume.ts';
+
 export interface TelegramForeignFlow {
   buy: number;
   sell: number;
@@ -28,6 +30,17 @@ export interface TelegramFinancials {
   cash?: string;
 }
 
+export type TelegramFormatterSection =
+  | 'price'
+  | 'benchmark'
+  | 'foreignFlow'
+  | 'news'
+  | 'filings'
+  | 'agenda'
+  | 'financials'
+  | 'volume'
+  | 'engine';
+
 export interface TelegramFormatterContext {
   prices?: any[];
   benchmark?: any[];
@@ -41,6 +54,10 @@ export interface TelegramFormatterContext {
   dashboardUrl?: string;
   wibTime?: string;
   isMorningBriefing?: boolean;
+  includeSections?: TelegramFormatterSection[];
+  engineSummaryOnly?: boolean;
+  includeHeader?: boolean;
+  includeFooter?: boolean;
 }
 
 const INDONESIAN_MONTHS = [
@@ -111,6 +128,8 @@ export function formatTelegramHtml(
     'https://siba.investor.id';
 
   const isMorning = !!context.isMorningBriefing;
+  const includesSection = (section: TelegramFormatterSection) =>
+    !context.includeSections || context.includeSections.includes(section);
   const asOfDate = template?.asOfDate || '';
   const dateFormatted = formatIndonesianDate(asOfDate);
 
@@ -131,7 +150,7 @@ export function formatTelegramHtml(
   // 1. HEADER (Format 2 Aesthetics)
   // ==========================================
   const headerIcon = isMorning ? '☀️' : '🌙';
-  const headerTitle = isMorning ? 'Pembaruan Pagi' : 'Update Watchlist';
+  const headerTitle = isMorning ? 'Rekap Pagi' : 'Update Watchlist';
   
   // Status badge to preserve SIBA audit visibility
   const statusBadge =
@@ -145,10 +164,12 @@ export function formatTelegramHtml(
       ? ' ⚠️ <i>[Data Belum Lengkap]</i>'
       : '';
 
-  sections.push(
-    `<b>${headerIcon} ${headerTitle} — ${escapeHtml(cleanSymbol)}</b>${statusBadge}\n` +
-    `📅 ${dateFormatted || escapeHtml(asOfDate)}`
-  );
+  if (context.includeHeader !== false) {
+    sections.push(
+      `<b>${headerIcon} ${headerTitle} — ${escapeHtml(cleanSymbol)}</b>${statusBadge}\n` +
+      `📅 ${dateFormatted || escapeHtml(asOfDate)}`
+    );
+  }
 
   // Extract prices
   const prices = context.prices || [];
@@ -158,7 +179,7 @@ export function formatTelegramHtml(
   // ==========================================
   // 2. HARGA PENUTUPAN
   // ==========================================
-  if (latestPrice) {
+  if (includesSection('price') && latestPrice) {
     const close = Number(latestPrice.close);
     const prevClose = prevPrice ? Number(prevPrice.close) : null;
     let changeText = '';
@@ -186,49 +207,14 @@ export function formatTelegramHtml(
     sections.push(priceLines);
   }
 
-  // ==========================================
-  // 3. PERBANDINGAN PASAR / IHSG
-  // ==========================================
   const benchmark = context.benchmark || [];
   const latestIHSG = benchmark.length > 0 ? benchmark[benchmark.length - 1] : null;
   const prevIHSG = benchmark.length > 1 ? benchmark[benchmark.length - 2] : null;
 
-  // Check if IHSG date matches target session date (Condition A vs Condition B)
-  const isIhsgAligned = latestIHSG && latestPrice && latestIHSG.date === latestPrice.date;
-
-  if (isIhsgAligned && latestIHSG) {
-    const ihsgPrice = Number(latestIHSG.close ?? latestIHSG.price ?? 0);
-    const prevIhsgPrice = prevIHSG ? Number(prevIHSG.close ?? prevIHSG.price ?? ihsgPrice) : ihsgPrice;
-    const ihsgDiff = prevIhsgPrice > 0 ? ((ihsgPrice - prevIhsgPrice) / prevIhsgPrice) * 100 : 0;
-    const ihsgSign = ihsgDiff > 0 ? '+' : '';
-
-    let ihsgBlock = `📊 <b>IHSG</b>\n`;
-    ihsgBlock += `IHSG sesi ${dateFormatted}: <b>${ihsgPrice.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> (${ihsgSign}${ihsgDiff.toFixed(2)}%)\n`;
-
-    if (latestPrice && prevPrice) {
-      const stockClose = Number(latestPrice.close);
-      const stockPrevClose = Number(prevPrice.close);
-      const stockPct = stockPrevClose > 0 ? ((stockClose - stockPrevClose) / stockPrevClose) * 100 : 0;
-      const spread = stockPct - ihsgDiff;
-      const relStrength = spread >= 0 ? 'lebih kuat' : 'lebih lemah';
-      const spreadSign = spread >= 0 ? '+' : '';
-      ihsgBlock += `Kinerja vs IHSG: ${relStrength} ${spreadSign}${spread.toFixed(2)} poin persentase.`;
-    }
-
-    sections.push(ihsgBlock);
-  } else if (latestPrice && !isIhsgAligned) {
-    // Condition B / Pending IHSG (PDF Hal 3 & 4)
-    sections.push(
-      `📊 <b>IHSG</b>\n` +
-      `Data penutupan IHSG sesi ${dateFormatted || escapeHtml(asOfDate)} belum dirilis bursa.\n` +
-      `Perbandingan performa akan diperiksa kembali pada checkpoint pagi.`
-    );
-  }
-
   // ==========================================
   // 4. ALIRAN DANA ASING (FOREIGN FLOW - Modular)
   // ==========================================
-  if (context.foreignFlow) {
+  if (includesSection('foreignFlow') && context.foreignFlow) {
     const ff = context.foreignFlow;
     const netType = ff.net >= 0 ? 'Net buy' : 'Net sell';
     let ffBlock = `🌏 <b>Aliran dana asing — ${dateFormatted}</b>\n`;
@@ -243,34 +229,16 @@ export function formatTelegramHtml(
   }
 
   // ==========================================
-  // 5. BERITA TERKAIT (NEWS - Modular)
-  // ==========================================
-  if (context.news && context.news.length > 0) {
-    // Maximum 3 articles as per PDF Hal 2
-    const topNews = context.news.slice(0, 3);
-    const newsLines: string[] = [`📰 <b>Berita terkait ${escapeHtml(cleanSymbol)} — ${dateFormatted}</b>`];
-    for (const item of topNews) {
-      let itemText = `<b>${escapeHtml(item.title)}</b>`;
-      if (item.summary) {
-        itemText += `\n${escapeHtml(item.summary)}`;
-      }
-      if (item.url) {
-        const sourceName = item.source ? escapeHtml(item.source) : 'Baca Berita';
-        itemText += `\n🔗 <a href="${escapeHtml(item.url)}">${sourceName}</a>`;
-      }
-      newsLines.push(itemText);
-    }
-    sections.push(newsLines.join('\n\n'));
-  }
-
-  // ==========================================
   // 6. KETERBUKAAN INFORMASI / FILING (Modular)
   // ==========================================
   const filings = context.filings || [];
   // Also check if template has filing facts
   const hasFilingRule = template?.facts?.some((f: string) => f.toLowerCase().includes('keterbukaan'));
 
-  if (filings.length > 0 && hasFilingRule) {
+  const includeFilings = context.includeSections
+    ? includesSection('filings')
+    : includesSection('filings') && hasFilingRule;
+  if (includeFilings && filings.length > 0) {
     const recentFilings = filings.slice(0, 2);
     const filingLines: string[] = ['📑 <b>Catatan kepemilikan &amp; keterbukaan terbaru</b>'];
     for (const f of recentFilings) {
@@ -299,7 +267,7 @@ export function formatTelegramHtml(
   // ==========================================
   // 7. AGENDA PERUSAHAAN (Modular)
   // ==========================================
-  if (context.agenda && context.agenda.length > 0) {
+  if (includesSection('agenda') && context.agenda && context.agenda.length > 0) {
     const topAgenda = context.agenda[0];
     let agendaBlock = `📅 <b>Agenda perusahaan</b>\n`;
     agendaBlock += `<b>${escapeHtml(topAgenda.title)}</b> tercatat pada <b>${formatIndonesianDate(topAgenda.eventDate)}</b>`;
@@ -317,7 +285,7 @@ export function formatTelegramHtml(
   // ==========================================
   // 8. LAPORAN KEUANGAN TERAKHIR (Modular)
   // ==========================================
-  if (context.financials) {
+  if (includesSection('financials') && context.financials) {
     const fin = context.financials;
     let finBlock = `📑 <b>Laporan keuangan terbaru yang tersedia</b>\n`;
     finBlock += `Periode laporan: ${escapeHtml(fin.period)}\n`;
@@ -328,18 +296,96 @@ export function formatTelegramHtml(
   }
 
   // ==========================================
-  // 9. SOROTAN VOLUME (Conditional on baseline)
+  // 9. PERBANDINGAN PASAR / IHSG
   // ==========================================
-  const volFact = template?.facts?.find((f: string) => f.toLowerCase().includes('volume'));
-  if (volFact) {
-    sections.push(`👀 <b>Sorotan volume</b>\n${escapeHtml(volFact)}`);
+  if (includesSection('benchmark') && latestIHSG) {
+    const ihsgPrice = Number(latestIHSG.close ?? latestIHSG.price ?? 0);
+    const ihsgPriceText = ihsgPrice.toLocaleString('id-ID', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const ihsgDate = escapeHtml(formatIndonesianDate(latestIHSG.date));
+
+    if (latestPrice && latestIHSG.date === latestPrice.date) {
+      const prevIhsgPrice = prevIHSG
+        ? Number(prevIHSG.close ?? prevIHSG.price ?? ihsgPrice)
+        : ihsgPrice;
+      const ihsgDiff = prevIhsgPrice > 0
+        ? ((ihsgPrice - prevIhsgPrice) / prevIhsgPrice) * 100
+        : 0;
+      const ihsgSign = ihsgDiff > 0 ? '+' : '';
+      let ihsgBlock = `📊 <b>IHSG</b>\n`;
+      ihsgBlock += `IHSG sesi ${ihsgDate}: <b>${ihsgPriceText}</b> (${ihsgSign}${ihsgDiff.toFixed(2)}%)`;
+
+      if (prevPrice) {
+        const stockClose = Number(latestPrice.close);
+        const stockPrevClose = Number(prevPrice.close);
+        const stockPct = stockPrevClose > 0
+          ? ((stockClose - stockPrevClose) / stockPrevClose) * 100
+          : 0;
+        const spread = stockPct - ihsgDiff;
+        const relStrength = spread >= 0 ? 'lebih kuat' : 'lebih lemah';
+        const spreadSign = spread >= 0 ? '+' : '';
+        ihsgBlock += `\nKinerja vs IHSG: ${relStrength} ${spreadSign}${spread.toFixed(2)} poin persentase.`;
+      }
+
+      sections.push(ihsgBlock);
+    } else if (latestPrice) {
+      sections.push(
+        `📊 <b>IHSG</b>\n` +
+        `Data terakhir tersedia untuk ${ihsgDate}: <b>${ihsgPriceText}</b>.\n` +
+        `Perbandingan dengan ${escapeHtml(cleanSymbol)} sesi ${escapeHtml(formatIndonesianDate(latestPrice.date))} belum ditampilkan karena tanggal data berbeda.`
+      );
+    } else {
+      sections.push(`📊 <b>IHSG</b>\nData terakhir tersedia untuk ${ihsgDate}: <b>${ihsgPriceText}</b>.`);
+    }
+  } else if (includesSection('benchmark') && latestPrice) {
+    sections.push(
+      `📊 <b>IHSG</b>\nData IHSG belum tersedia; perbandingan performa belum ditampilkan.`
+    );
   }
 
   // ==========================================
-  // 10. FAKTA LAIN & INTERPRETASI TERBATAS (Fallback/Engine audit)
+  // 10. SOROTAN VOLUME
+  // ==========================================
+  if (includesSection('volume') && latestPrice && latestPrice.volume !== undefined && latestPrice.volume !== null) {
+    const volume = Number(latestPrice.volume);
+    const volumeRule = context.evalResult?.ruleResults?.find(
+      (result: any) => result.ruleId === 'ABNORMAL_VOLUME'
+    ) ?? evaluateAbnormalVolume(prices);
+    const volumeEvidence = volumeRule.evidence;
+    let volumeBlock =
+      `👀 <b>Sorotan volume</b>\n` +
+      `Volume sesi ${escapeHtml(formatIndonesianDate(latestPrice.date))}: <b>${Number.isFinite(volume) && volume >= 0 ? volume.toLocaleString('id-ID') : 'Tidak tersedia'}</b>`;
+
+    if (volumeEvidence) {
+      const median = Number(volumeEvidence.medianVolume20Days);
+      const multiplier = Number(volumeEvidence.multiplier);
+      const threshold = Number(volumeEvidence.threshold);
+      if (!volumeRule.missingDataReasons?.length && volumeEvidence.tradingDaysEvaluated >= 20 && median > 0 && Number.isFinite(multiplier)) {
+        volumeBlock +=
+          `\nRasio terhadap median 20 sesi: ${multiplier.toLocaleString('id-ID', { maximumFractionDigits: 2 })}x ` +
+          `(batas deteksi ≥ ${threshold.toLocaleString('id-ID', { maximumFractionDigits: 2 })}x).`;
+      } else {
+        volumeBlock += '\nPerbandingan dengan median 20 sesi tidak tersedia: ' + escapeHtml(volumeRule.missingDataReasons?.join(' ') || 'Baseline belum valid.');
+      }
+    } else {
+      volumeBlock += '\nPerbandingan dengan median 20 sesi tidak tersedia pada hasil evaluasi.';
+    }
+
+    sections.push(volumeBlock);
+  }
+
+  // ==========================================
+  // 11. FAKTA LAIN & INTERPRETASI TERBATAS (Fallback/Engine audit)
   // ==========================================
   // If no price/filing context was passed, ensure template facts are visible
-  if (prices.length === 0 && template?.facts && template.facts.length > 0) {
+  if (
+    includesSection('engine') && !context.engineSummaryOnly &&
+    (prices.length === 0 || context.includeSections !== undefined) &&
+    template?.facts &&
+    template.facts.length > 0
+  ) {
     let fallbackFacts = `<b>📌 FAKTA (Terverifikasi Data Sectors API):</b>\n`;
     template.facts.forEach((f: string) => {
       fallbackFacts += `• ${escapeHtml(f)}\n`;
@@ -347,7 +393,7 @@ export function formatTelegramHtml(
     sections.push(fallbackFacts.trim());
   }
 
-  if (template?.limitedInterpretations && template.limitedInterpretations.length > 0) {
+  if (includesSection('engine') && !context.engineSummaryOnly && template?.limitedInterpretations && template.limitedInterpretations.length > 0) {
     let interBlock = `🔍 <b>Interpretasi Terbatas (Tanpa Prediksi):</b>\n`;
     template.limitedInterpretations.forEach((item: string) => {
       interBlock += `• ${escapeHtml(item)}\n`;
@@ -355,19 +401,91 @@ export function formatTelegramHtml(
     sections.push(interBlock.trim());
   }
 
-  // ==========================================
-  // 11. FOOTER & DISCLAIMER
-  // ==========================================
-  const disclaimerText = escapeHtml(
-    template?.disclaimer ||
-    'Evaluasi otomatis SIBA berbasis aturan deterministik dan data resmi Sectors API. Bukan rekomendasi investasi (DYOR).'
-  );
+  if (includesSection('engine') && context.engineSummaryOnly) {
+    const labels: Record<string, string> = { OPEN: 'Kasus terbuka', UPDATED: 'Kasus diperbarui', CLOSED: 'Kasus ditutup', MONITORING: 'Dalam pemantauan', DATA_INCOMPLETE: 'Menunggu kelengkapan data' };
+    const evaluation = context.evalResult;
+    const result = evaluation?.hasIncompleteData
+      ? 'Evaluasi menunggu kelengkapan data sesi yang sama.'
+      : evaluation ? `${evaluation.activeTriggerCount} aturan terpicu pada sesi ini.` : 'Hasil evaluasi belum tersedia.';
+    sections.push(`📌 <b>Status kasus</b>\n${escapeHtml(labels[status] || status)}\n${escapeHtml(result)}`);
+  }
 
-  let footer = `<i>Sumber data: Sectors API. Diperiksa sekitar ${wibTime} WIB.</i>\n\n`;
-  footer += `⚠️ <b>Disclaimer:</b>\n<i>${disclaimerText}</i>\n\n`;
-  footer += `🔗 <a href="${escapeHtml(dashboardUrl)}/?ticker=${escapeHtml(cleanSymbol)}">Lihat detail kasus di Dashboard SIBA →</a>`;
+  // ==========================================
+  // 5. BERITA TERKAIT (NEWS - Modular)
+  // ==========================================
+  if (includesSection('news') && context.news && context.news.length > 0) {
+    // Maximum 3 articles as per PDF Hal 2
+    const topNews = context.news.slice(0, 3);
+    const newsLines: string[] = [`📰 <b>Berita terkait ${escapeHtml(cleanSymbol)} — ${dateFormatted}</b>`];
+    for (const item of topNews) {
+      let itemText = `<b>${escapeHtml(item.title)}</b>`;
+      if (item.summary) {
+        itemText += `\n${escapeHtml(item.summary)}`;
+      }
+      if (item.url) {
+        const sourceName = item.source ? escapeHtml(item.source) : 'Baca Berita';
+        itemText += `\n🔗 <a href="${escapeHtml(item.url)}">${sourceName}</a>`;
+      }
+      newsLines.push(itemText);
+    }
+    sections.push(newsLines.join('\n\n'));
+  }
 
-  sections.push(footer);
+  // ==========================================
+  // 12. FOOTER & DISCLAIMER
+  // ==========================================
+  if (context.includeFooter !== false) {
+    const disclaimerText = escapeHtml(
+      template?.disclaimer ||
+      'Evaluasi otomatis SIBA berbasis aturan deterministik dan data resmi Sectors API. Bukan rekomendasi investasi (DYOR).'
+    );
+
+    let footer = `<i>Sumber data: Sectors API. Diperiksa sekitar ${escapeHtml(wibTime)} WIB.</i>\n\n`;
+    footer += `⚠️ <b>Disclaimer:</b>\n<i>${disclaimerText}</i>\n\n`;
+    footer += `🔗 <a href="${escapeHtml(dashboardUrl)}/?ticker=${escapeHtml(cleanSymbol)}">Lihat detail kasus di Dashboard SIBA →</a>`;
+
+    sections.push(footer);
+  }
 
   return sections.join('\n\n');
+}
+
+export function formatTelegramDigest(
+  checkpoint: 'evening' | 'morning',
+  date: string,
+  tickerBlocks: string[],
+  wibTime: string,
+  dashboardUrl = 'https://siba.investor.id'
+): string {
+  const blocks = tickerBlocks.filter((block) => block.trim().length > 0);
+  if (blocks.length === 0) return '';
+
+  const title = checkpoint === 'morning' ? '☀️ REKAP PAGI' : '🌙 RINGKASAN MALAM';
+  const footer =
+    `<i>Sumber data: Sectors API. Diperiksa sekitar ${escapeHtml(wibTime)} WIB.</i>\n\n` +
+    `⚠️ <b>Disclaimer:</b>\n<i>Data dapat tidak lengkap atau terlambat. Bukan rekomendasi investasi.</i>\n\n` +
+    `🔗 <a href="${escapeHtml(dashboardUrl)}">Lihat detail di Dashboard SIBA →</a>`;
+
+  return `<b>${title} | ${escapeHtml(formatIndonesianDate(date))}</b>\n\n${blocks.join('\n\n')}\n\n${footer}`;
+}
+
+export function formatTelegramTickerDigest(
+  checkpoint: 'evening' | 'morning',
+  date: string,
+  symbol: string,
+  tickerBlock: string,
+  wibTime: string,
+  dashboardUrl = 'https://siba.investor.id',
+  context?: { purpose: 'briefing' | 'evaluation'; sessionDate?: string }
+): string {
+  const cleanSymbol = symbol.toUpperCase().replace(/\.JK$/, '');
+  const title = context?.purpose === 'evaluation' ? '☀️ Pembaruan Kasus' : checkpoint === 'morning' ? '☀️ Rekap Pagi' : '🌙 Update Watchlist';
+  const footer =
+    `<i>Sumber data: Sectors API. Diperiksa sekitar ${escapeHtml(wibTime)} WIB.</i>\n\n` +
+    `⚠️ <b>Disclaimer:</b>\n<i>Data dapat tidak lengkap atau terlambat. Bukan rekomendasi investasi.</i>\n\n` +
+    `🔗 <a href="${escapeHtml(dashboardUrl)}/?ticker=${escapeHtml(cleanSymbol)}">Lihat detail kasus di Dashboard SIBA →</a>`;
+
+  return `<b>${title} — ${escapeHtml(cleanSymbol)}</b>\n` +
+    `📅 ${escapeHtml(formatIndonesianDate(date))}\n\n` +
+    `${context?.sessionDate ? `<i>Sesi perdagangan: ${escapeHtml(formatIndonesianDate(context.sessionDate))}.</i>\n\n` : ''}${tickerBlock}\n\n${footer}`;
 }
