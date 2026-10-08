@@ -1,12 +1,6 @@
 export type TelegramDeliveryStatus = 'pending' | 'queued' | 'sent' | 'unknown';
+// evening remains accepted for legacy manual requests and persisted history.
 export type TelegramCheckpoint = 'evening' | 'morning';
-
-export function inferTelegramCheckpoint(wibHour: number): TelegramCheckpoint {
-  if (!Number.isInteger(wibHour) || wibHour < 0 || wibHour > 23) {
-    throw new RangeError('WIB hour must be an integer from 0 to 23');
-  }
-  return wibHour < 12 ? 'morning' : 'evening';
-}
 
 export interface KeyedTelegramItem {
   key: string;

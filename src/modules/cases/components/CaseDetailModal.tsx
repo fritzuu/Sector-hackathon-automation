@@ -7,6 +7,9 @@ import {
 import { useCompanyStore } from "../../../data/companyStore";
 import { useWorkflowStore } from '../stores/workflow.store.js';
 
+import { useDialogFocus } from "../../../shared/hooks/useDialogFocus";
+import { formatWib } from "../../automation/lib/automationStatus";
+
 interface CaseDetailModalProps {
   caseItem: CaseState | null;
   events: CaseEvent[];
@@ -14,9 +17,11 @@ interface CaseDetailModalProps {
   onClose: () => void;
 }
 
-const fmt = (n?: number)  => (n ?? 0).toLocaleString('id-ID');
-const pct = (n?: number) => `${(n || 0) >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
-const vol = (n?: number) => `${((n || 0) / 1_000_000).toFixed(2)}M`;
+const available = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+const fmt = (value?: number | null) => available(value) ? value.toLocaleString('id-ID') : 'Belum tersedia';
+const pct = (value?: number | null) => available(value) ? `${value > 0 ? '+' : ''}${value.toFixed(2)}%` : 'Belum tersedia';
+const sessionLabel = (value?: string | null) => value && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value))
+  ? new Date(`${value}T00:00:00+07:00`).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric' }) : 'Belum tercatat';
 
 export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   caseItem,
@@ -26,12 +31,15 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 }) => {
   const rawMetrics = useWorkflowStore(s => caseItem ? s.marketSnapshots.get(caseItem.symbol) : null);
 
-  const metrics = rawMetrics ? {
-    ...rawMetrics,
-    volumeMultiplier: rawMetrics.volumeMultiplier ?? (rawMetrics.medianVolume20d > 0 ? Number((rawMetrics.todayVolume / rawMetrics.medianVolume20d).toFixed(2)) : 0),
-    isVolumeAnomaly: rawMetrics.isVolumeAnomaly ?? (rawMetrics.todayVolume >= (rawMetrics.medianVolume20d * 2)),
-    isSpreadAnomaly: rawMetrics.isSpreadAnomaly ?? (Math.abs((rawMetrics.changePercent||0) - (rawMetrics.ihsgChangePercent||0)) >= 2.0),
-    spreadVsIhsg: rawMetrics.spreadVsIhsg ?? Math.abs((rawMetrics.changePercent||0) - (rawMetrics.ihsgChangePercent||0))
+  const dialogRef = useDialogFocus(caseItem?.caseId || null, onClose);
+  const volumeAvailable = available(rawMetrics?.todayVolume) && rawMetrics.todayVolume >= 0;
+  const baselineAvailable = available(rawMetrics?.medianVolume20d) && rawMetrics.medianVolume20d > 0;
+  const ratio = volumeAvailable && baselineAvailable ? rawMetrics.todayVolume / rawMetrics.medianVolume20d : null;
+  const matchedSessions = !!rawMetrics?.sessionDate && rawMetrics.sessionDate === rawMetrics.ihsgSessionDate;
+  const spread = matchedSessions && available(rawMetrics?.changePercent) && available(rawMetrics?.ihsgChangePercent)
+    ? rawMetrics.changePercent - rawMetrics.ihsgChangePercent : null;
+  const metrics = rawMetrics ? { ...rawMetrics, volumeMultiplier: ratio, spreadVsIhsg: spread,
+    isVolumeAnomaly: ratio !== null && ratio >= 2, isSpreadAnomaly: spread !== null && Math.abs(spread) >= 2,
   } : null;
 
   if (!caseItem) return null;
@@ -48,6 +56,11 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="case-detail-title"
+        tabIndex={-1}
         className="relative w-full sm:max-w-3xl bg-surface border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
@@ -59,7 +72,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h3 className="text-lg sm:text-xl font-extrabold text-white truncate tracking-tight">
+                <h3 id="case-detail-title" className="text-lg sm:text-xl font-extrabold text-white truncate tracking-tight">
                   {companyName}
                 </h3>
                 <span className={`px-2.5 py-0.5 text-xs font-mono font-bold rounded-full border ${
@@ -71,19 +84,21 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs text-text-muted mt-1 font-mono flex-wrap">
-                <span>{companySector}{companySubSector ? ` · ${companySubSector}` : ''}</span>
+                <span>{companySector}{companySubSector && companySubSector !== companySector ? ` · ${companySubSector}` : ''}</span>
                 <span>•</span>
                 <span className="text-text-muted/80">ID: {caseItem.caseId}</span>
                 <span>•</span>
                 <span className="text-text-muted">
-                  Dibuka: {new Date(caseItem.openedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, {new Date(caseItem.openedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                  Dibuka: {formatWib(caseItem.openedAt)}
                 </span>
               </div>
             </div>
           </div>
           <button
+            type="button"
+            aria-label="Tutup detail kasus"
             onClick={onClose}
-            className="p-2 rounded-xl text-text-muted hover:text-white hover:bg-secondary transition-colors flex-shrink-0 cursor-pointer"
+            className="min-h-11 min-w-11 p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary rounded-xl text-text-muted hover:text-white hover:bg-secondary transition-colors flex-shrink-0 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -92,51 +107,36 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-5 text-xs">
           {events[0]?.newStatus === 'DATA_INCOMPLETE' && <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-300"><strong>Menunggu data sumber.</strong> {(events[0].dataQualityIssues || []).join(' · ')} Status kasus {caseItem.status} tetap dipertahankan.</div>}
-          {/* Live Market HUD / KPI Strip */}
-          {metrics && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-secondary/50 border border-border">
-              <div className="p-2.5 rounded-lg bg-bg/70 border border-border">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-semibold">Harga Terakhir</div>
-                <div className="text-base font-extrabold font-mono text-white mt-0.5">
-                  Rp {fmt(metrics.lastPrice)}
-                </div>
-                <div className={`text-xs font-mono font-bold flex items-center gap-1 mt-0.5 ${metrics.changePercent >= 0 ? 'text-accent' : 'text-rose-400'}`}>
-                  {metrics.changePercent >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  {pct(metrics.changePercent)}
-                </div>
+          <div className="rounded-xl border border-border bg-secondary/30 p-4 text-sm text-text-muted">
+            <p>Sesi saham: <strong className="text-text-main">{sessionLabel(metrics?.sessionDate)}</strong> · Sesi IHSG: <strong className="text-text-main">{sessionLabel(metrics?.ihsgSessionDate)}</strong></p>
+            <p className="mt-1 text-xs">Snapshot diperbarui: {formatWib(metrics?.lastUpdated || null)}. Waktu pembaruan berbeda dari tanggal perdagangan.</p>
+            {!matchedSessions && <p className="mt-2 text-amber-300">Perbandingan dengan IHSG menunggu tanggal sesi yang cocok dan tercatat.</p>}
+          </div>
+          {metrics ? (
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
+              <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+                <div className="text-xs text-text-muted">Harga penutupan terakhir</div>
+                <div className="text-lg font-bold font-mono text-text-main mt-2">{available(metrics.lastPrice) ? `Rp ${fmt(metrics.lastPrice)}` : 'Belum tersedia'}</div>
+                <p className={`mt-1 text-sm ${!available(metrics.changePercent) || metrics.changePercent === 0 ? 'text-text-muted' : metrics.changePercent > 0 ? 'text-accent' : 'text-rose-400'}`}>{pct(metrics.changePercent)}</p>
               </div>
-
-              <div className="p-2.5 rounded-lg bg-bg/70 border border-border">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-semibold">Volume Hari Ini</div>
-                <div className="text-base font-extrabold font-mono text-white mt-0.5">
-                  {vol(metrics.todayVolume)} lot
-                </div>
-                <div className="text-[11px] font-mono text-text-muted mt-0.5">
-                  Med: {vol(metrics.medianVolume20d)} lot
-                </div>
+              <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+                <div className="text-xs text-text-muted">Volume sesi terakhir</div>
+                <div className="text-lg font-bold font-mono text-text-main mt-2">{volumeAvailable ? fmt(metrics.todayVolume) : 'Belum tersedia'}</div>
+                <p className="mt-1 text-xs text-text-muted">{volumeAvailable ? 'lembar saham' : 'Data volume belum tersedia'}</p>
+                <p className="mt-2 text-xs text-text-muted">Median 20 sesi: {baselineAvailable ? `${fmt(metrics.medianVolume20d)} lembar` : 'Belum tersedia'}</p>
               </div>
-
-              <div className="p-2.5 rounded-lg bg-bg/70 border border-border">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-semibold">Rasio Volume</div>
-                <div className={`text-base font-extrabold font-mono mt-0.5 ${metrics.isVolumeAnomaly ? 'text-amber-400' : 'text-accent'}`}>
-                  {metrics.volumeMultiplier}x
-                </div>
-                <div className="text-[11px] font-mono text-text-muted mt-0.5">
-                  {metrics.isVolumeAnomaly ? '≥ 2.0x Spike' : 'Batas Wajar'}
-                </div>
+              <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+                <div className="text-xs text-text-muted">Rasio volume</div>
+                <div className={`text-lg font-bold font-mono mt-2 ${ratio === null ? 'text-text-muted' : metrics.isVolumeAnomaly ? 'text-amber-300' : 'text-text-main'}`}>{ratio !== null ? `${ratio.toFixed(2)}×` : 'Belum tersedia'}</div>
+                <p className="mt-1 text-xs text-text-muted">{ratio === null ? 'Memerlukan volume dan baseline valid' : metrics.isVolumeAnomaly ? 'Mencapai ambang 2× median' : 'Di bawah ambang 2× median'}</p>
               </div>
-
-              <div className="p-2.5 rounded-lg bg-bg/70 border border-border">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-semibold">Spread vs IHSG</div>
-                <div className={`text-base font-extrabold font-mono mt-0.5 ${metrics.isSpreadAnomaly ? 'text-amber-400' : 'text-white'}`}>
-                  {pct(metrics.spreadVsIhsg)}
-                </div>
-                <div className="text-[11px] font-mono text-text-muted mt-0.5">
-                  IHSG: {pct(metrics.ihsgChangePercent)}
-                </div>
+              <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+                <div className="text-xs text-text-muted">Selisih perubahan vs IHSG</div>
+                <div className={`text-lg font-bold font-mono mt-2 ${spread === null ? 'text-text-muted' : metrics.isSpreadAnomaly ? 'text-amber-300' : 'text-text-main'}`}>{spread !== null ? `${spread > 0 ? '+' : ''}${spread.toFixed(2)} poin` : 'Belum tersedia'}</div>
+                <p className="mt-1 text-xs text-text-muted">{matchedSessions ? `IHSG: ${pct(metrics.ihsgChangePercent)}` : 'Tanggal sesi belum cocok atau belum tercatat'}</p>
               </div>
             </div>
-          )}
+          ) : <p className="rounded-xl border border-border p-4 text-sm text-text-muted">Snapshot pasar belum tersedia. Riwayat kasus tetap dapat dibaca di bawah.</p>}
 
           {template && (
             <div className="space-y-4">
@@ -179,7 +179,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
               {/* Disclaimer */}
               <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-text-muted text-xs leading-relaxed">
-                <strong className="text-amber-400 block mb-1 font-semibold">⚠️ Disclaimer Mandatori:</strong>
+                <strong className="text-amber-400 block mb-1 font-semibold">Catatan:</strong>
                 {template.disclaimer}
               </div>
             </div>
@@ -248,7 +248,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs mb-1.5 font-mono gap-1 sm:gap-0">
                         <span className={`font-bold ${styles.iconColor}`}>Status: {evt.newStatus}</span>
                         <span className="text-text-muted">
-                          {new Date(evt.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })} WIB
+                          {formatWib(evt.timestamp)}
                         </span>
                       </div>
                       {evt.triggeredRules && evt.triggeredRules.length > 0 ? (
@@ -287,8 +287,10 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             SIBA Engine · Evaluasi Pagi 07:00 WIB
           </span>
           <button
+            type="button"
+            aria-label="Tutup detail kasus"
             onClick={onClose}
-            className="px-5 py-2 text-xs font-bold text-white bg-secondary hover:bg-secondary/80 border border-border hover:border-primary/40 rounded-xl transition-all cursor-pointer shadow-sm"
+            className="min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary px-5 py-2 text-sm font-bold text-white bg-secondary hover:bg-secondary/80 border border-border hover:border-primary/40 rounded-xl transition-all cursor-pointer shadow-sm"
           >
             Tutup
           </button>

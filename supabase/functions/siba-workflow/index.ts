@@ -1,3 +1,4 @@
+import { normalizeTelegramSections } from "../../../src/engine/telegramPreferences.ts"
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { authorizeWorkflow } from "./auth.ts"
 import { WorkflowMonitor, workflowSource } from "./monitor.ts"
@@ -92,6 +93,11 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
 
   if (!users || users.length === 0) return new Response("No users found", { status: 200 })
 
+  const { data: preferences, error: preferencesError } = await supabase
+    .from("telegram_preferences").select("user_id, sections").in("user_id", users.map(user => user.id))
+  if (preferencesError) return new Response("Telegram preferences unavailable", { status: 503, headers: corsHeaders })
+  const preferencesMap = new Map((preferences || []).map(row => [row.user_id, row.sections]))
+
   await monitor.start(users, workflowSource(req.url), previewUserName ? "preview" : phase, checkpoint)
 
   const userIds = users.map((u) => u.id)
@@ -181,6 +187,7 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
   // They do not consume delivery keys or mutate the automated workflow state.
   if (previewUserName) {
     const user = users[0]
+    const selectedSections = normalizeTelegramSections(preferencesMap.get(user.id))
     if (!user.telegram_chat_id) return new Response("Telegram is not linked", { status: 409, headers: corsHeaders })
     const messages: any[] = []
     const tickers: string[] = []
@@ -205,12 +212,13 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
         asOfDate: latestPrice.date, facts: [], limitedInterpretations: [],
       }, {
         prices, benchmark: benchmarkCache.get(ticker) || [],
-        filings: [], news,
-        includeSections: ["price", "benchmark", "volume", "news"],
+        filings: filingsCache.get(ticker) || [], news,
+        includeSections: selectedSections,
+        engineSummaryOnly: preferencesMap.has(user.id),
         includeHeader: false, includeFooter: false,
         isMorningBriefing: checkpoint === "morning",
       })
-      const coverageNote = newsFetchFailed
+      const coverageNote = !selectedSections.includes("news") ? "" : newsFetchFailed
         ? "<i>Sebagian sumber berita belum berhasil diperiksa.</i>\n\n"
         : newsPage.hasNext
         ? "<i>Cakupan berita parsial; masih ada halaman berita yang belum diperiksa.</i>\n\n"
@@ -260,6 +268,8 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
   for (const user of users) {
     if (!user.watchlist || user.watchlist.length === 0 || !user.telegram_chat_id) continue
 
+    const selectedSections = normalizeTelegramSections(preferencesMap.get(user.id))
+    const enabled = (section: TelegramFormatterSection) => selectedSections.some(value => value === section)
     const startTime = Date.now()
 
     const workspace = workspaceMap.get(user.id)
@@ -333,10 +343,10 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
           ? `briefing:${digestDate}:${cleanTicker}:price:${latestPrice.date}`
           : marketDeliveryKey("price", ticker, latestPrice.date)
         const pendingPriceKey = `pending:price:${cleanTicker}`
-        if (includesRecap && userPendingKeys.has(pendingPriceKey) && reserveKey(pendingPriceKey)) {
+        if (includesRecap && (enabled("price") || enabled("volume")) && userPendingKeys.has(pendingPriceKey) && reserveKey(pendingPriceKey)) {
           tickerItemKeys.push(pendingPriceKey)
         }
-        if (includesRecap && reserveKey(priceKey)) {
+        if (includesRecap && (enabled("price") || enabled("volume")) && reserveKey(priceKey)) {
           includeSections.add("price")
           includeSections.add("volume")
           tickerItemKeys.push(priceKey)
@@ -344,7 +354,7 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
 
         if (!latestIHSG || latestIHSG.date !== latestPrice.date) {
           if (tickerItemKeys.length > 0) includeSections.add("benchmark")
-        } else {
+        } else if (enabled("benchmark")) {
           const comparisonKey = marketDeliveryKey("comparison", ticker, latestPrice.date)
           const pendingBenchmarkKey = `pending:benchmark:${cleanTicker}`
           const pendingComparisonKey = `pending:comparison:${cleanTicker}:${latestPrice.date}`
@@ -366,7 +376,7 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
       const previouslySeenFilingIds = new Set(previousTickerState?.seenFilingIds || [])
       const newFilings = filings.filter((filing: any) => {
         const key = filingDeliveryKey(ticker, filing)
-        if (!includesRecap || previousTickerState?.seenFilingIds == null) return false
+        if (!enabled("filings") || !includesRecap || previousTickerState?.seenFilingIds == null) return false
         if (previouslySeenFilingIds.has(filing.id) && deliveryStatuses.get(key) !== "pending") return false
         if (!reserveKey(key)) return false
         tickerItemKeys.push(key)
@@ -397,7 +407,7 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
             },
           }
         })
-      const newNews = selectUndeliveredItems(tickerNewsCandidates, deliveryStatuses)
+      const newNews = selectUndeliveredItems(enabled("news") ? tickerNewsCandidates : [], deliveryStatuses)
         .slice(0, remainingNews)
         .filter(({ key }) => reserveKey(key))
       if (newNews.length > 0) {
@@ -411,7 +421,7 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
         : { asOfDate: latestPrice?.date || "", facts: [], limitedInterpretations: [] }
       if (r.shouldNotify && r.event && r.evalResult) {
         const eventKey = `event:${r.event.caseId}:${r.event.eventId}`
-        if (reserveKey(eventKey)) {
+        if (enabled("engine") && reserveKey(eventKey)) {
           tickerItemKeys.push(eventKey)
           includeSections.add("engine")
           template = renderCaseTemplate(r.evalResult, r.event.newStatus)
@@ -419,6 +429,12 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
       }
 
       if (includesRecap && r.evalResult) includeSections.add("engine")
+      if (includesRecap && latestPrice && !enabled("price") && !enabled("volume") && reserveKey(`recap:${digestDate}:${cleanTicker}`)) {
+        tickerItemKeys.push(`recap:${digestDate}:${cleanTicker}`)
+        for (const section of selectedSections) {
+          if (section !== "news" && section !== "filings") includeSections.add(section)
+        }
+      }
 
       if (tickerItemKeys.length > 0 && latestPrice) {
         // Include market context in each new ticker message without reserving
@@ -437,19 +453,20 @@ async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<R
           evalResult: r.evalResult,
           event: r.event,
           isMorningBriefing: checkpoint === "morning",
-          includeSections: [...includeSections],
+          includeSections: [...includeSections].filter(enabled),
+          engineSummaryOnly: preferencesMap.has(user.id),
           includeHeader: false,
           includeFooter: false,
         })
         if (block) {
-          const coverageNote = newsFetchFailed
+          const coverageNote = !enabled("news") ? "" : newsFetchFailed
             ? "<i>Sebagian sumber berita belum berhasil diperiksa.</i>"
             : newsPage.hasNext
             ? "<i>Cakupan berita parsial; masih ada halaman berita yang belum diperiksa.</i>"
             : ""
-          const evaluationNote = evaluatesCases && r.outcome === 'DATA_INCOMPLETE'
+          const evaluationNote = enabled("engine") && evaluatesCases && r.outcome === 'DATA_INCOMPLETE'
             ? "<i>Evaluasi kasus menunggu kelengkapan data sesi yang sama. Status kasus dipertahankan.</i>\n\n"
-            : evaluatesCases && r.outcome === 'SKIPPED_STALE'
+            : enabled("engine") && evaluatesCases && r.outcome === 'SKIPPED_STALE'
             ? "<i>Sesi perdagangan ini sudah dievaluasi; status kasus terakhir dipertahankan.</i>\n\n" : ""
           const message = formatTelegramTickerDigest(
             checkpoint,

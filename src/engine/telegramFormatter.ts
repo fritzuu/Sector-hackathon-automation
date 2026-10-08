@@ -55,6 +55,7 @@ export interface TelegramFormatterContext {
   wibTime?: string;
   isMorningBriefing?: boolean;
   includeSections?: TelegramFormatterSection[];
+  engineSummaryOnly?: boolean;
   includeHeader?: boolean;
   includeFooter?: boolean;
 }
@@ -380,7 +381,7 @@ export function formatTelegramHtml(
   // ==========================================
   // If no price/filing context was passed, ensure template facts are visible
   if (
-    includesSection('engine') &&
+    includesSection('engine') && !context.engineSummaryOnly &&
     (prices.length === 0 || context.includeSections !== undefined) &&
     template?.facts &&
     template.facts.length > 0
@@ -392,12 +393,21 @@ export function formatTelegramHtml(
     sections.push(fallbackFacts.trim());
   }
 
-  if (includesSection('engine') && template?.limitedInterpretations && template.limitedInterpretations.length > 0) {
+  if (includesSection('engine') && !context.engineSummaryOnly && template?.limitedInterpretations && template.limitedInterpretations.length > 0) {
     let interBlock = `🔍 <b>Interpretasi Terbatas (Tanpa Prediksi):</b>\n`;
     template.limitedInterpretations.forEach((item: string) => {
       interBlock += `• ${escapeHtml(item)}\n`;
     });
     sections.push(interBlock.trim());
+  }
+
+  if (includesSection('engine') && context.engineSummaryOnly) {
+    const labels: Record<string, string> = { OPEN: 'Kasus terbuka', UPDATED: 'Kasus diperbarui', CLOSED: 'Kasus ditutup', MONITORING: 'Dalam pemantauan', DATA_INCOMPLETE: 'Menunggu kelengkapan data' };
+    const evaluation = context.evalResult;
+    const result = evaluation?.hasIncompleteData
+      ? 'Evaluasi menunggu kelengkapan data sesi yang sama.'
+      : evaluation ? `${evaluation.activeTriggerCount} aturan terpicu pada sesi ini.` : 'Hasil evaluasi belum tersedia.';
+    sections.push(`📌 <b>Status kasus</b>\n${escapeHtml(labels[status] || status)}\n${escapeHtml(result)}`);
   }
 
   // ==========================================
