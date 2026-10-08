@@ -23,12 +23,18 @@ function GuestIndexPage() {
   const navigate = useNavigate();
   const syncFromSession = useAuthStore((state) => state.syncFromSession);
   const currentUser = useAuthStore((state) => state.currentUser);
+  const [postLoginDestination] = useState<'/dashboard' | '/dashboard/watchlist'>(() => {
+    try {
+      return window.sessionStorage.getItem('siba_post_login_watchlist') === 'true' ? '/dashboard/watchlist' : '/dashboard';
+    } catch { return '/dashboard'; }
+  });
 
   useEffect(() => {
     if (currentUser) {
-      navigate({ to: "/dashboard" });
+      try { window.sessionStorage.removeItem('siba_post_login_watchlist'); } catch { /* Storage may be unavailable. */ }
+      navigate({ to: postLoginDestination });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, postLoginDestination]);
 
   const [oauthError] = useState(() => {
     const query = new URLSearchParams(window.location.search);
@@ -53,7 +59,7 @@ function GuestIndexPage() {
   const handleAuthSuccess = async () => {
     await syncFromSession();
     if (useAuthStore.getState().currentUser) {
-      navigate({ to: "/dashboard" });
+      navigate({ to: postLoginDestination });
     }
   };
 

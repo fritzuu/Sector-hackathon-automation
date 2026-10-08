@@ -6,6 +6,27 @@ import {
 } from '../src/engine/telegramFormatter.ts';
 
 describe('formatTelegramHtml', () => {
+  it('links every message format to Watchlist without a ticker parameter', () => {
+    const block = formatTelegramHtml('BBCA', 'MONITORING', {
+      asOfDate: '2026-10-07', facts: [], limitedInterpretations: [],
+    });
+    const tickerDigest = formatTelegramTickerDigest('morning', '2026-10-08', 'BBCA.JK', 'Recap', '07.00');
+    const digest = formatTelegramDigest('morning', '2026-10-08', ['Recap'], '07.00');
+    for (const message of [block, tickerDigest]) {
+      expect(message).toContain('href="https://siba-pi.vercel.app/dashboard/watchlist"');
+      expect(message).not.toContain('?ticker=');
+      expect(message).not.toContain('siba.investor.id');
+    }
+    expect(digest).toContain('href="https://siba-pi.vercel.app/dashboard/watchlist"');
+  });
+
+  it('uses the configured origin and removes stale paths from the dashboard entry', () => {
+    const message = formatTelegramTickerDigest('morning', '2026-10-08', 'GOTO', 'Recap', '07.00', 'https://example.com/dashboard?old=value');
+    expect(message).toContain('href="https://example.com/dashboard/watchlist"');
+    const invalid = formatTelegramDigest('morning', '2026-10-08', ['Recap'], '07.00', 'javascript:alert(1)');
+    expect(invalid).toContain('href="https://siba-pi.vercel.app/dashboard/watchlist"');
+  });
+
   it('keeps the previous available session and places news after market context', () => {
     const block = formatTelegramHtml('GOTO', 'MONITORING', {
       asOfDate: '2026-10-07', facts: [], limitedInterpretations: [],
@@ -60,6 +81,7 @@ describe('formatTelegramHtml', () => {
     expect(message).toContain('Data terakhir tersedia untuk 5 Oktober 2026');
     expect(message).toContain('6.118,86');
     expect(message).toContain('tanggal data berbeda');
+    expect(message).toContain('Data IHSG terakhir: 5 Oktober 2026 (sesi perdagangan).');
     expect(message).toContain('Volume sesi 6 Oktober 2026');
     expect(message).toContain('18.443.953.300');
     expect(message).toContain('1.844.395,33x');

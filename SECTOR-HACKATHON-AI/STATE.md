@@ -77,3 +77,15 @@
 - Migrasi 20261008220000_workflow_cron_vault_auth.sql diterapkan via CLI SQL: command invoke-siba-workflow kini menggunakan net.http_post dengan header dari Vault. Jadwal 0 0 * * 1-5 dan active=true dipertahankan; worker tidak diubah.
 - Metadata live confirms uses_active_vault_key=true. Probe menggunakan pg_net dan header Vault ke phase=auth-check menghasilkan400 Invalid phase, bukan401, tanpa timeout: autentikasi lolos lalu validasi fase menghentikan proses sebelum workspace/Telegram. Tidak mengirim ulang recap/evaluasi ke seluruh user. Eksekusi Cron penuh unattended masih menunggu jadwal berikutnya.
 - Empat preview price+benchmark sebelumnya sudah confirmed status sent di outbox.
+
+## 2026-10-08 — Tautan dashboard Telegram production
+- Ketiga formatter Telegram memakai domain production siba-pi.vercel.app, dengan DASHBOARD_URL sebagai konfigurasi bersama dan fallback domain production. Domain contoh siba.investor.id dihapus dari footer pesan.
+- Tautan memakai entry aplikasi /?ticker=SYMBOL; GuestIndexPage sudah menavigasikan sesi aktif ke /dashboard. Akses langsung /dashboard production masih404, sehingga entry dipakai agar link berfungsi tanpa perubahan hosting. Belum login tetap mengikuti autentikasi akun, tidak ada token login/ID pengguna dalam tautan.
+- Tes formatter8/8 lulus; URL entry production dengan ticker mendapat HTTP200. Tidak memeriksa browser atau mengirim pesan tambahan. Pesan lama tidak diubah.
+- DASHBOARD_URL disetel di Supabase production dan siba-workflow dideploy dari branch refactor/websocket-implementation. Perubahan sumber lokal belum dipush.
+
+## 2026-10-08 — Watchlist dan waktu data IHSG di Telegram
+- Semua footer formatter menuju https://siba-pi.vercel.app/dashboard/watchlist tanpa parameter ticker. Bagian IHSG menampilkan tanggal sesi data terakhir dan waktu pemeriksaan secara terpisah; tidak mengklaim waktu publikasi provider.
+- Fallback Vercel /dashboard/:path* ke index.html ditambahkan. Tujuan Watchlist disimpan saat pengguna belum login dan dipakai setelah autentikasi. Build frontend dideploy sebagai aset terkompilasi ke project siba production; deployment dpl_Fha9uGdnrjsmU6iQTEj6nx6tncLa READY. Root dan /dashboard/watchlist diuji HTTP200, tanpa pemeriksaan browser/alur OAuth langsung.
+- siba-workflow dideploy ke tdqwrfcaxxswmrtwcxyd. Curl preview morning ke akun Revan Alifian Zhafran HTTP200 queued4 (BBCA/BMRI/GOTO/AMMN). Empat pesan terbaru confirmed sent, footer Watchlist tanpa ticker, data IHSG terakhir 7 Oktober 2026 dan diperiksa sekitar22.52 WIB.
+- npm test69/69 lulus; npm run build berhasil dengan peringatan ukuran chunk yang sudah ada. Tidak mengubah jadwal Cron/preferensi pengguna; perubahan sumber lokal belum dipush.

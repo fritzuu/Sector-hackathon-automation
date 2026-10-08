@@ -20,10 +20,13 @@ import { generateSecurePairingToken } from "../utils/token";
 import { supabase } from "../lib/supabaseClient";
 
 export const Route = createFileRoute("/_auth")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     await waitForAuthReady();
     const { currentUser } = useAuthStore.getState();
     if (!currentUser) {
+      if (location.pathname === '/dashboard/watchlist') {
+        try { window.sessionStorage.setItem('siba_post_login_watchlist', 'true'); } catch { /* Storage may be unavailable. */ }
+      }
       throw redirect({ to: "/" });
     }
   },

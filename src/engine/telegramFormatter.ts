@@ -65,6 +65,22 @@ const INDONESIAN_MONTHS = [
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
+const DEFAULT_DASHBOARD_ORIGIN = 'https://siba-pi.vercel.app';
+
+/** Watchlist stays scoped to the account authenticated in the app. */
+function dashboardEntryUrl(configuredUrl?: string): string {
+  const configured = configuredUrl ||
+    ((globalThis as any).Deno ? (globalThis as any).Deno.env.get('DASHBOARD_URL') : null);
+  let url: URL;
+  try {
+    url = new URL('/dashboard/watchlist', configured || DEFAULT_DASHBOARD_ORIGIN);
+    if (!['https:', 'http:'].includes(url.protocol)) throw new Error('Invalid dashboard protocol');
+  } catch {
+    url = new URL('/dashboard/watchlist', DEFAULT_DASHBOARD_ORIGIN);
+  }
+  return url.toString();
+}
+
 export function escapeHtml(str: string): string {
   if (!str) return '';
   return str
@@ -122,10 +138,7 @@ export function formatTelegramHtml(
   context: TelegramFormatterContext = {}
 ): string {
   const cleanSymbol = symbol.toUpperCase().replace('.JK', '');
-  const dashboardUrl =
-    context.dashboardUrl ||
-    ((globalThis as any).Deno ? (globalThis as any).Deno.env.get('DASHBOARD_URL') : null) ||
-    'https://siba.investor.id';
+  const dashboardUrl = dashboardEntryUrl(context.dashboardUrl);
 
   const isMorning = !!context.isMorningBriefing;
   const includesSection = (section: TelegramFormatterSection) =>
@@ -305,6 +318,7 @@ export function formatTelegramHtml(
       maximumFractionDigits: 2,
     });
     const ihsgDate = escapeHtml(formatIndonesianDate(latestIHSG.date));
+    const ihsgFreshness = `\nData IHSG terakhir: ${ihsgDate} (sesi perdagangan).\nDiperiksa sekitar ${escapeHtml(wibTime)} WIB.`;
 
     if (latestPrice && latestIHSG.date === latestPrice.date) {
       const prevIhsgPrice = prevIHSG
@@ -329,15 +343,15 @@ export function formatTelegramHtml(
         ihsgBlock += `\nKinerja vs IHSG: ${relStrength} ${spreadSign}${spread.toFixed(2)} poin persentase.`;
       }
 
-      sections.push(ihsgBlock);
+      sections.push(ihsgBlock + ihsgFreshness);
     } else if (latestPrice) {
       sections.push(
         `📊 <b>IHSG</b>\n` +
         `Data terakhir tersedia untuk ${ihsgDate}: <b>${ihsgPriceText}</b>.\n` +
-        `Perbandingan dengan ${escapeHtml(cleanSymbol)} sesi ${escapeHtml(formatIndonesianDate(latestPrice.date))} belum ditampilkan karena tanggal data berbeda.`
+        `Perbandingan dengan ${escapeHtml(cleanSymbol)} sesi ${escapeHtml(formatIndonesianDate(latestPrice.date))} belum ditampilkan karena tanggal data berbeda.` + ihsgFreshness
       );
     } else {
-      sections.push(`📊 <b>IHSG</b>\nData terakhir tersedia untuk ${ihsgDate}: <b>${ihsgPriceText}</b>.`);
+      sections.push(`📊 <b>IHSG</b>\nData terakhir tersedia untuk ${ihsgDate}: <b>${ihsgPriceText}</b>.` + ihsgFreshness);
     }
   } else if (includesSection('benchmark') && latestPrice) {
     sections.push(
@@ -442,7 +456,7 @@ export function formatTelegramHtml(
 
     let footer = `<i>Sumber data: Sectors API. Diperiksa sekitar ${escapeHtml(wibTime)} WIB.</i>\n\n`;
     footer += `⚠️ <b>Disclaimer:</b>\n<i>${disclaimerText}</i>\n\n`;
-    footer += `🔗 <a href="${escapeHtml(dashboardUrl)}/?ticker=${escapeHtml(cleanSymbol)}">Lihat detail kasus di Dashboard SIBA →</a>`;
+    footer += `🔗 <a href="${escapeHtml(dashboardUrl)}">Buka Watchlist SIBA →</a>`;
 
     sections.push(footer);
   }
@@ -455,7 +469,7 @@ export function formatTelegramDigest(
   date: string,
   tickerBlocks: string[],
   wibTime: string,
-  dashboardUrl = 'https://siba.investor.id'
+  dashboardUrl?: string
 ): string {
   const blocks = tickerBlocks.filter((block) => block.trim().length > 0);
   if (blocks.length === 0) return '';
@@ -464,7 +478,7 @@ export function formatTelegramDigest(
   const footer =
     `<i>Sumber data: Sectors API. Diperiksa sekitar ${escapeHtml(wibTime)} WIB.</i>\n\n` +
     `⚠️ <b>Disclaimer:</b>\n<i>Data dapat tidak lengkap atau terlambat. Bukan rekomendasi investasi.</i>\n\n` +
-    `🔗 <a href="${escapeHtml(dashboardUrl)}">Lihat detail di Dashboard SIBA →</a>`;
+    `🔗 <a href="${escapeHtml(dashboardEntryUrl(dashboardUrl))}">Buka Watchlist SIBA →</a>`;
 
   return `<b>${title} | ${escapeHtml(formatIndonesianDate(date))}</b>\n\n${blocks.join('\n\n')}\n\n${footer}`;
 }
@@ -475,7 +489,7 @@ export function formatTelegramTickerDigest(
   symbol: string,
   tickerBlock: string,
   wibTime: string,
-  dashboardUrl = 'https://siba.investor.id',
+  dashboardUrl?: string,
   context?: { purpose: 'briefing' | 'evaluation'; sessionDate?: string }
 ): string {
   const cleanSymbol = symbol.toUpperCase().replace(/\.JK$/, '');
@@ -483,7 +497,7 @@ export function formatTelegramTickerDigest(
   const footer =
     `<i>Sumber data: Sectors API. Diperiksa sekitar ${escapeHtml(wibTime)} WIB.</i>\n\n` +
     `⚠️ <b>Disclaimer:</b>\n<i>Data dapat tidak lengkap atau terlambat. Bukan rekomendasi investasi.</i>\n\n` +
-    `🔗 <a href="${escapeHtml(dashboardUrl)}/?ticker=${escapeHtml(cleanSymbol)}">Lihat detail kasus di Dashboard SIBA →</a>`;
+    `🔗 <a href="${escapeHtml(dashboardEntryUrl(dashboardUrl))}">Buka Watchlist SIBA →</a>`;
 
   return `<b>${title} — ${escapeHtml(cleanSymbol)}</b>\n` +
     `📅 ${escapeHtml(formatIndonesianDate(date))}\n\n` +
