@@ -1,4 +1,10 @@
-import { DailyTransaction, BenchmarkData, CompanyFiling } from '../types/sectors.ts';
+import {
+  DailyTransaction,
+  BenchmarkData,
+  CompanyFiling,
+  SectorsNewsArticle,
+  SectorsNewsPage,
+} from '../types/sectors.ts';
 
 
 export interface CompanyRealOverview {
@@ -90,6 +96,33 @@ export function mapFilings(raw: any, symbol: string): CompanyFiling[] {
     price: item.price || undefined,
     transactionValue: item.transaction_value || undefined,
   }));
+}
+
+export function mapNewsArticles(raw: any): SectorsNewsPage {
+  const results = Array.isArray(raw?.results) ? raw.results : [];
+  const articles = results
+    .filter((item: any) => item && typeof item.title === 'string' && typeof item.source === 'string')
+    .map((item: any): SectorsNewsArticle => ({
+      title: item.title,
+      body: typeof item.body === 'string' ? item.body : undefined,
+      source: item.source,
+      publishedAt: typeof item.timestamp === 'string' ? item.timestamp : '',
+      symbols: Array.isArray(item.symbols)
+        ? item.symbols.filter((symbol: unknown): symbol is string => typeof symbol === 'string')
+        : [],
+      sector: typeof item.sector === 'string' ? item.sector : undefined,
+      subSector: Array.isArray(item.sub_sector)
+        ? item.sub_sector.filter((slug: unknown): slug is string => typeof slug === 'string')
+        : undefined,
+    }));
+
+  return {
+    articles,
+    hasNext: raw?.pagination?.has_next === true,
+    nextOffset: Number.isInteger(raw?.pagination?.next_offset)
+      ? raw.pagination.next_offset
+      : null,
+  };
 }
 
 export class SectorsApiService {
@@ -227,6 +260,40 @@ export class SectorsApiService {
       console.error(`[SectorsApiService] Filings failed for ${cleanSymbol}:`, err);
       return [];
     }
+  }
+
+  async fetchNewsArticles(symbols: string[], startDate: string): Promise<SectorsNewsPage> {
+    if (!this.apiKey || symbols.length === 0) {
+      return { articles: [], hasNext: false, nextOffset: null };
+    }
+
+    const uniqueSymbols = [...new Set(symbols.map((symbol) => symbol.toUpperCase().replace('.JK', '')))];
+    const cacheKey = `news_${uniqueSymbols.slice().sort().join(',')}_${startDate}`;
+    const cached = this.cache.get(cacheKey) as SectorsNewsPage | undefined;
+    if (cached) return cached;
+
+    const params = new URLSearchParams({
+      extension: 'idx',
+      symbols: uniqueSymbols.join(','),
+      start: startDate,
+      limit: '30',
+      offset: '0',
+    });
+    const response = await fetch(`${getBaseUrl()}/news/?${params.toString()}`, {
+      headers: {
+        Authorization: this.apiKey,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Sectors API news returned ${response.status}`);
+    }
+
+    const page = mapNewsArticles(await response.json());
+    this.cache.set(cacheKey, page);
+    return page;
   }
 
   /**

@@ -81,9 +81,8 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
     );
     const interpretations = extractList(
       "INTERPRETASI TERBATAS (Tanpa Prediksi):",
-      "❓ BELUM DIKETAHUI",
+      "⚠️ DISCLAIMER",
     );
-    const unknowns = extractList("BELUM DIKETAHUI:", "⚠️ DISCLAIMER");
 
     const discStart = text.indexOf("⚠️ DISCLAIMER:");
     const discEnd = text.indexOf("🔗");
@@ -94,7 +93,7 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
             .trim()
         : "";
 
-    return { facts, interpretations, unknowns, disclaimer };
+    return { facts, interpretations, disclaimer };
   };
 
   if (!user.isTelegramLinked) {
@@ -328,7 +327,7 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto bg-bg">
               {(() => {
-                const { facts, interpretations, unknowns, disclaimer } =
+                const { facts, interpretations, disclaimer } =
                   parseStructuredLog(selectedLog.message);
 
                 // Fallback to raw HTML if parsing fails for some reason
@@ -387,24 +386,8 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
                       </ul>
                     </div>
 
-                    {/* Footer Row: Unknowns & Disclaimer */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-border/30">
-                      <div>
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-text/40 mb-3">
-                          Belum Diketahui / Batasan
-                        </h4>
-                        <ul className="space-y-2">
-                          {unknowns.map((u, i) => (
-                            <li
-                              key={i}
-                              className="text-[11px] text-text/50 leading-relaxed flex items-start"
-                            >
-                              <span>{u}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
+                    {/* Disclaimer */}
+                    <div className="pt-6 border-t border-border/30">
                       <div className="bg-secondary/30 p-4 rounded-lg border border-border/40">
                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-text/40 mb-2">
                           Disclaimer Risiko

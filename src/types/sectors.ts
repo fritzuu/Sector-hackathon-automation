@@ -34,6 +34,22 @@ export interface CompanyFiling {
   transactionValue?: number;
 }
 
+export interface SectorsNewsArticle {
+  title: string;
+  body?: string;
+  source: string;
+  publishedAt: string;
+  symbols: string[];
+  sector?: string;
+  subSector?: string[];
+}
+
+export interface SectorsNewsPage {
+  articles: SectorsNewsArticle[];
+  hasNext: boolean;
+  nextOffset: number | null;
+}
+
 export interface TickerDataset {
   symbol: string;
   asOfDate: string;

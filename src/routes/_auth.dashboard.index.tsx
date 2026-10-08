@@ -56,8 +56,7 @@ function DashboardOverviewPage() {
     }
   }, [currentUser, fetchTelegramLogs]);
 
-  // Auto-scheduler has been moved to Supabase Edge Functions (siba-workflow)
-  // It is triggered automatically by pg_cron at 07:00 WIB.
+  // Supabase Cron invokes siba-workflow at 19:15 and 07:00 WIB when configured.
 
   const activeCasesArray = Array.from(activeCases.values()).filter(c => watchlist.includes(c.symbol));
 
