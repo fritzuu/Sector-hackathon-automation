@@ -2,7 +2,7 @@ import React from 'react';
 import { CaseState, CaseEvent, RenderedTemplate } from '../../../types/engine.js';
 import {
   X, Shield, CheckCircle, Clock, ExternalLink,
-  TrendingUp, TrendingDown,
+  TrendingUp, TrendingDown, Activity, AlertCircle, CheckCircle2, AlertTriangle, FileText
 } from 'lucide-react';
 import { useCompanyStore } from "../../../data/companyStore";
 import { useWorkflowStore } from '../stores/workflow.store.js';
@@ -213,26 +213,70 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
           {/* Timeline */}
           <div className="border-t border-border pt-5">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-3.5 flex items-center gap-2">
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-5 flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />
               <span>Linimasa Perkembangan Kasus ({events.length} Catatan Evaluasi)</span>
             </h4>
 
-            <div className="relative pl-6 space-y-3.5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
-              {events.map((evt, idx) => (
-                <div key={evt.eventId || idx} className="relative">
-                  <div className="absolute -left-6 top-2 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-surface" />
-                  <div className="p-3.5 rounded-xl bg-secondary/60 border border-border">
-                    <div className="flex items-center justify-between text-xs mb-1 font-mono">
-                      <span className="font-bold text-white">Status: {evt.newStatus}</span>
-                      <span className="text-text-muted">
-                        {new Date(evt.timestamp).toLocaleString('id-ID')}
-                      </span>
+            <div className="relative pl-7 space-y-4 before:absolute before:left-2.5 before:top-4 before:bottom-4 before:w-0.5 before:bg-border/60 before:border-l-2 before:border-dashed before:border-border/50">
+              {events.map((evt, idx) => {
+                let styles = {
+                  icon: AlertTriangle,
+                  iconColor: 'text-gray-400',
+                  bgColor: 'bg-secondary/60',
+                  borderColor: 'border-border',
+                  ringColor: 'ring-border/50',
+                };
+                
+                if (evt.newStatus === 'OPEN') {
+                  styles = { icon: AlertCircle, iconColor: 'text-red-400', bgColor: 'bg-red-400/10', borderColor: 'border-red-400/30', ringColor: 'ring-red-500/20' };
+                } else if (evt.newStatus === 'UPDATED') {
+                  styles = { icon: Activity, iconColor: 'text-cyan-400', bgColor: 'bg-cyan-400/10', borderColor: 'border-cyan-400/30', ringColor: 'ring-cyan-500/20' };
+                } else if (evt.newStatus === 'CLOSED') {
+                  styles = { icon: CheckCircle2, iconColor: 'text-emerald-400', bgColor: 'bg-emerald-400/10', borderColor: 'border-emerald-400/30', ringColor: 'ring-emerald-500/20' };
+                }
+
+                const Icon = styles.icon;
+
+                return (
+                  <div key={evt.eventId || idx} className="relative">
+                    <div className={`absolute -left-7 top-1.5 w-5 h-5 rounded-full flex items-center justify-center bg-surface ring-4 ring-surface`}>
+                      <Icon className={`w-3.5 h-3.5 ${styles.iconColor} bg-surface`} />
                     </div>
-                    <p className="text-xs text-text-muted leading-relaxed font-mono">{evt.renderedSummary}</p>
+                    
+                    <div className={`p-3.5 rounded-xl ${styles.bgColor} border ${styles.borderColor} shadow-sm backdrop-blur-sm transition-colors`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs mb-1.5 font-mono gap-1 sm:gap-0">
+                        <span className={`font-bold ${styles.iconColor}`}>Status: {evt.newStatus}</span>
+                        <span className="text-text-muted">
+                          {new Date(evt.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })} WIB
+                        </span>
+                      </div>
+                      {evt.triggeredRules && evt.triggeredRules.length > 0 ? (
+                        <div className="mt-1 space-y-2.5">
+                          {evt.triggeredRules.filter(r => r.isTriggered).map((rule) => {
+                            let RuleIcon = Activity;
+                            if (rule.ruleId === 'ABNORMAL_VOLUME') RuleIcon = TrendingUp;
+                            if (rule.ruleId === 'RELATIVE_MOVEMENT') RuleIcon = TrendingDown;
+                            if (rule.ruleId === 'NEW_FILING') RuleIcon = FileText;
+                            
+                            return (
+                              <div key={rule.ruleId} className="flex flex-col gap-1.5">
+                                <span className={`inline-flex w-fit items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold font-mono ${styles.bgColor} ${styles.iconColor} border ${styles.borderColor}`}>
+                                  <RuleIcon className="w-3 h-3" />
+                                  {rule.name.split(' (')[0]}
+                                </span>
+                                <p className="text-xs text-white/90 leading-relaxed font-sans">{rule.summary}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-white/90 leading-relaxed font-sans mt-1">{evt.renderedSummary}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

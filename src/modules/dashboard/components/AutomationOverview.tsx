@@ -1,7 +1,7 @@
 import React from "react";
-import { Eye, Layers, Clock, Zap, ArrowRight } from "lucide-react";
+import { Eye, Layers, Clock, Zap, ArrowRight, Activity } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-
+import { useWorkflowStore } from "../../cases/stores/workflow.store";
 interface OverviewProps {
   lastRunTime: string | null;
   activeCasesCount: number;
@@ -80,17 +80,26 @@ export const AutomationOverview: React.FC<OverviewProps> = ({
   totalRunsCount,
 }) => {
   const isRunning = lastRunStatus === "RUNNING";
+  const ihsgSnapshot = useWorkflowStore(s => s.marketSnapshots.get('IHSG'));
+  
+  const ihsgPrice = ihsgSnapshot?.lastPrice 
+    ? `Rp ${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(ihsgSnapshot.lastPrice)}` 
+    : "---";
+    
+  const ihsgChange = ihsgSnapshot?.changePercent !== undefined
+    ? `${ihsgSnapshot.changePercent >= 0 ? '+' : ''}${ihsgSnapshot.changePercent.toFixed(2)}%`
+    : "";
 
   const cards: KpiCardProps[] = [
     {
-      label: "Watchlist Saham",
-      value: `${totalWatchlistCount}`,
-      sub: "Emiten dalam radar otomatis bursa",
-      icon: <Eye className="w-4.5 h-4.5" />,
+      label: "Indeks Harga Saham Gabungan",
+      value: ihsgPrice,
+      sub: ihsgChange ? `Pergerakan terakhir: ${ihsgChange}` : "Menunggu data bursa...",
+      icon: <Activity className="w-4.5 h-4.5" />,
       iconBgClass: "bg-accent/10 border border-accent/20",
       iconColorClass: "text-accent",
       linkTo: "/dashboard/watchlist",
-      linkText: "Kelola Watchlist",
+      linkText: "Bandingkan dengan Watchlist",
     },
     {
       label: "Kasus Aktif Terbuka",

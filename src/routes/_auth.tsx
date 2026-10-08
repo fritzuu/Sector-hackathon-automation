@@ -17,6 +17,7 @@ import { useWorkflowStore } from "../modules/cases/stores/workflow.store";
 import { useState, useEffect, useCallback } from "react";
 import { fetchUserWorkspaceFromSupabase, fetchGlobalMarketSnapshots } from "../services/supabaseStorage";
 import { generateSecurePairingToken } from "../utils/token";
+import { supabase } from "../lib/supabaseClient";
 
 export const Route = createFileRoute("/_auth")({
   beforeLoad: async () => {
@@ -52,7 +53,7 @@ function AuthLayout() {
       try {
         const symbols = useWatchlistStore.getState().watchlist;
         const [workspace, snapshots] = await Promise.all([
-          fetchUserWorkspaceFromSupabase(accountId), fetchGlobalMarketSnapshots(symbols),
+          fetchUserWorkspaceFromSupabase(accountId), fetchGlobalMarketSnapshots([...symbols, 'IHSG']),
         ]);
         if (cancelled || useAuthStore.getState().currentUser?.id !== accountId || useWorkflowStore.getState().isRunning) return;
         if (workspace) useWorkflowStore.setState({
@@ -65,10 +66,25 @@ function AuthLayout() {
         if (!cancelled && user?.id === accountId && user.telegramChatId) await useWorkflowStore.getState().fetchTelegramLogs(user.telegramChatId);
       } catch { /* Preserve the last readable state during transient network errors. */ } finally { busy = false; }
     };
-    const timer = window.setInterval(() => { void refresh(); }, 30000);
+
+    const channel = supabase
+      .channel(`audit_runs_${accountId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'audit_runs', filter: `user_id=eq.${accountId}` },
+        () => { void refresh(); }
+      )
+      .subscribe();
+
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
-    return () => { cancelled = true; window.clearInterval(timer); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
+    
+    return () => { 
+      cancelled = true; 
+      void supabase.removeChannel(channel);
+      window.removeEventListener('focus', refresh); 
+      document.removeEventListener('visibilitychange', refresh); 
+    };
   }, [currentUser?.id]);
 
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);

@@ -54,7 +54,7 @@ async function hydrateUserData(profile: UserProfile) {
     const [, workspace, globalSnapshots, workflowMod, watchlistMod] = await Promise.all([
       import('../../../modules/cases/stores/workflow.store').then(mod => mod.useWorkflowStore.getState().fetchAuditRuns(profile.id)),
       fetchUserWorkspaceFromSupabase(profile.id),
-      fetchGlobalMarketSnapshots(profile.defaultWatchlist || []),
+      fetchGlobalMarketSnapshots([...(profile.defaultWatchlist || []), 'IHSG']),
       import('../../../modules/cases/stores/workflow.store'),
       import('../../../modules/watchlist/stores/watchlist.store'),
     ]);
