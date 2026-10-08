@@ -18,27 +18,40 @@ export function evaluateAbnormalVolume(
   const ruleId = 'ABNORMAL_VOLUME';
   const name = 'Volume Transaksi Abnormal (>= 2.0x Median 20 Hari)';
 
-  if (!transactions || transactions.length < 21) {
+  // A repeated API row is not an additional trading session.
+  const sessions = new Map<string, DailyTransaction>();
+  const conflictingDates = new Set<string>();
+  for (const transaction of transactions || []) {
+    const previous = sessions.get(transaction.date);
+    if (previous && previous.volume !== transaction.volume) conflictingDates.add(transaction.date);
+    sessions.set(transaction.date, transaction);
+  }
+  const sorted = [...sessions.values()].sort((a, b) => a.date.localeCompare(b.date));
+  const targetSession = sorted[sorted.length - 1];
+  const preceding20Sessions = sorted.slice(-21, -1);
+  const relevantSessions = sorted.slice(-21);
+  let missingReason: string | undefined;
+  if (sorted.length < 21) {
+    missingReason = 'Data historis kurang dari 20 sesi bursa untuk perbandingan volume.';
+  } else if (relevantSessions.some((session) => conflictingDates.has(session.date))) {
+    missingReason = 'Data volume pada tanggal yang sama saling bertentangan.';
+  } else if (relevantSessions.some((session) => !Number.isFinite(session.volume) || session.volume < 0)) {
+    missingReason = 'Data volume sesi atau baseline tidak valid.';
+  } else if (calculateMedian(preceding20Sessions.map((session) => session.volume)) <= 0) {
+    missingReason = 'Median volume baseline nol; rasio tidak dapat dihitung.';
+  }
+  if (missingReason) {
     return {
-      ruleId,
-      name,
-      isTriggered: false,
-      summary: 'Data historis tidak mencukupi untuk menghitung median 20 sesi bursa.',
+      ruleId, name, isTriggered: false,
+      summary: missingReason,
       evidence: {
-        latestVolume: transactions?.[transactions.length - 1]?.volume || 0,
-        medianVolume20Days: 0,
-        multiplier: 0,
-        threshold: thresholdMultiplier,
-        tradingDaysEvaluated: transactions ? Math.max(0, transactions.length - 1) : 0,
+        latestVolume: targetSession?.volume ?? 0,
+        medianVolume20Days: 0, multiplier: 0, threshold: thresholdMultiplier,
+        tradingDaysEvaluated: Math.min(20, Math.max(0, sorted.length - 1)),
       },
-      missingDataReasons: ['Data historis kurang dari 20 sesi bursa untuk perbandingan volume.'],
+      missingDataReasons: [missingReason],
     };
   }
-
-  // Sort ascending by date
-  const sorted = [...transactions].sort((a, b) => (a.date > b.date ? 1 : -1));
-  const targetSession = sorted[sorted.length - 1];
-  const preceding20Sessions = sorted.slice(sorted.length - 21, sorted.length - 1);
 
   const baselineVolumes = preceding20Sessions.map((t) => t.volume);
   const medianVolume = calculateMedian(baselineVolumes);

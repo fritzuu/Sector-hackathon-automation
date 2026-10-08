@@ -52,10 +52,10 @@ const KpiCard: React.FC<KpiCardProps> = ({
 
       {/* Hero Metric Number */}
       <div className="my-2">
-        <div className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight text-white transition-colors duration-300 group-hover:text-primary">
+        <div className={`${value.length > 8 ? 'text-xl' : 'text-3xl sm:text-4xl'} break-words font-bold font-mono tracking-tight text-text-main`}>
           {value}
         </div>
-        <p className="text-xs text-text-muted mt-2 leading-relaxed">
+        <p className="text-sm text-text-muted mt-2 leading-relaxed">
           {sub}
         </p>
       </div>
@@ -64,7 +64,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
     {/* Bottom Action Link */}
     <Link
       to={linkTo}
-      className="flex items-center justify-between pt-4 mt-4 border-t border-border/60 text-xs font-semibold text-primary/90 hover:text-primary transition-colors group-hover:translate-x-0.5"
+      className="flex items-center justify-between pt-4 mt-4 border-t border-border/60 text-sm font-semibold text-primary/90 hover:text-primary transition-colors group-hover:translate-x-0.5"
     >
       <span>{linkText}</span>
       <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
@@ -95,7 +95,7 @@ export const AutomationOverview: React.FC<OverviewProps> = ({
     {
       label: "Kasus Aktif Terbuka",
       value: `${activeCasesCount}`,
-      sub: "Pola anomali terdeteksi hari ini",
+      sub: "Kasus pemantauan yang masih terbuka di watchlist",
       icon: <Layers className="w-4.5 h-4.5" />,
       iconBgClass:
         activeCasesCount > 0
@@ -111,19 +111,19 @@ export const AutomationOverview: React.FC<OverviewProps> = ({
       value: isRunning 
         ? "Mengevaluasi..." 
         : lastRunTime
-          ? new Date(lastRunTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+          ? new Date(lastRunTime).toLocaleTimeString("id-ID", { timeZone: 'Asia/Jakarta', hour: "2-digit", minute: "2-digit" })
           : "N/A",
       sub: isRunning 
         ? "Sistem sedang memproses data bursa" 
-        : `Total ${totalRunsCount} eksekusi otomatis selesai`,
+        : lastRunTime ? `${new Date(lastRunTime).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short' })} WIB · ${totalRunsCount} run dalam riwayat` : 'Belum ada riwayat pemeriksaan',
       icon: isRunning ? <Zap className="w-4.5 h-4.5" /> : <Clock className="w-4.5 h-4.5" />,
       iconBgClass: isRunning 
         ? "bg-amber-500/10 border border-amber-500/20" 
         : "bg-primary/10 border border-primary/20",
       iconColorClass: isRunning ? "text-amber-400" : "text-primary",
       pulse: isRunning,
-      linkTo: "/dashboard/audit",
-      linkText: "Buka Log Audit",
+      linkTo: "/dashboard/automation",
+      linkText: "Pantau Otomatisasi",
     },
   ];
 
@@ -134,7 +134,7 @@ export const AutomationOverview: React.FC<OverviewProps> = ({
           <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
             Ringkasan Otomatisasi
           </h2>
-          <p className="text-xs text-text-muted mt-1 font-medium">Status evaluasi bursa &amp; metrik eksekusi harian</p>
+          <p className="text-sm text-text-muted mt-1 font-medium">Watchlist, kasus yang perlu diperhatikan, dan riwayat pemeriksaan.</p>
         </div>
       </div>
       

@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { authorizeWorkflow } from "./auth.ts"
+import { WorkflowMonitor, workflowSource } from "./monitor.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
-import { runTickerStep, TickerStepResult } from "../../../src/engine/tickerStep.ts"
+import { runPhaseTicker, completedSessions } from "./phase.ts"
+import { evaluateAbnormalVolume } from "../../../src/engine/rules/abnormalVolume.ts"
 import { renderCaseTemplate } from "../../../src/engine/templateRenderer.ts"
 import { sectorsApi, wibDateOffset } from "../../../src/services/sectorsApi.ts"
 import {
@@ -13,9 +16,7 @@ import {
 } from "./formatter.ts"
 import {
   filingDeliveryKey,
-  inferTelegramCheckpoint,
   marketDeliveryKey,
-  marketSymbolFromDeliveryKey,
   newsDeliveryKey,
   selectUndeliveredItems,
 } from "../../../src/engine/telegramDelivery.ts"
@@ -27,7 +28,7 @@ const SECTORS_API_KEY = Deno.env.get("SECTORS_API_KEY")
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 if (SECTORS_API_KEY) sectorsApi.setApiKey(SECTORS_API_KEY)
 
-serve(async (req) => {
+async function handleWorkflow(req: Request, monitor: WorkflowMonitor): Promise<Response> {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -36,19 +37,11 @@ serve(async (req) => {
   if (req.method === "GET") return new Response(JSON.stringify({ isConfigured: !!SECTORS_API_KEY }), { headers: { ...corsHeaders, "Content-Type": "application/json" } })
   
   if (req.method === "POST") {
-    const authHeader = req.headers.get("Authorization")
-    if (!authHeader) {
-      return new Response("Unauthorized: Missing auth header", { status: 401, headers: corsHeaders })
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
+      return new Response("Workflow authentication is not configured", { status: 503, headers: corsHeaders })
     }
-    try {
-      const token = authHeader.replace('Bearer ', '')
-      const payloadBase64 = token.split('.')[1]
-      const payload = JSON.parse(atob(payloadBase64))
-      if (payload.role !== 'service_role') {
-        return new Response("Unauthorized: Only Service Role can execute workflow", { status: 401, headers: corsHeaders })
-      }
-    } catch (e) {
-      return new Response("Unauthorized: Invalid token format", { status: 401, headers: corsHeaders })
+    if (!await authorizeWorkflow(req.headers.get("Authorization"), SUPABASE_SERVICE_ROLE_KEY)) {
+      return new Response("Unauthorized", { status: 401, headers: corsHeaders })
     }
   }
 
@@ -56,35 +49,58 @@ serve(async (req) => {
     return new Response("Method not allowed", { status: 405, headers: corsHeaders })
   }
 
-  const jakartaHour = Number(new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Jakarta', hour: '2-digit', hourCycle: 'h23'
-  }).format(new Date()))
-  let checkpoint: "evening" | "morning" = inferTelegramCheckpoint(jakartaHour)
+  const phase = new URL(req.url).searchParams.get("phase") || "workflow"
+  if (!["briefing", "evaluation", "workflow"].includes(phase)) return new Response("Invalid phase", { status: 400 })
+  const includesRecap = phase !== "evaluation"
+  const evaluatesCases = phase !== "briefing"
+  let checkpoint: "evening" | "morning" = "morning"
+  let previewUserName: string | null = null
   try {
     const body = await req.json()
     if (body?.checkpoint !== undefined && !["evening", "morning"].includes(body.checkpoint)) {
       return new Response("Invalid checkpoint", { status: 400, headers: corsHeaders })
     }
     if (body?.checkpoint) checkpoint = body.checkpoint
+    if (body?.mode !== undefined && body.mode !== "preview") {
+      return new Response("Invalid mode", { status: 400, headers: corsHeaders })
+    }
+    if (body?.mode === "preview") {
+      if (typeof body.user_name !== "string" || !body.user_name.trim()) {
+        return new Response("Preview requires user_name", { status: 400, headers: corsHeaders })
+      }
+      previewUserName = body.user_name.trim()
+    }
   } catch {
-    // Existing manual invocations without a body default to the evening format.
+    // Empty manual invocations use the morning presentation.
   }
   
+  if (new URL(req.url).searchParams.has("phase")) checkpoint = "morning"
+
   // CLEAR CACHE: Ensure Deno isolate doesn't reuse stale memory across cron runs
   sectorsApi.invalidateAll();
   
-  const { data: users } = await supabase
+  let usersQuery = supabase
     .from("profiles")
     .select("id, name, watchlist, telegram_chat_id")
     .eq("is_telegram_linked", true)
+  if (previewUserName) usersQuery = usersQuery.eq("name", previewUserName)
+  const { data: users, error: usersError } = await usersQuery
+  if (usersError) return new Response("Profiles unavailable", { status: 500, headers: corsHeaders })
+  if (previewUserName && users?.length !== 1) {
+    return new Response("Preview requires exactly one linked profile", { status: 409, headers: corsHeaders })
+  }
 
   if (!users || users.length === 0) return new Response("No users found", { status: 200 })
 
+  await monitor.start(users, workflowSource(req.url), previewUserName ? "preview" : phase, checkpoint)
+
   const userIds = users.map((u) => u.id)
-  const { data: workspaces } = await supabase
+  const { data: workspaces, error: workspaceError } = await supabase
     .from("user_workspaces")
     .select("user_id, active_cases, case_events, run_index, market_snapshots, ticker_states")
     .in("user_id", userIds)
+
+  if (workspaceError) return new Response("Workspace state unavailable", { status: 500, headers: corsHeaders })
 
   const workspaceMap = new Map(workspaces?.map((w) => [w.user_id, w]) || [])
 
@@ -112,46 +128,27 @@ serve(async (req) => {
 
   const { data: pendingRows, error: pendingError } = await supabase
     .from("telegram_delivery_items")
-    .select("user_id, chat_id, item_key, payload")
+    .select("user_id, item_key")
     .eq("status", "pending")
     .in("user_id", userIds)
   if (pendingError) {
     return new Response("Pending delivery state unavailable", { status: 500, headers: corsHeaders })
   }
 
-  const activeTickers = new Set(uniqueTickers.map((ticker) => ticker.toUpperCase().replace(/\.JK$/, "")))
-  const pendingPriceTickers = new Set<string>()
-  const pendingPricesByTicker = new Map<string, any[]>()
-  let hasPendingBenchmark = false
   const pendingKeysByUser = new Map<string, Set<string>>()
   for (const row of pendingRows || []) {
     const keys = pendingKeysByUser.get(row.user_id) || new Set<string>()
     keys.add(row.item_key)
     pendingKeysByUser.set(row.user_id, keys)
-    const [prefix, part] = row.item_key.split(":")
-    const pendingSymbol = marketSymbolFromDeliveryKey(row.item_key)
-    if (pendingSymbol && activeTickers.has(pendingSymbol.toUpperCase().replace(/\.JK$/, ""))) {
-      if (Array.isArray(row.payload?.prices)) {
-        pendingPricesByTicker.set(pendingSymbol, row.payload.prices)
-      }
-      if ((prefix === "pending" && part === "price") || prefix === "price") {
-        pendingPriceTickers.add(pendingSymbol)
-        hasPendingBenchmark = true
-      }
-    }
-    if (prefix === "pending" && ["benchmark", "comparison"].includes(part)) {
-      hasPendingBenchmark = true
-    }
   }
 
-  const tickersToRefresh = checkpoint === "evening"
-    ? uniqueTickers
-    : uniqueTickers.filter((ticker) => pendingPriceTickers.has(ticker.toUpperCase().replace(/\.JK$/, "")))
-  const shouldFetchBenchmark = checkpoint === "evening" || hasPendingBenchmark
+  // Full context is required for morning news too. Fetch once per unique ticker,
+  // shared across users; delivery keys still decide which updates are sent.
+  const shouldFetchBenchmark = uniqueTickers.length > 0
 
   let newsPage = { articles: [], hasNext: false, nextOffset: null } as Awaited<ReturnType<typeof sectorsApi.fetchNewsArticles>>
   let newsFetchFailed = false
-  if (uniqueTickers.length > 0) {
+  if (uniqueTickers.length > 0 && (includesRecap || previewUserName)) {
     try {
       newsPage = await sectorsApi.fetchNewsArticles(uniqueTickers, wibDateOffset(7))
       if (newsPage.hasNext) {
@@ -166,16 +163,11 @@ serve(async (req) => {
   if (shouldFetchBenchmark) await sectorsApi.fetchBenchmarkData();
 
   await Promise.all(uniqueTickers.map(async (ticker) => {
-    const normalizedTicker = ticker.toUpperCase().replace(/\.JK$/, "")
-    const shouldRefreshPrice = tickersToRefresh.some((item) =>
-      item.toUpperCase().replace(/\.JK$/, "") === normalizedTicker
-    )
-    const [prices, filings] = await Promise.all([
-      shouldRefreshPrice
-        ? sectorsApi.fetchDailyTransactions(ticker)
-        : Promise.resolve(pendingPricesByTicker.get(normalizedTicker) || []),
+    const [rawPrices, filings] = await Promise.all([
+      sectorsApi.fetchDailyTransactions(ticker),
       sectorsApi.fetchCompanyFilings(ticker)
     ]);
+    const prices = completedSessions(rawPrices, digestDate);
     pricesCache.set(ticker, prices);
     filingsCache.set(ticker, filings);
     
@@ -185,10 +177,65 @@ serve(async (req) => {
     }
   }));
 
+  // Explicit manual previews use the same formatter and real latest sessions.
+  // They do not consume delivery keys or mutate the automated workflow state.
+  if (previewUserName) {
+    const user = users[0]
+    if (!user.telegram_chat_id) return new Response("Telegram is not linked", { status: 409, headers: corsHeaders })
+    const messages: any[] = []
+    const tickers: string[] = []
+    const skipped: string[] = []
+    for (const ticker of uniqueTickers) {
+      const prices = pricesCache.get(ticker) || []
+      const latestPrice = prices[prices.length - 1]
+      if (!latestPrice) { skipped.push(ticker); continue }
+      const cleanTicker = ticker.toUpperCase().replace(/\.JK$/, "")
+      const news = newsPage.articles
+        .filter((article) => article.symbols.some((symbol) => symbol.toUpperCase().replace(/\.JK$/, "") === cleanTicker))
+        .slice(0, 3)
+        .map((article) => {
+          let source = "Sumber berita"
+          try { source = new URL(article.source).hostname.replace(/^www\./, "") } catch { /* Keep generic label. */ }
+          return {
+            title: article.title, summary: article.body?.trim().split(/(?<=[.!?])\s+/)[0]?.slice(0, 500),
+            source, url: article.source, publishedAt: article.publishedAt,
+          }
+        })
+      const block = formatTelegramHtml(ticker, "MONITORING", {
+        asOfDate: latestPrice.date, facts: [], limitedInterpretations: [],
+      }, {
+        prices, benchmark: benchmarkCache.get(ticker) || [],
+        filings: [], news,
+        includeSections: ["price", "benchmark", "volume", "news"],
+        includeHeader: false, includeFooter: false,
+        isMorningBriefing: checkpoint === "morning",
+      })
+      const coverageNote = newsFetchFailed
+        ? "<i>Sebagian sumber berita belum berhasil diperiksa.</i>\n\n"
+        : newsPage.hasNext
+        ? "<i>Cakupan berita parsial; masih ada halaman berita yang belum diperiksa.</i>\n\n"
+        : ""
+      messages.push({
+        user_id: user.id, chat_id: user.telegram_chat_id, status: "pending",
+        automation_run_id: monitor.id(user.id),
+        message: formatTelegramTickerDigest(checkpoint, digestDate, cleanTicker, coverageNote + block, wibTime),
+      })
+      tickers.push(cleanTicker)
+    }
+    if (messages.length) {
+      const { error } = await supabase.from("telegram_outbox").insert(messages)
+      if (error) return new Response("Preview could not be queued", { status: 500, headers: corsHeaders })
+    }
+    monitor.result(user.id, skipped.length ? (messages.length ? "PARTIAL" : "INCOMPLETE") : "SUCCESS")
+    return new Response(JSON.stringify({ mode: "preview", queued: messages.length, tickers, skipped }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    })
+  }
+
   const globalSnapshotsToUpsert = new Map<string, any>()
 
   // Cache unfiltered IHSG globally for the proxy
-  const rawBenchmark = shouldFetchBenchmark ? await sectorsApi.fetchBenchmarkData() : [];
+  const rawBenchmark = shouldFetchBenchmark ? completedSessions(await sectorsApi.fetchBenchmarkData(), digestDate) : [];
   if (rawBenchmark && rawBenchmark.length > 0) {
     const latestIHSG = rawBenchmark[rawBenchmark.length - 1];
     const prevIHSG = rawBenchmark[rawBenchmark.length - 2] || latestIHSG;
@@ -204,6 +251,8 @@ serve(async (req) => {
       ihsg_price: Math.round(latestIHSG.close),
       ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
       latest_filings: [],
+      data_date: latestIHSG.date,
+      ihsg_data_date: latestIHSG.date,
       updated_at: timestamp
     });
   }
@@ -251,7 +300,7 @@ serve(async (req) => {
       const filings = filingsCache.get(ticker) || []
       const previousTickerState = tickerStates[ticker] || null
 
-      const r = runTickerStep({
+      const r = runPhaseTicker(phase as "briefing" | "evaluation" | "workflow", {
         symbol: ticker,
         prices,
         benchmark,
@@ -280,12 +329,14 @@ serve(async (req) => {
       const latestIHSG = benchmark.length > 0 ? benchmark[benchmark.length - 1] : null
 
       if (latestPrice) {
-        const priceKey = marketDeliveryKey("price", ticker, latestPrice.date)
+        const priceKey = includesRecap
+          ? `briefing:${digestDate}:${cleanTicker}:price:${latestPrice.date}`
+          : marketDeliveryKey("price", ticker, latestPrice.date)
         const pendingPriceKey = `pending:price:${cleanTicker}`
-        if (userPendingKeys.has(pendingPriceKey) && reserveKey(pendingPriceKey)) {
+        if (includesRecap && userPendingKeys.has(pendingPriceKey) && reserveKey(pendingPriceKey)) {
           tickerItemKeys.push(pendingPriceKey)
         }
-        if (reserveKey(priceKey)) {
+        if (includesRecap && reserveKey(priceKey)) {
           includeSections.add("price")
           includeSections.add("volume")
           tickerItemKeys.push(priceKey)
@@ -315,7 +366,7 @@ serve(async (req) => {
       const previouslySeenFilingIds = new Set(previousTickerState?.seenFilingIds || [])
       const newFilings = filings.filter((filing: any) => {
         const key = filingDeliveryKey(ticker, filing)
-        if (previousTickerState?.seenFilingIds == null) return false
+        if (!includesRecap || previousTickerState?.seenFilingIds == null) return false
         if (previouslySeenFilingIds.has(filing.id) && deliveryStatuses.get(key) !== "pending") return false
         if (!reserveKey(key)) return false
         tickerItemKeys.push(key)
@@ -367,8 +418,14 @@ serve(async (req) => {
         }
       }
 
+      if (includesRecap && r.evalResult) includeSections.add("engine")
+
       if (tickerItemKeys.length > 0 && latestPrice) {
+        // Include market context in each new ticker message without reserving
+        // already-delivered price/volume keys again.
+        includeSections.add("price")
         includeSections.add("benchmark")
+        includeSections.add("volume")
       }
 
       if (tickerItemKeys.length > 0) {
@@ -390,14 +447,20 @@ serve(async (req) => {
             : newsPage.hasNext
             ? "<i>Cakupan berita parsial; masih ada halaman berita yang belum diperiksa.</i>"
             : ""
+          const evaluationNote = evaluatesCases && r.outcome === 'DATA_INCOMPLETE'
+            ? "<i>Evaluasi kasus menunggu kelengkapan data sesi yang sama. Status kasus dipertahankan.</i>\n\n"
+            : evaluatesCases && r.outcome === 'SKIPPED_STALE'
+            ? "<i>Sesi perdagangan ini sudah dievaluasi; status kasus terakhir dipertahankan.</i>\n\n" : ""
           const message = formatTelegramTickerDigest(
             checkpoint,
             digestDate,
             cleanTicker,
-            `${coverageNote ? `${coverageNote}\n\n` : ""}${block}`,
-            wibTime
+            `${evaluationNote}${coverageNote ? `${coverageNote}\n\n` : ""}${block}`,
+            wibTime,
+            undefined,
+            { purpose: includesRecap ? "briefing" : "evaluation", sessionDate: latestPrice?.date }
           )
-          const { error: enqueueError } = await supabase.rpc("enqueue_telegram_digest", {
+          const { data: outboxId, error: enqueueError } = await supabase.rpc("enqueue_telegram_digest", {
             p_user_id: user.id,
             p_chat_id: user.telegram_chat_id,
             p_checkpoint: checkpoint,
@@ -405,6 +468,11 @@ serve(async (req) => {
             p_message: message,
             p_item_keys: [...new Set(tickerItemKeys)],
           })
+          if (outboxId && !enqueueError) {
+            const { error: linkError } = await supabase.from("telegram_outbox")
+              .update({ automation_run_id: monitor.id(user.id) }).eq("id", outboxId).eq("user_id", user.id)
+            if (linkError) return new Response("Delivery tracking could not be saved", { status: 500, headers: corsHeaders })
+          }
           if (enqueueError) {
             console.error(`Telegram digest enqueue failed for user ${user.id}`)
             return new Response("Telegram digest could not be queued", { status: 500, headers: corsHeaders })
@@ -416,19 +484,22 @@ serve(async (req) => {
         totalTriggersFound += r.evalResult.activeTriggerCount
       }
       
-      if (r.outcome === 'DATA_INCOMPLETE') {
+      if (!evaluatesCases) {
+        if (!latestPrice || !latestIHSG || latestIHSG.date !== latestPrice.date) incompleteCount++
+        else evaluatedCount++
+      } else if (r.outcome === 'DATA_INCOMPLETE') {
         incompleteCount++
       } else if (r.outcome === 'EVALUATED') {
         evaluatedCount++
       }
 
-      if (r.outcome !== 'SKIPPED_STALE' && prices.length > 0) {
+      if ((includesRecap || r.outcome !== 'SKIPPED_STALE') && prices.length > 0) {
         const latestPriceData = prices[prices.length - 1]
         const prevPriceData = prices[prices.length - 2] || latestPriceData
         const latestIHSG = benchmark[benchmark.length - 1] || { close: 0 }
         const prevIHSG = benchmark[benchmark.length - 2] || latestIHSG
 
-        const volRule = r.evalResult?.ruleResults.find((r: any) => r.ruleId === 'ABNORMAL_VOLUME')
+        const volRule = r.evalResult?.ruleResults.find((r: any) => r.ruleId === 'ABNORMAL_VOLUME') || evaluateAbnormalVolume(prices)
         const medianVol = volRule?.evidence ? (volRule.evidence as any).medianVolume20Days : 0
         
         const changePercent = prevPriceData.close ? ((latestPriceData.close - prevPriceData.close) / prevPriceData.close) * 100 : 0
@@ -444,6 +515,8 @@ serve(async (req) => {
           ihsg_price: Math.round(latestIHSG.close),
           ihsg_change_percent: Number(ihsgChangePercent.toFixed(2)),
           latest_filings: filings,
+          data_date: latestPriceData.date,
+          ihsg_data_date: latestIHSG.date || null,
           updated_at: timestamp
         })
       }
@@ -453,12 +526,14 @@ serve(async (req) => {
     const durationMs = Date.now() - startTime
     const uniqueRunId = `RUN-${dateStr}-${Math.floor(Date.now() / 1000).toString().slice(-5)}-${user.id.slice(0, 4)}`
 
-    let auditStatus = 'SUCCESS'
+    let auditStatus = includesRecap && (newsFetchFailed || newsPage.hasNext) ? 'PARTIAL' : 'SUCCESS'
     if (incompleteCount > 0) {
       auditStatus = evaluatedCount === 0 ? 'INCOMPLETE' : 'PARTIAL'
     }
 
-    auditRunsToInsert.push({
+    monitor.result(user.id, auditStatus, totalTriggersFound)
+    if (evaluatesCases) auditRunsToInsert.push({
+      automation_run_id: monitor.id(user.id),
       user_id: user.id,
       run_id: uniqueRunId,
       timestamp,
@@ -468,7 +543,7 @@ serve(async (req) => {
       duration_ms: durationMs
     })
 
-    workspacesToUpsert.push({
+    if (evaluatesCases) workspacesToUpsert.push({
       user_id: user.id,
       active_cases: activeCases,
       case_events: caseEvents,
@@ -517,17 +592,37 @@ serve(async (req) => {
   }
 
   if (globalSnapshotsToUpsert.size > 0) {
-    await supabase.from("global_market_snapshots").upsert(Array.from(globalSnapshotsToUpsert.values()))
+    const { error } = await supabase.from("global_market_snapshots").upsert(Array.from(globalSnapshotsToUpsert.values()))
+    if (error) return new Response("Market snapshot could not be saved", { status: 500 })
   }
 
   if (auditRunsToInsert.length > 0) {
-    await supabase.from("audit_runs").insert(auditRunsToInsert)
+    const { error } = await supabase.from("audit_runs").insert(auditRunsToInsert)
+    if (error) return new Response("Audit could not be saved", { status: 500 })
   }
   
   if (workspacesToUpsert.length > 0) {
-    await supabase.from("user_workspaces").upsert(workspacesToUpsert)
+    const { error } = await supabase.from("user_workspaces").upsert(workspacesToUpsert)
+    if (error) return new Response("Workspace could not be saved", { status: 500 })
   }
 
   return new Response("Workflow completed successfully", { status: 200 })
-})
+}
 
+serve(async (req) => {
+  const monitor = new WorkflowMonitor(supabase);
+  let response: Response;
+  try {
+    response = await handleWorkflow(req, monitor);
+  } catch {
+    console.error("Workflow failed unexpectedly");
+    response = new Response("Workflow could not complete", { status: 500 });
+  }
+  try {
+    await monitor.finish(response.status);
+  } catch {
+    console.error("Workflow execution result could not be recorded");
+    return new Response("Execution tracking could not be completed", { status: 500 });
+  }
+  return response;
+});

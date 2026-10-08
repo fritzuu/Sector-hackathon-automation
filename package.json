@@ -11,7 +11,8 @@
     "demo:cli": "tsx src/demo.ts",
     "build": "tsc && vite build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:workflow": "node scripts/build-workflow.mjs"
   },
   "keywords": [
     "idx",

@@ -14,6 +14,7 @@ import { Route as GuestRouteImport } from './routes/_guest'
 import { Route as GuestIndexRouteImport } from './routes/_guest.index'
 import { Route as AuthDashboardIndexRouteImport } from './routes/_auth.dashboard.index'
 import { Route as AuthDashboardAuditRouteImport } from './routes/_auth.dashboard.audit'
+import { Route as AuthDashboardAutomationRouteImport } from './routes/_auth.dashboard.automation'
 import { Route as AuthDashboardCasesRouteImport } from './routes/_auth.dashboard.cases'
 import { Route as AuthDashboardWatchlistRouteImport } from './routes/_auth.dashboard.watchlist'
 
@@ -40,6 +41,11 @@ const AuthDashboardAuditRoute = AuthDashboardAuditRouteImport.update({
   path: '/dashboard/audit',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthDashboardAutomationRoute = AuthDashboardAutomationRouteImport.update({
+  id: '/dashboard/automation',
+  path: '/dashboard/automation',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthDashboardCasesRoute = AuthDashboardCasesRouteImport.update({
   id: '/dashboard/cases',
   path: '/dashboard/cases',
@@ -54,6 +60,7 @@ const AuthDashboardWatchlistRoute = AuthDashboardWatchlistRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof GuestIndexRoute
   '/dashboard/audit': typeof AuthDashboardAuditRoute
+  '/dashboard/automation': typeof AuthDashboardAutomationRoute
   '/dashboard/cases': typeof AuthDashboardCasesRoute
   '/dashboard/watchlist': typeof AuthDashboardWatchlistRoute
   '/dashboard/': typeof AuthDashboardIndexRoute
@@ -61,6 +68,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof GuestIndexRoute
   '/dashboard/audit': typeof AuthDashboardAuditRoute
+  '/dashboard/automation': typeof AuthDashboardAutomationRoute
   '/dashboard/cases': typeof AuthDashboardCasesRoute
   '/dashboard/watchlist': typeof AuthDashboardWatchlistRoute
   '/dashboard': typeof AuthDashboardIndexRoute
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/_guest': typeof GuestRouteWithChildren
   '/_guest/': typeof GuestIndexRoute
   '/_auth/dashboard/audit': typeof AuthDashboardAuditRoute
+  '/_auth/dashboard/automation': typeof AuthDashboardAutomationRoute
   '/_auth/dashboard/cases': typeof AuthDashboardCasesRoute
   '/_auth/dashboard/watchlist': typeof AuthDashboardWatchlistRoute
   '/_auth/dashboard/': typeof AuthDashboardIndexRoute
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard/audit'
+    | '/dashboard/automation'
     | '/dashboard/cases'
     | '/dashboard/watchlist'
     | '/dashboard/'
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard/audit'
+    | '/dashboard/automation'
     | '/dashboard/cases'
     | '/dashboard/watchlist'
     | '/dashboard'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/_guest'
     | '/_guest/'
     | '/_auth/dashboard/audit'
+    | '/_auth/dashboard/automation'
     | '/_auth/dashboard/cases'
     | '/_auth/dashboard/watchlist'
     | '/_auth/dashboard/'
@@ -143,6 +155,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardAuditRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/dashboard/automation': {
+      id: '/_auth/dashboard/automation'
+      path: '/dashboard/automation'
+      fullPath: '/dashboard/automation'
+      preLoaderRoute: typeof AuthDashboardAutomationRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/dashboard/cases': {
       id: '/_auth/dashboard/cases'
       path: '/dashboard/cases'
@@ -162,6 +181,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthRouteChildren {
   AuthDashboardAuditRoute: typeof AuthDashboardAuditRoute
+  AuthDashboardAutomationRoute: typeof AuthDashboardAutomationRoute
   AuthDashboardCasesRoute: typeof AuthDashboardCasesRoute
   AuthDashboardWatchlistRoute: typeof AuthDashboardWatchlistRoute
   AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute
@@ -169,6 +189,7 @@ interface AuthRouteChildren {
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthDashboardAuditRoute: AuthDashboardAuditRoute,
+  AuthDashboardAutomationRoute: AuthDashboardAutomationRoute,
   AuthDashboardCasesRoute: AuthDashboardCasesRoute,
   AuthDashboardWatchlistRoute: AuthDashboardWatchlistRoute,
   AuthDashboardIndexRoute: AuthDashboardIndexRoute,

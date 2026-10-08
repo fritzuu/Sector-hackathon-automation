@@ -54,8 +54,8 @@ export function mapDailyTransactions(raw: any[], symbol: string): DailyTransacti
       high: Number(item.high),
       low: Number(item.low),
       close: Number(item.close),
-      volume: Number(item.volume || 0),
-      value: Number(item.close) * Number(item.volume || 0),
+      volume: item.volume == null || item.volume === '' ? NaN : Number(item.volume),
+      value: Number(item.close) * (item.volume == null || item.volume === '' ? NaN : Number(item.volume)),
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }

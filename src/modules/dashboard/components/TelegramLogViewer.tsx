@@ -4,6 +4,8 @@
  */
 
 import React, { useState } from "react";
+import { Pagination } from "../../../shared/components/Pagination";
+import { usePagination } from "../../../shared/hooks/usePagination";
 import {
   Send,
   Copy,
@@ -60,6 +62,8 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
       (log.ticker &&
         log.ticker.toLowerCase().includes(searchTerm.toLowerCase())),
   );
+
+  const pagination = usePagination(filteredLogs, `${user.id}:${searchTerm}`);
 
   const parseStructuredLog = (htmlMessage: string) => {
     const text = htmlMessage.replace(/<br\/>/g, "\n").replace(/<[^>]+>/g, "");
@@ -155,27 +159,21 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
           <div>
             <div className="flex flex-col-reverse md:flex-row items-start md:items-center space-x-2">
               <h3 className="text-lg font-extrabold text-white tracking-tight">
-                Log Entri Telegram Sent
+                Riwayat Telegram
               </h3>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-secondary text-primary border border-primary/30">
                 {isLoading ? "..." : logs.length} Notifikasi
               </span>
             </div>
-            <p className="text-xs text-text-muted mt-0.5">
-              Riwayat pesan &amp; alert anomali bursa yang telah dikirim ke bot
+            <p className="text-sm text-text-muted mt-1">
+              Pesan watchlist dan peringatan yang dikirim ke bot
               Telegram Anda.
             </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
-          {logs.length > 0 && !isLoading && (
-            <button
-              onClick={onClearLogs}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-colors cursor-pointer">
-              <span>Clear</span>
-            </button>
-          )}
+
         </div>
       </div>
 
@@ -188,7 +186,7 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari dalam riwayat log Telegram..."
-            className="w-full pl-9 pr-3 py-2 bg-bg border border-border rounded-lg text-xs text-text placeholder:text-text/40 outline-none focus:border-primary transition-colors"
+            className="w-full pl-9 pr-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-text/40 outline-none focus:border-primary transition-colors"
           />
         </div>
       )}
@@ -244,20 +242,19 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
           </p>
         </div>
       ) : (
-        <div className="space-y-3 max-h-[400px] overflow-y-auto px-1 -mx-1 pb-2 pt-1 mt-2 hide-scrollbar">
-          {filteredLogs.map((log) => (
+        <div className="space-y-3 max-h-[520px] overflow-y-auto px-1 -mx-1 pb-2 pt-1 mt-2 hide-scrollbar">
+          {pagination.items.map((log) => (
             <div
               key={log.id}
               className="p-3 rounded-lg bg-bg border border-border/80 hover:border-primary/40 transition-all flex items-center justify-between gap-3"
             >
-              <div className="flex items-center space-x-3 flex-wrap">
-                {log.ticker && (
-                  <span className="font-mono font-bold text-xs text-primary bg-secondary px-2 py-0.5 rounded border border-primary/30 tracking-wider">
-                    {log.ticker}
-                  </span>
-                )}
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-sm font-bold text-text-main">{log.ticker || 'Pesan watchlist'}</span>
+                  <span className={`text-xs ${log.status === 'SENT' ? 'text-accent' : 'text-amber-300'}`}>{log.status === 'SENT' ? 'Terkirim' : 'Menunggu'}</span>
+                </div>
 
-                <span className="flex items-center space-x-1.5 text-[10px] text-text/50 font-mono">
+                <span className="flex items-center space-x-1.5 text-xs text-text-muted font-mono">
                   <Clock className="w-3 h-3" />
                   <span>
                     {new Date(log.timestamp).toLocaleString("id-ID", {
@@ -269,11 +266,12 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
                     })}
                   </span>
                 </span>
+                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-text-muted">{log.message.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 180)}</p>
               </div>
 
               <button
                 onClick={() => setSelectedLog(log)}
-                className="text-[10px] text-accent hover:text-white transition-colors cursor-pointer font-bold px-3 py-1 rounded bg-secondary border border-border flex-shrink-0"
+                className="min-h-10 text-sm text-accent hover:text-white transition-colors cursor-pointer font-bold px-3 py-1 rounded bg-secondary border border-border flex-shrink-0"
               >
                 Detail →
               </button>
@@ -281,6 +279,8 @@ export const TelegramLogViewer: React.FC<TelegramLogViewerProps> = ({
           ))}
         </div>
       )}
+
+      <Pagination {...pagination} label="Halaman log Telegram" />
 
       {/* Detail Modal */}
       {selectedLog && (

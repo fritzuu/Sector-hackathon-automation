@@ -1,3 +1,4 @@
+import { StockLogo } from '../../../shared/components/StockLogo';
 import React from 'react';
 import { TrendingUp, Plus, Check, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -40,7 +41,7 @@ export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchl
     <div className="rounded-xl p-5 bg-secondary/30 border border-border flex flex-col font-sans h-full">
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/5">
         <TrendingUp className="w-4 h-4 text-primary" />
-        <h2 className="text-sm font-bold text-text-main tracking-wide">
+        <h2 className="text-base font-bold text-text-main tracking-wide">
           Trending / Populer
         </h2>
       </div>
@@ -53,7 +54,7 @@ export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchl
           <div className="font-bold flex items-center gap-1.5 text-rose-300">
             <Lock className="w-3.5 h-3.5" /> Kuota 20x Penambahan Habis
           </div>
-          <p className="text-[11px] text-rose-200/80 mt-0.5">
+          <p className="text-xs text-rose-200/80 mt-0.5">
             Penambahan saham dikunci hingga 00:00 WIB. Klik untuk detail.
           </p>
         </div>
@@ -95,18 +96,14 @@ export const PopularStocksWidget: React.FC<PopularStocksWidgetProps> = ({ watchl
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold font-mono text-[10px] shadow-inner ${
-                    isAdded ? 'bg-white/5 text-text-muted' : 'bg-primary/10 border border-primary/20 text-primary'
-                  }`}>
-                    {stock.symbol.slice(0, 2)}
-                  </div>
+                  <StockLogo ticker={stock.symbol} />
                   <div>
-                    <div className={`text-xs font-bold font-mono transition-colors ${
+                    <div className={`text-sm font-bold font-mono transition-colors ${
                       isAdded ? 'text-text-muted' : 'text-text-main group-hover:text-primary'
                     }`}>
                       {stock.symbol}
                     </div>
-                    <div className="text-[9px] text-text-muted truncate max-w-[120px]" title={stock.name}>
+                    <div className="text-xs text-text-muted truncate max-w-[190px]" title={stock.name}>
                       {stock.name}
                     </div>
                   </div>

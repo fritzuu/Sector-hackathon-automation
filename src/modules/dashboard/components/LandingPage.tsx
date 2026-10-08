@@ -3,12 +3,13 @@
  * nav: N1b canonical SaaS · footer: Ft5 statement
  * pre-emit critique: P5 H5 E5 S5 R5 V5
  * Audience: retail IDX investors · Use: sign up for automated anomaly alerts · Tone: utilitarian precision
- * Constraints: ZERO lucide/icon imports, zero emoji, zero invented metrics, zero decorative chrome
+ * Constraints: ZERO lucide/icon imports, emoji only inside the canonical Telegram message, zero invented metrics, zero decorative chrome
  * Differs from last (Workbench · dark teal): macrostructure + accent-hue (teal→indigo) + paper-band shift
  */
 
 import React, { useState, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { formatTelegramHtml, formatTelegramTickerDigest } from '../../../engine/telegramFormatter';
 import { RealTickerMetrics } from '../../../types/engine.js';
 
 interface LandingPageProps {
@@ -700,14 +701,16 @@ const GLOBAL_CSS = `
   }
   .tg-body {
     padding: 18px;
-    font-family: var(--font-mono);
-    font-size: 13px;
+    font-family: var(--font-sans);
+    font-size: 14px;
     color: var(--tx-1);
     line-height: 1.8;
     white-space: pre-wrap;
     word-break: break-word;
     min-height: 200px;
   }
+  .tg-body b { color: var(--tx-0); }
+  .tg-body a { color: var(--ac-h); text-decoration: underline; }
   .tg-foot {
     padding: 14px 18px;
     border-top: 1px solid var(--ed);
@@ -951,7 +954,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Kapan evaluasi harian berjalan dan bagaimana cara kerjanya?',
-    a: 'Evaluasi harian dijadwalkan pukul 07:00 WIB pada hari bursa menggunakan data sesi bursa terakhir yang tersedia. Sistem membandingkan volume dengan median 20 sesi bursa serta memeriksa pergerakan relatif terhadap IHSG dan keterbukaan informasi emiten.'
+    a: 'Rekap pagi dan evaluasi kasus dijalankan bersama pukul 07.00 WIB, Senin–Jumat, menggunakan sesi bursa terakhir yang tersedia. Saham dan IHSG harus berasal dari tanggal yang sama. Sistem membandingkan volume dengan median 20 sesi bursa serta memeriksa pergerakan relatif terhadap IHSG dan keterbukaan informasi emiten.'
   },
   {
     q: 'Dari mana SIBA mengambil data saham dan pasar?',
@@ -994,34 +997,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onAuthSucc
   const tickers = DEMO_TICKERS;
   const active = tickers[selected];
 
-  const telegramText = active
-    ? `[SIMULASI SIBA: ${active.symbol}] pukul 07:00 WIB
-Data contoh: bukan data pasar aktual.
-Status: ${active.isVolumeAnomaly || active.isSpreadAnomaly ? 'PERLU DICEK, LONJAKAN TERDETEKSI' : 'DALAM PEMANTAUAN'}
-
-RINGKASAN DATA TRANSAKSI
-Volume transaksi   ${vol(active.todayVolume)} lot
-Patokan 20 sesi    ${vol(active.medianVolume20d)} lot
-Rasio volume       ${active.volumeMultiplier}x patokan
-Harga penutupan    Rp ${fmt(active.lastPrice)}
-Perubahan harian   ${pct(active.changePercent)}
-IHSG               ${pct(active.ihsgChangePercent)}
-Selisih vs IHSG    ${pct(active.changePercent - active.ihsgChangePercent)}
-
-KETERANGAN
-${active.isVolumeAnomaly
-  ? '• Volume melampaui batas lonjakan (≥ 2,0x patokan 20 sesi).'
-  : '• Volume berada dalam batas wajar harian.'}
-${active.isSpreadAnomaly
-  ? '• Perubahan harga berbeda dari IHSG lebih dari 2,0%.'
-  : '• Pergerakan harga bergerak sejalan dengan indeks acuan.'}
-
-CATATAN EVALUASI
-Keterbukaan informasi dan transaksi resmi
-dianalisis saat evaluasi dashboard dijalankan.
-
-Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
-    : '';
+  // Fixed, explicitly labelled fixtures; the production formatter owns the message layout.
+  const demoDate = '2026-10-08';
+  const sessionDate = '2026-10-07';
+  const sessionDates: string[] = [];
+  const cursor = new Date(`${sessionDate}T00:00:00Z`);
+  while (sessionDates.length < 21) {
+    if (![0, 6].includes(cursor.getUTCDay())) sessionDates.unshift(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  const previousClose = active ? Math.round(active.lastPrice / (1 + active.changePercent / 100)) : 0;
+  const demoPrices = active ? sessionDates.map((date, index) => ({
+    symbol: active.symbol, date,
+    open: previousClose,
+    close: index === 20 ? active.lastPrice : previousClose,
+    low: Math.min(previousClose, active.lastPrice), high: Math.max(previousClose, active.lastPrice),
+    volume: index === 20 ? active.todayVolume : active.medianVolume20d,
+  })) : [];
+  const telegramText = active ? formatTelegramTickerDigest(
+    'morning', demoDate, active.symbol,
+    formatTelegramHtml(active.symbol, 'MONITORING', { asOfDate: sessionDate, facts: [], limitedInterpretations: [] }, {
+      prices: demoPrices,
+      benchmark: [
+        { symbol: 'IHSG', date: sessionDates[19], close: 7000 / 1.006, percentChange: 0 },
+        { symbol: 'IHSG', date: sessionDate, close: 7000, percentChange: 0.6 },
+      ],
+      news: [{ title: `Contoh berita emiten ${active.symbol} (simulasi)`, summary: 'Ringkasan berita terkait saham tampil di bagian paling bawah setelah harga, IHSG, dan volume.' }],
+      includeSections: ['price', 'benchmark', 'volume', 'news'],
+      includeHeader: false, includeFooter: false, isMorningBriefing: true, wibTime: '07.00',
+    }), '07.00', undefined, { purpose: 'briefing', sessionDate },
+  ) : '';
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1084,7 +1089,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
             <em>di Telegram.</em>
           </h1>
           <p className="hero-sub">
-            Setiap hari bursa pukul 07:00 WIB, SIBA memeriksa data sesi terakhir:
+            Rekap dan evaluasi kasus pukul 07.00 WIB memakai sesi bursa terakhir:
             volume, pergerakan harga terhadap IHSG, dan keterbukaan emiten.
             Ringkasannya dikirim ke Telegram, tanpa prediksi atau rekomendasi jual beli.
           </p>
@@ -1265,7 +1270,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
               {[
                 'Bersumber dari data transaksi bursa dan pengumuman emiten (Sectors API)',
                 'Bebas dari prediksi harga, sinyal beli/jual, atau saran spekulatif',
-                'Format ringkas, dapat dipahami dalam 30 detik',
+                'Harga, IHSG, volume, lalu berita dalam satu pesan per saham',
                 'Alasan lonjakan volume atau selisih harga dijelaskan secara gamblang',
               ].map(item => (
                 <li key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -1285,10 +1290,11 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
                   </div>
                 </div>
               </div>
-              <pre className="tg-body">{telegramText}</pre>
+              <p style={{ padding: '12px 18px 0', fontSize: 12, color: 'var(--tx-1)' }}>Simulasi template · angka, tanggal, dan berita contoh, bukan data pasar aktual.</p>
+              <div className="tg-body" dangerouslySetInnerHTML={{ __html: telegramText }} />
               <div className="tg-foot">
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-1)' }}>
-                  Contoh laporan · jadwal evaluasi 07:00 WIB
+                  Satu bubble per saham · rekap 07.00 WIB
                 </span>
                 <button className="btn-primary btn-sm" onClick={() => onOpenAuth('register')}>
                   Sambungkan Telegram
@@ -1310,7 +1316,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
           {[
             { n: '01', title: 'Daftar dan susun daftar pantauan', body: 'Buat akun gratis. Tentukan kode saham IDX yang ingin Anda pantau, seperti BBCA, TLKM, BBRI, atau emiten lain pilihan Anda.' },
             { n: '02', title: 'Sambungkan ke Telegram', body: 'Salin kode token unik ke bot Telegram SIBA. ID chat Anda hanya digunakan untuk mengirimkan laporan akun pribadi Anda dan dijaga kerahasiaannya.' },
-            { n: '03', title: 'Jalankan evaluasi harian', body: 'Sistem dijadwalkan mengevaluasi data sesi bursa terakhir yang tersedia setiap hari bursa pukul 07:00 WIB dan mengirimkan laporan jika ada lonjakan.' },
+            { n: '03', title: 'Jalankan evaluasi harian', body: 'Rekap pagi dan evaluasi kasus dijalankan bersama pukul 07.00 WIB, Senin–Jumat, dengan saham dan IHSG pada sesi yang sama.' },
           ].map(s => (
             <div key={s.n} className="step-cell">
               <span className="step-n-watermark" aria-hidden="true">{s.n}</span>
@@ -1475,7 +1481,7 @@ Catatan: Laporan otomatis SIBA bukan rekomendasi atau saran trading.`
           </h2>
           <p className="cta-lead">
             Daftar gratis, susun daftar pantauan saham IDX Anda,
-            sambungkan Telegram untuk menerima laporan evaluasi pukul 07:00 WIB pada hari bursa.
+            sambungkan Telegram untuk menerima rekap pagi pukul 07.00 WIB pada hari bursa.
           </p>
           <div className="cta-ctas">
             <button className="btn-primary" onClick={() => onOpenAuth('register')}>

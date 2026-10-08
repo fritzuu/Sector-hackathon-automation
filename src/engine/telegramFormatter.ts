@@ -1,3 +1,5 @@
+import { evaluateAbnormalVolume } from './rules/abnormalVolume.ts';
+
 export interface TelegramForeignFlow {
   buy: number;
   sell: number;
@@ -147,7 +149,7 @@ export function formatTelegramHtml(
   // 1. HEADER (Format 2 Aesthetics)
   // ==========================================
   const headerIcon = isMorning ? '☀️' : '🌙';
-  const headerTitle = isMorning ? 'Pembaruan Pagi' : 'Update Watchlist';
+  const headerTitle = isMorning ? 'Rekap Pagi' : 'Update Watchlist';
   
   // Status badge to preserve SIBA audit visibility
   const statusBadge =
@@ -223,27 +225,6 @@ export function formatTelegramHtml(
       ffBlock += `\n\nTotal lima sesi terakhir: ${accNetType} Rp${formatRupiahScale(Math.abs(ff.accumulatedNet5Days))}.`;
     }
     sections.push(ffBlock);
-  }
-
-  // ==========================================
-  // 5. BERITA TERKAIT (NEWS - Modular)
-  // ==========================================
-  if (includesSection('news') && context.news && context.news.length > 0) {
-    // Maximum 3 articles as per PDF Hal 2
-    const topNews = context.news.slice(0, 3);
-    const newsLines: string[] = [`📰 <b>Berita terkait ${escapeHtml(cleanSymbol)} — ${dateFormatted}</b>`];
-    for (const item of topNews) {
-      let itemText = `<b>${escapeHtml(item.title)}</b>`;
-      if (item.summary) {
-        itemText += `\n${escapeHtml(item.summary)}`;
-      }
-      if (item.url) {
-        const sourceName = item.source ? escapeHtml(item.source) : 'Baca Berita';
-        itemText += `\n🔗 <a href="${escapeHtml(item.url)}">${sourceName}</a>`;
-      }
-      newsLines.push(itemText);
-    }
-    sections.push(newsLines.join('\n\n'));
   }
 
   // ==========================================
@@ -368,23 +349,24 @@ export function formatTelegramHtml(
   // ==========================================
   if (includesSection('volume') && latestPrice && latestPrice.volume !== undefined && latestPrice.volume !== null) {
     const volume = Number(latestPrice.volume);
-    const volumeEvidence = context.evalResult?.ruleResults?.find(
+    const volumeRule = context.evalResult?.ruleResults?.find(
       (result: any) => result.ruleId === 'ABNORMAL_VOLUME'
-    )?.evidence;
+    ) ?? evaluateAbnormalVolume(prices);
+    const volumeEvidence = volumeRule.evidence;
     let volumeBlock =
       `👀 <b>Sorotan volume</b>\n` +
-      `Volume sesi ${escapeHtml(formatIndonesianDate(latestPrice.date))}: <b>${volume.toLocaleString('id-ID')}</b>`;
+      `Volume sesi ${escapeHtml(formatIndonesianDate(latestPrice.date))}: <b>${Number.isFinite(volume) && volume >= 0 ? volume.toLocaleString('id-ID') : 'Tidak tersedia'}</b>`;
 
     if (volumeEvidence) {
       const median = Number(volumeEvidence.medianVolume20Days);
       const multiplier = Number(volumeEvidence.multiplier);
       const threshold = Number(volumeEvidence.threshold);
-      if (volumeEvidence.tradingDaysEvaluated >= 20 && median > 0 && Number.isFinite(multiplier)) {
+      if (!volumeRule.missingDataReasons?.length && volumeEvidence.tradingDaysEvaluated >= 20 && median > 0 && Number.isFinite(multiplier)) {
         volumeBlock +=
           `\nRasio terhadap median 20 sesi: ${multiplier.toLocaleString('id-ID', { maximumFractionDigits: 2 })}x ` +
           `(batas deteksi ≥ ${threshold.toLocaleString('id-ID', { maximumFractionDigits: 2 })}x).`;
       } else {
-        volumeBlock += '\nPerbandingan dengan median 20 sesi belum dapat dihitung dari baseline yang tersedia.';
+        volumeBlock += '\nPerbandingan dengan median 20 sesi tidak tersedia: ' + escapeHtml(volumeRule.missingDataReasons?.join(' ') || 'Baseline belum valid.');
       }
     } else {
       volumeBlock += '\nPerbandingan dengan median 20 sesi tidak tersedia pada hasil evaluasi.';
@@ -419,6 +401,27 @@ export function formatTelegramHtml(
   }
 
   // ==========================================
+  // 5. BERITA TERKAIT (NEWS - Modular)
+  // ==========================================
+  if (includesSection('news') && context.news && context.news.length > 0) {
+    // Maximum 3 articles as per PDF Hal 2
+    const topNews = context.news.slice(0, 3);
+    const newsLines: string[] = [`📰 <b>Berita terkait ${escapeHtml(cleanSymbol)} — ${dateFormatted}</b>`];
+    for (const item of topNews) {
+      let itemText = `<b>${escapeHtml(item.title)}</b>`;
+      if (item.summary) {
+        itemText += `\n${escapeHtml(item.summary)}`;
+      }
+      if (item.url) {
+        const sourceName = item.source ? escapeHtml(item.source) : 'Baca Berita';
+        itemText += `\n🔗 <a href="${escapeHtml(item.url)}">${sourceName}</a>`;
+      }
+      newsLines.push(itemText);
+    }
+    sections.push(newsLines.join('\n\n'));
+  }
+
+  // ==========================================
   // 12. FOOTER & DISCLAIMER
   // ==========================================
   if (context.includeFooter !== false) {
@@ -447,7 +450,7 @@ export function formatTelegramDigest(
   const blocks = tickerBlocks.filter((block) => block.trim().length > 0);
   if (blocks.length === 0) return '';
 
-  const title = checkpoint === 'morning' ? '☀️ PEMBARUAN PAGI' : '🌙 RINGKASAN MALAM';
+  const title = checkpoint === 'morning' ? '☀️ REKAP PAGI' : '🌙 RINGKASAN MALAM';
   const footer =
     `<i>Sumber data: Sectors API. Diperiksa sekitar ${escapeHtml(wibTime)} WIB.</i>\n\n` +
     `⚠️ <b>Disclaimer:</b>\n<i>Data dapat tidak lengkap atau terlambat. Bukan rekomendasi investasi.</i>\n\n` +
@@ -462,10 +465,11 @@ export function formatTelegramTickerDigest(
   symbol: string,
   tickerBlock: string,
   wibTime: string,
-  dashboardUrl = 'https://siba.investor.id'
+  dashboardUrl = 'https://siba.investor.id',
+  context?: { purpose: 'briefing' | 'evaluation'; sessionDate?: string }
 ): string {
   const cleanSymbol = symbol.toUpperCase().replace(/\.JK$/, '');
-  const title = checkpoint === 'morning' ? '☀️ Pembaruan Pagi' : '🌙 Update Watchlist';
+  const title = context?.purpose === 'evaluation' ? '☀️ Pembaruan Kasus' : checkpoint === 'morning' ? '☀️ Rekap Pagi' : '🌙 Update Watchlist';
   const footer =
     `<i>Sumber data: Sectors API. Diperiksa sekitar ${escapeHtml(wibTime)} WIB.</i>\n\n` +
     `⚠️ <b>Disclaimer:</b>\n<i>Data dapat tidak lengkap atau terlambat. Bukan rekomendasi investasi.</i>\n\n` +
@@ -473,5 +477,5 @@ export function formatTelegramTickerDigest(
 
   return `<b>${title} — ${escapeHtml(cleanSymbol)}</b>\n` +
     `📅 ${escapeHtml(formatIndonesianDate(date))}\n\n` +
-    `${tickerBlock}\n\n${footer}`;
+    `${context?.sessionDate ? `<i>Sesi perdagangan: ${escapeHtml(formatIndonesianDate(context.sessionDate))}.</i>\n\n` : ''}${tickerBlock}\n\n${footer}`;
 }

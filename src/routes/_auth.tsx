@@ -15,6 +15,7 @@ import { DashboardTourModal, DashboardPath } from "../modules/dashboard/componen
 import { useWatchlistStore } from "../modules/watchlist/stores/watchlist.store";
 import { useWorkflowStore } from "../modules/cases/stores/workflow.store";
 import { useState, useEffect, useCallback } from "react";
+import { fetchUserWorkspaceFromSupabase, fetchGlobalMarketSnapshots } from "../services/supabaseStorage";
 import { generateSecurePairingToken } from "../utils/token";
 
 export const Route = createFileRoute("/_auth")({
@@ -38,6 +39,37 @@ function AuthLayout() {
     clearLatestAlert,
     resetReplay,
   } = useWorkflowStore();
+
+  // Server Cron updates are read-only; polling never saves or clears a workspace.
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    const accountId = currentUser.id;
+    let cancelled = false;
+    let busy = false;
+    const refresh = async () => {
+      if (busy || document.visibilityState === 'hidden' || useWorkflowStore.getState().isRunning) return;
+      busy = true;
+      try {
+        const symbols = useWatchlistStore.getState().watchlist;
+        const [workspace, snapshots] = await Promise.all([
+          fetchUserWorkspaceFromSupabase(accountId), fetchGlobalMarketSnapshots(symbols),
+        ]);
+        if (cancelled || useAuthStore.getState().currentUser?.id !== accountId || useWorkflowStore.getState().isRunning) return;
+        if (workspace) useWorkflowStore.setState({
+          activeCases: workspace.activeCases, caseEvents: workspace.caseEvents,
+          caseTemplates: workspace.caseTemplates, lastRunTime: workspace.lastRunTime, runIndex: workspace.runIndex,
+        });
+        if (snapshots.length) useWorkflowStore.setState({ marketSnapshots: new Map(snapshots.map(item => [item.symbol, item])) });
+        await useWorkflowStore.getState().fetchAuditRuns(accountId);
+        const user = useAuthStore.getState().currentUser;
+        if (!cancelled && user?.id === accountId && user.telegramChatId) await useWorkflowStore.getState().fetchTelegramLogs(user.telegramChatId);
+      } catch { /* Preserve the last readable state during transient network errors. */ } finally { busy = false; }
+    };
+    const timer = window.setInterval(() => { void refresh(); }, 30000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { cancelled = true; window.clearInterval(timer); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
+  }, [currentUser?.id]);
 
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [showMarketCloseToast, setShowMarketCloseToast] = useState(false);

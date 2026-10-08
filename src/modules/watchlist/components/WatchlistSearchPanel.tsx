@@ -1,3 +1,4 @@
+import { StockLogo } from '../../../shared/components/StockLogo';
 import { motion } from "framer-motion";
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
@@ -105,10 +106,10 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <Wifi className="w-3.5 h-3.5 text-accent" />
-            <span className="text-xs font-bold text-text-main tracking-wide">
+            <span className="text-base font-bold text-text-main tracking-wide">
               Tambah saham
             </span>
-            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-accent border border-accent text-bg font-bold ml-1">
+            <span className="font-mono text-xs px-1.5 py-0.5 rounded-md bg-accent border border-accent text-bg font-bold ml-1">
               {watchlist.length}/{MAX_WATCHLIST_SIZE}
             </span>
 
@@ -117,7 +118,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
               type="button"
               onClick={onOpenLimitModal}
               title="Klik untuk melihat aturan kuota penambahan saham"
-              className={`flex items-center gap-1.5 font-mono text-[10px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ml-2 ${
+              className={`flex items-center gap-1.5 font-mono text-xs px-2 py-0.5 rounded-md border transition-all cursor-pointer ml-2 ${
                 isLimitReached
                   ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 font-bold shadow-[0_0_10px_rgba(244,63,94,0.2)]'
                   : mutationCount >= 15
@@ -138,31 +139,31 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
           </div>
           
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="text-[10px] font-mono text-text-muted/60">
-              Harga: Sectors API · cache 5 mnt
+            <div className="text-xs font-mono text-text-muted/60">
+              Snapshot harga: Sectors API · Logo: situs emiten / Stockbit
             </div>
             
             {companiesLoading ? (
-              <div className="flex items-center gap-1.5 text-[10px] font-mono text-primary animate-pulse">
+              <div className="flex items-center gap-1.5 text-xs font-mono text-primary animate-pulse">
                 <RefreshCw className="w-3 h-3 animate-spin" />
                 Mengambil emiten IDX...
               </div>
             ) : companiesError ? (
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 text-[10px] font-mono text-rose-400">
+                <div className="flex items-center gap-1 text-xs font-mono text-rose-400">
                   <ServerCrash className="w-3 h-3" />
                   API Gagal
                 </div>
                 <button
                   onClick={onRetryCompanies}
-                  className="flex items-center gap-1 text-[10px] font-mono text-primary hover:text-primary-hover transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-xs font-mono text-primary hover:text-primary-hover transition-colors cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Retry
                 </button>
               </div>
             ) : liveCompanies.length > 0 ? (
-              <div className="flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded-lg bg-accent/10 text-accent border border-accent/20 font-medium">
+              <div className="flex items-center gap-1.5 text-xs font-mono px-2 py-0.5 rounded-lg bg-accent/10 text-accent border border-accent/20 font-medium">
                 <Globe className="w-3 h-3" />
                 {liveCompanies.length} emiten live
               </div>
@@ -186,14 +187,14 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                 <div className="text-xs font-bold text-rose-300">
                   Batas Maksimal 20x Penambahan Saham Tercapai
                 </div>
-                <div className="text-[11px] text-rose-200/70">
+                <div className="text-xs text-rose-200/70">
                   Penambahan saham baru dikunci sementara (20/20). Anda tetap dapat menghapus saham yang dipantau.
                 </div>
               </div>
             </div>
             <button
               type="button"
-              className="px-3 py-1 text-[11px] font-bold rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 transition-colors flex-shrink-0 cursor-pointer"
+              className="px-3 py-1 text-xs font-bold rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 transition-colors flex-shrink-0 cursor-pointer"
             >
               Lihat Peringatan
             </button>
@@ -210,7 +211,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
             <button
               type="button"
               onClick={onOpenLimitModal}
-              className="text-[11px] font-mono underline hover:text-amber-200 cursor-pointer"
+              className="text-xs font-mono underline hover:text-amber-200 cursor-pointer"
             >
               Aturan 20x
             </button>
@@ -263,7 +264,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
           {/* Autocomplete Dropdown */}
           {isDropdownOpen && !companiesError && (
             <div className="absolute left-0 right-0 top-full mt-2 rounded-xl z-30 bg-secondary border border-border shadow-2xl divide-y divide-border/50 max-h-[350px] overflow-y-auto">
-              <div className="px-4 py-2.5 flex items-center justify-between text-[10px] font-mono bg-bg/50 text-text-muted">
+              <div className="px-4 py-2.5 flex items-center justify-between text-xs font-mono bg-bg/50 text-text-muted">
                 <div className="flex items-center gap-1.5 font-bold">
                   <Globe className="w-3 h-3 text-primary" />
                   {searchQuery.trim() ? `${filteredCompanies.length} Hasil Pencarian` : 'Top 3 Saham Pilihan'}
@@ -302,12 +303,13 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
+                      <StockLogo ticker={company.symbol} />
                       <span className="font-mono font-bold text-xs px-2 py-1 rounded flex-shrink-0 bg-accent text-bg shadow-sm">
                         {company.symbol}
                       </span>
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-text-main truncate group-hover:text-primary transition-colors">{company.name}</div>
-                        <div className="text-[10px] font-mono truncate text-text-muted">
+                        <div className="text-sm font-bold text-text-main truncate group-hover:text-primary transition-colors">{company.name}</div>
+                        <div className="text-xs font-mono truncate text-text-muted">
                           {company.sector}
                           {company.marketCapTrillion > 0 ? ` · Rp ${company.marketCapTrillion} T` : ''}
                         </div>
@@ -320,7 +322,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
                         </span>
                       )}
                       {isAdded ? (
-                        <span className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-accent/15 text-accent border border-accent/30">
+                        <span className="text-xs font-mono font-bold px-2 py-1 rounded bg-accent/15 text-accent border border-accent/30">
                           Dipantau
                         </span>
                       ) : (
@@ -342,7 +344,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
               </div>
               <div>
                 <div className="text-sm font-bold text-text-main mb-1">Data Emiten Tidak Tersedia</div>
-                <div className="text-[11px] font-mono text-text-muted">
+                <div className="text-xs font-mono text-text-muted">
                   Gagal mengambil daftar emiten dari Sectors API.<br />
                   Pastikan API key valid dan koneksi aktif.
                 </div>
@@ -367,6 +369,8 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
         </button>
         </div>
 
+        <p className="text-xs leading-relaxed text-text-muted">Harga dan volume mengikuti snapshot terakhir yang tersimpan; data dapat tertinggal dari sesi terbaru.</p>
+
         {/* Watchlist Cards Grid */}
         {watchlist.length === 0 ? (
           <div className="py-12 text-center rounded-xl border border-dashed border-border bg-bg/30 flex flex-col items-center justify-center gap-2">
@@ -374,7 +378,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
             <div className="text-sm font-bold text-text-muted">
               Watchlist Anda masih kosong
             </div>
-            <div className="text-[11px] font-mono text-text-muted/50">
+            <div className="text-xs font-mono text-text-muted/50">
               {liveCompanies.length > 0
                 ? `Cari dari ${liveCompanies.length} emiten IDX di atas atau pasang preset sektor`
                 : 'Tunggu data emiten dimuat, lalu cari saham di atas'}
@@ -382,7 +386,7 @@ export const WatchlistSearchPanel: React.FC<WatchlistSearchPanelProps> = ({
           </div>
         ) : (
           <motion.div 
-            className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3 sm:gap-4"
+            className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-2 sm:gap-4"
             variants={{
               hidden: { opacity: 0 },
               show: { opacity: 1, transition: { staggerChildren: 0.05 } }

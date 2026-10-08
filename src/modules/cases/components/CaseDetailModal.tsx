@@ -91,6 +91,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-5 text-xs">
+          {events[0]?.newStatus === 'DATA_INCOMPLETE' && <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-300"><strong>Menunggu data sumber.</strong> {(events[0].dataQualityIssues || []).join(' · ')} Status kasus {caseItem.status} tetap dipertahankan.</div>}
           {/* Live Market HUD / KPI Strip */}
           {metrics && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-secondary/50 border border-border">

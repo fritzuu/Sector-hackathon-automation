@@ -1,5 +1,7 @@
 import React from 'react';
 import { History, CheckCircle } from 'lucide-react';
+import { Pagination } from '../../../shared/components/Pagination';
+import { usePagination } from '../../../shared/hooks/usePagination';
 
 export interface AuditRunItem {
   runId: string;
@@ -18,6 +20,7 @@ interface RunAuditHistoryProps {
 }
 
 export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs, error, isLoading = false, onRetry }) => {
+  const pagination = usePagination(runs);
   return (
     <div
       id="tour-audit-content"
@@ -61,7 +64,7 @@ export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs, error, i
                 </td>
               </tr>
             ) : (
-              runs.map((r) => (
+              pagination.items.map((r) => (
                 <tr key={r.runId} className="hover:bg-secondary/40 transition-colors">
                   <td className="py-2.5 pl-2 text-primary">{r.runId}</td>
                   <td className="py-2.5 text-text/80 font-sans">
@@ -86,6 +89,7 @@ export const RunAuditHistory: React.FC<RunAuditHistoryProps> = ({ runs, error, i
           </tbody>
         </table>
       </div>
+      <Pagination {...pagination} label="Halaman audit trail" />
     </div>
   );
 };

@@ -6,6 +6,31 @@ import {
 } from '../src/engine/telegramFormatter.ts';
 
 describe('formatTelegramHtml', () => {
+  it('keeps the previous available session and places news after market context', () => {
+    const block = formatTelegramHtml('GOTO', 'MONITORING', {
+      asOfDate: '2026-10-07', facts: [], limitedInterpretations: [],
+    }, {
+      prices: [
+        { date: '2026-10-06', close: 31, volume: 100 },
+        { date: '2026-10-07', close: 30, volume: 200 },
+      ],
+      benchmark: [
+        { date: '2026-10-06', close: 6200 },
+        { date: '2026-10-07', close: 6146.72 },
+      ],
+      news: [{ title: 'Berita GOTO', url: 'https://example.com/news', publishedAt: '2026-10-07' }],
+      includeSections: ['price', 'benchmark', 'volume', 'news'],
+      includeHeader: false, includeFooter: false,
+    });
+    const message = formatTelegramTickerDigest('evening', '2026-10-08', 'GOTO', block, '15.00');
+    expect(message).toContain('Harga penutupan — 7 Oktober 2026');
+    expect(message).toContain('Volume sesi 7 Oktober 2026');
+    expect(message.indexOf('Harga penutupan')).toBeLessThan(message.indexOf('IHSG'));
+    expect(message.indexOf('IHSG')).toBeLessThan(message.indexOf('Sorotan volume'));
+    expect(message.indexOf('Sorotan volume')).toBeLessThan(message.indexOf('Berita terkait'));
+    expect(message.indexOf('Berita terkait')).toBeLessThan(message.indexOf('Disclaimer'));
+  });
+
   it('shows the latest available IHSG date and price when it lags the stock session', () => {
     const message = formatTelegramHtml(
       'GOTO',
@@ -80,7 +105,7 @@ describe('formatTelegramHtml', () => {
       '07.00'
     );
 
-    expect(digest).toContain('PEMBARUAN PAGI');
+    expect(digest).toContain('REKAP PAGI');
     expect(digest).toContain('Kinerja vs IHSG: lebih kuat');
     expect(digest).not.toContain('Harga penutupan');
     expect(digest).not.toContain('Lihat detail kasus di Dashboard');

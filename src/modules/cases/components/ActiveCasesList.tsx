@@ -12,11 +12,13 @@ import {
 interface ActiveCasesListProps {
   cases: CaseState[];
   onSelectCase: (caseItem: CaseState) => void;
+  waitingCaseIds?: Set<string>;
 }
 
 export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({
   cases,
   onSelectCase,
+  waitingCaseIds,
 }) => {
   const getStatusBadge = (status: CaseStatus) => {
     switch (status) {
@@ -117,6 +119,7 @@ export const ActiveCasesList: React.FC<ActiveCasesListProps> = ({
                   {getStatusBadge(c.status)}
                 </div>
 
+                {waitingCaseIds?.has(c.caseId) && <p className="mb-3 text-sm text-amber-300">Menunggu kelengkapan data sumber · status kasus dipertahankan</p>}
                 <div className="text-xs text-text-muted space-y-1 mb-4 font-mono">
                   <div>
                     ID Kasus:{" "}

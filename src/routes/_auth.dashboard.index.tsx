@@ -56,7 +56,7 @@ function DashboardOverviewPage() {
     }
   }, [currentUser, fetchTelegramLogs]);
 
-  // Supabase Cron invokes siba-workflow at 19:15 and 07:00 WIB when configured.
+  // Server Cron evaluates cases and sends the morning recap in one 07:00 WIB run.
 
   const activeCasesArray = Array.from(activeCases.values()).filter(c => watchlist.includes(c.symbol));
 
@@ -84,6 +84,7 @@ function DashboardOverviewPage() {
       />
 
       <div id="tour-overview-content">
+        <div className="mb-5 rounded-xl border border-border bg-surface p-4 text-sm text-text-muted"><strong className="text-text-main">Rekap dan evaluasi kasus 07.00 WIB</strong> · Senin–Jumat. Menggunakan sesi perdagangan terakhir; dashboard diperbarui otomatis setiap 30 detik saat terbuka.</div>
         <AutomationOverview
           lastRunTime={lastRunTime}
           activeCasesCount={activeCasesArray.length}
@@ -93,9 +94,9 @@ function DashboardOverviewPage() {
         />
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 items-stretch gap-4 lg:grid-cols-2 2xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)_minmax(0,1.2fr)]">
-        <QuickWatchlistWidget watchlist={watchlist} />
+      <QuickWatchlistWidget watchlist={watchlist} />
 
+      <div className="grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-2">
         <MarketActivityWidget watchlist={watchlist} />
 
         <div id="tour-telegram-logs" className="min-w-0">

@@ -293,6 +293,8 @@ export async function fetchGlobalMarketSnapshots(
       ihsgPrice: d.ihsg_price,
       ihsgChangePercent: d.ihsg_change_percent,
       latestFilings: d.latest_filings || [],
+      sessionDate: d.data_date,
+      ihsgSessionDate: d.ihsg_data_date,
       lastUpdated: d.updated_at
     }));
   } catch {
