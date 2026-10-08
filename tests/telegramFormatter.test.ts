@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { formatTelegramDigest, formatTelegramHtml } from '../src/engine/telegramFormatter.ts';
+import {
+  formatTelegramDigest,
+  formatTelegramHtml,
+  formatTelegramTickerDigest,
+} from '../src/engine/telegramFormatter.ts';
 
 describe('formatTelegramHtml', () => {
   it('shows the latest available IHSG date and price when it lags the stock session', () => {
@@ -97,5 +101,23 @@ describe('formatTelegramHtml', () => {
 
     expect(block).toContain('Volume abnormal terverifikasi');
     expect(block).not.toContain('Harga penutupan');
+  });
+});
+
+describe('formatTelegramTickerDigest', () => {
+  it('uses the watchlist report layout and wraps only the requested ticker', () => {
+    const message = formatTelegramTickerDigest(
+      'evening',
+      '2026-10-08',
+      'BBCA.JK',
+      '💵 <b>Harga penutupan</b>\nRp6.050',
+      '14.30'
+    );
+
+    expect(message).toContain('<b>🌙 Update Watchlist — BBCA</b>');
+    expect(message).toContain('📅 8 Oktober 2026');
+    expect(message).toContain('Harga penutupan');
+    expect(message).not.toContain('GOTO');
+    expect(message).not.toContain('TLKM');
   });
 });

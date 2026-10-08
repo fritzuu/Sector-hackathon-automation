@@ -455,3 +455,23 @@ export function formatTelegramDigest(
 
   return `<b>${title} | ${escapeHtml(formatIndonesianDate(date))}</b>\n\n${blocks.join('\n\n')}\n\n${footer}`;
 }
+
+export function formatTelegramTickerDigest(
+  checkpoint: 'evening' | 'morning',
+  date: string,
+  symbol: string,
+  tickerBlock: string,
+  wibTime: string,
+  dashboardUrl = 'https://siba.investor.id'
+): string {
+  const cleanSymbol = symbol.toUpperCase().replace(/\.JK$/, '');
+  const title = checkpoint === 'morning' ? '☀️ Pembaruan Pagi' : '🌙 Update Watchlist';
+  const footer =
+    `<i>Sumber data: Sectors API. Diperiksa sekitar ${escapeHtml(wibTime)} WIB.</i>\n\n` +
+    `⚠️ <b>Disclaimer:</b>\n<i>Data dapat tidak lengkap atau terlambat. Bukan rekomendasi investasi.</i>\n\n` +
+    `🔗 <a href="${escapeHtml(dashboardUrl)}/?ticker=${escapeHtml(cleanSymbol)}">Lihat detail kasus di Dashboard SIBA →</a>`;
+
+  return `<b>${title} — ${escapeHtml(cleanSymbol)}</b>\n` +
+    `📅 ${escapeHtml(formatIndonesianDate(date))}\n\n` +
+    `${tickerBlock}\n\n${footer}`;
+}

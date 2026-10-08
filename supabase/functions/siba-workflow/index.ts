@@ -6,8 +6,8 @@ import { sectorsApi, wibDateOffset } from "../../../src/services/sectorsApi.ts"
 import {
   escapeHtml,
   formatIndonesianDate,
-  formatTelegramDigest,
   formatTelegramHtml,
+  formatTelegramTickerDigest,
   TelegramNewsItem,
   TelegramFormatterSection,
 } from "./formatter.ts"
@@ -223,8 +223,6 @@ serve(async (req) => {
     let totalTriggersFound = 0
     let incompleteCount = 0
     let evaluatedCount = 0
-    const digestBlocks: string[] = []
-    const digestItemKeys: string[] = []
     const selectedKeys = new Set<string>()
     const { data: deliveryRows, error: deliveryError } = await supabase
       .from("telegram_delivery_items")
@@ -243,7 +241,6 @@ serve(async (req) => {
       const status = deliveryStatuses.get(key)
       if (selectedKeys.has(key) || (status && status !== "pending")) return false
       selectedKeys.add(key)
-      digestItemKeys.push(key)
       return true
     }
     let remainingNews = 3
@@ -297,14 +294,11 @@ serve(async (req) => {
         if (!latestIHSG || latestIHSG.date !== latestPrice.date) {
           if (tickerItemKeys.length > 0) includeSections.add("benchmark")
         } else {
-          const ihsgKey = marketDeliveryKey("ihsg", "IHSG", latestPrice.date)
           const comparisonKey = marketDeliveryKey("comparison", ticker, latestPrice.date)
           const pendingBenchmarkKey = `pending:benchmark:${cleanTicker}`
           const pendingComparisonKey = `pending:comparison:${cleanTicker}:${latestPrice.date}`
-          const includeIHSG = reserveKey(ihsgKey)
           const includeComparison = reserveKey(comparisonKey)
           let includePendingBenchmark = false
-          if (includeIHSG) tickerItemKeys.push(ihsgKey)
           if (includeComparison) tickerItemKeys.push(comparisonKey)
           if (userPendingKeys.has(pendingBenchmarkKey) && reserveKey(pendingBenchmarkKey)) {
             tickerItemKeys.push(pendingBenchmarkKey)
@@ -314,7 +308,7 @@ serve(async (req) => {
             tickerItemKeys.push(pendingComparisonKey)
             includePendingBenchmark = true
           }
-          if (includeIHSG || includeComparison || includePendingBenchmark) includeSections.add("benchmark")
+          if (includeComparison || includePendingBenchmark) includeSections.add("benchmark")
         }
       }
 
@@ -373,6 +367,10 @@ serve(async (req) => {
         }
       }
 
+      if (tickerItemKeys.length > 0 && latestPrice) {
+        includeSections.add("benchmark")
+      }
+
       if (tickerItemKeys.length > 0) {
         const block = formatTelegramHtml(ticker, r.event?.newStatus || "MONITORING", template, {
           prices,
@@ -386,7 +384,32 @@ serve(async (req) => {
           includeHeader: false,
           includeFooter: false,
         })
-        if (block) digestBlocks.push(`<b>${escapeHtml(cleanTicker)}</b>\n${block}`)
+        if (block) {
+          const coverageNote = newsFetchFailed
+            ? "<i>Sebagian sumber berita belum berhasil diperiksa.</i>"
+            : newsPage.hasNext
+            ? "<i>Cakupan berita parsial; masih ada halaman berita yang belum diperiksa.</i>"
+            : ""
+          const message = formatTelegramTickerDigest(
+            checkpoint,
+            digestDate,
+            cleanTicker,
+            `${coverageNote ? `${coverageNote}\n\n` : ""}${block}`,
+            wibTime
+          )
+          const { error: enqueueError } = await supabase.rpc("enqueue_telegram_digest", {
+            p_user_id: user.id,
+            p_chat_id: user.telegram_chat_id,
+            p_checkpoint: checkpoint,
+            p_digest_date: digestDate,
+            p_message: message,
+            p_item_keys: [...new Set(tickerItemKeys)],
+          })
+          if (enqueueError) {
+            console.error(`Telegram digest enqueue failed for user ${user.id}`)
+            return new Response("Telegram digest could not be queued", { status: 500, headers: corsHeaders })
+          }
+        }
       }
 
       if (r.evalResult) {
@@ -455,28 +478,6 @@ serve(async (req) => {
       last_run_time: timestamp,
       updated_at: timestamp
     })
-
-    if (newsFetchFailed && digestBlocks.length > 0) {
-      digestBlocks.unshift("<i>Sebagian sumber berita belum berhasil diperiksa.</i>")
-    } else if (newsPage.hasNext && digestBlocks.length > 0) {
-      digestBlocks.unshift("<i>Cakupan berita parsial; masih ada halaman berita yang belum diperiksa.</i>")
-    }
-
-    if (digestItemKeys.length > 0 && digestBlocks.length > 0) {
-      const message = formatTelegramDigest(checkpoint, digestDate, digestBlocks, wibTime)
-      const { error: enqueueError } = await supabase.rpc("enqueue_telegram_digest", {
-        p_user_id: user.id,
-        p_chat_id: user.telegram_chat_id,
-        p_checkpoint: checkpoint,
-        p_digest_date: digestDate,
-        p_message: message,
-        p_item_keys: [...new Set(digestItemKeys)],
-      })
-      if (enqueueError) {
-        console.error(`Telegram digest enqueue failed for user ${user.id}`)
-        return new Response("Telegram digest could not be queued", { status: 500, headers: corsHeaders })
-      }
-    }
 
     const pendingSources: any[] = []
     for (const ticker of user.watchlist) {
