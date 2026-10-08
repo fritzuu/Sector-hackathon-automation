@@ -1,3 +1,4 @@
+import { TelegramMessagePreferences } from '../../telegram/components/TelegramMessagePreferences';
 import { useState } from 'react';
 import { Pagination } from '../../../shared/components/Pagination';
 import { usePagination } from '../../../shared/hooks/usePagination';
@@ -43,12 +44,12 @@ function SchedulerPanel({ job, name, description }: { job?: SchedulerJob; name: 
   </section>;
 }
 
-function LatestRun({ run, title }: { run?: AutomationRun; title: string }) {
+function LatestRun({ run, title, hasLegacyHistory }: { run?: AutomationRun; title: string; hasLegacyHistory: boolean }) {
   const status = run ? runStatus(run) : null;
   return <div className="space-y-2">
     <p className="text-sm font-medium text-text-muted">{title}</p>
-    <p className="text-base font-semibold text-text-main">{formatWib(run?.started_at || null)}</p>
-    {status ? <Badge {...status} /> : <p className="text-xs text-text-muted">Belum ada dalam riwayat yang ditampilkan.</p>}
+    <p className="text-base font-semibold text-text-main">{run ? formatWib(run.started_at) : 'Belum ada run dengan pemicu terkonfirmasi'}</p>
+    {status ? <Badge {...status} /> : <p className="text-xs text-text-muted">{hasLegacyHistory ? 'Run lama tersedia, tetapi pemicunya belum tercatat.' : 'Belum ada dalam riwayat yang ditampilkan.'}</p>}
   </div>;
 }
 
@@ -62,6 +63,7 @@ export function AutomationPage() {
   });
   const data = query.data;
   const runs = data?.runs || [];
+  const hasLegacyHistory = runs.some((run) => run.source !== 'cron' && run.source !== 'manual');
   const visibleRuns = runs.filter((run) => filter === 'all' || run.source === filter);
   const pagination = usePagination(visibleRuns, `${userId}:${filter}`);
   const refresh = () => { void query.refetch(); };
@@ -95,11 +97,15 @@ export function AutomationPage() {
       </div>
       <p className="text-xs leading-relaxed text-text-muted">Jadwal aktif berarti scheduler diaktifkan. Pemicu berhasil berarti perintah Cron selesai; hasil pemeriksaan dan pengiriman pesan tercatat terpisah di bawah.</p>
 
+      <>{hasLegacyHistory && <div role="status" className="rounded-lg border border-border bg-secondary/30 p-4 text-sm leading-relaxed text-text-muted">Riwayat lama belum memiliki catatan pemicu otomatis atau manual. Status “Pemicu berhasil” menunjukkan perintah Cron selesai; sumber run lama tetap ditampilkan sebagai “Pemicu tidak tercatat”.</div>}</>
+
       <section className={`${panel} grid gap-5 p-5 sm:grid-cols-3`} aria-label="Eksekusi dan pengiriman terakhir">
-        <LatestRun title="Run otomatis terbaru" run={runs.find((run) => run.source === 'cron')} />
-        <LatestRun title="Run manual terbaru" run={runs.find((run) => run.source === 'manual')} />
+        <LatestRun hasLegacyHistory={hasLegacyHistory} title="Run otomatis terbaru" run={runs.find((run) => run.source === 'cron')} />
+        <LatestRun hasLegacyHistory={hasLegacyHistory} title="Run manual terbaru" run={runs.find((run) => run.source === 'manual')} />
         <div className="space-y-2"><p className="flex items-center gap-2 text-sm font-medium text-text-muted"><Send className="h-4 w-4" aria-hidden="true" />Telegram terakhir</p><p className="text-base font-semibold text-text-main">{formatWib(messages[0]?.created_at || null)}</p><p className="text-xs leading-relaxed text-text-muted">{summarizeDelivery(messages.slice(0, 1))}</p></div>
       </section>
+
+      <TelegramMessagePreferences key={userId} />
 
       <section className={`${panel} overflow-hidden`}>
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border p-5">
@@ -114,8 +120,8 @@ export function AutomationPage() {
           const delivery = run.delivery_counts ? summarizeDeliveryCounts(run.delivery_counts) : 'Pesan belum tertaut ke run ini';
           return <tr key={run.id} className="align-top hover:bg-secondary/50">
             <td className="px-5 py-4"><time dateTime={run.started_at} className="whitespace-nowrap text-xs text-text-main">{formatWib(run.started_at)}</time><p className="mt-1 text-xs text-text-muted">{run.finished_at ? `Selesai ${formatWib(run.finished_at, false)}` : 'Waktu selesai belum tercatat'}</p></td>
-            <td className="px-5 py-4"><Badge label={run.source === 'cron' ? 'Otomatis' : run.source === 'manual' ? 'Manual' : 'Belum tercatat'} /></td>
-            <td className="px-5 py-4 text-xs text-text-main">{run.mode === 'workflow' && run.checkpoint === 'morning' ? 'Rekap dan evaluasi pagi' : run.mode === 'briefing' ? 'Rekap pagi' : run.mode === 'evaluation' ? 'Evaluasi kasus' : run.mode === 'preview' ? 'Preview Telegram' : run.checkpoint === 'morning' ? 'Pemeriksaan pagi' : run.checkpoint === 'evening' ? 'Pemeriksaan malam' : 'Evaluasi saham'}</td>
+            <td className="px-5 py-4"><Badge label={run.source === 'cron' ? 'Otomatis' : run.source === 'manual' ? 'Manual' : 'Pemicu tidak tercatat'} /></td>
+            <td className="px-5 py-4 text-xs text-text-main">{run.mode === 'workflow' && run.checkpoint === 'morning' ? 'Rekap dan evaluasi pagi' : run.mode === 'briefing' ? 'Rekap pagi' : run.mode === 'evaluation' ? 'Evaluasi kasus' : run.mode === 'preview' ? 'Preview Telegram' : run.checkpoint === 'morning' ? 'Pemeriksaan pagi' : run.checkpoint === 'evening' ? 'Checkpoint malam (legacy)' : 'Evaluasi saham'}</td>
             <td className="px-5 py-4"><Badge {...status} />{run.error_code && <p className="mt-1 text-xs text-text-muted">{run.error_code}</p>}</td>
             <td className="px-5 py-4 text-text-main">{run.tickers_count}</td>
             <td className="max-w-64 px-5 py-4 text-xs leading-relaxed text-text-muted">{delivery}</td>

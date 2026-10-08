@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   filingDeliveryKey,
-  inferTelegramCheckpoint,
   marketDeliveryKey,
   marketSymbolFromDeliveryKey,
   newsDeliveryKey,
@@ -10,12 +9,6 @@ import {
 } from '../src/engine/telegramDelivery.ts';
 
 describe('Telegram delivery identity', () => {
-  it('infers the expected checkpoint from WIB time when a trigger omits its mode', () => {
-    expect(inferTelegramCheckpoint(7)).toBe('morning');
-    expect(inferTelegramCheckpoint(19)).toBe('evening');
-    expect(() => inferTelegramCheckpoint(24)).toThrow(RangeError);
-  });
-
   it('normalizes tracking parameters and fragments for article identity', () => {
     expect(newsDeliveryKey('https://News.example/story/?utm_source=feed&id=4#top'))
       .toBe(newsDeliveryKey('https://news.example/story?id=4&utm_medium=email'));
